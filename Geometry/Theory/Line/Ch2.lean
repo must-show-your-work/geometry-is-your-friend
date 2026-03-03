@@ -16,6 +16,8 @@ open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
 
+set_option maxRecDepth 5000
+
 namespace Line
 
 /-- An intersection is either empty, a singleton, or the lines are equal. -/
@@ -99,7 +101,7 @@ lemma commutes {AneB : A ≠ B} : line A B = line B A := by
           cases h_1 with
           | inl h => simp_all only [or_true]
           | inr h_2 => simp_all only [true_or, or_true]
-  
+
 
 
 /-- A segment contains the points that define it -/
@@ -138,7 +140,7 @@ lemma seg_sub_line : segment A B ⊆ line A B := by
   tauto
 
 /-- All points on a line are collinear -/
-lemma all_points_on_a_line_are_collinear {AneB : A ≠ B} : P on line A B -> collinear A B P := by 
+lemma all_points_on_a_line_are_collinear {AneB : A ≠ B} : P on line A B -> collinear A B P := by
   -- Direct Proof
   intro PonAB
   simp only [mem_setOf_eq] at PonAB
@@ -173,18 +175,18 @@ lemma line_has_definition_points.right : B on line A B := ray_sub_line ray_has_e
 lemma line_has_definition_points : A on line A B ∧ B on line A B := ⟨line_has_definition_points.left, line_has_definition_points.right⟩
 
 /-- All points on a extension are collinear -/
-lemma all_points_on_an_extension_are_collinear {A B : Point} : P on extension A B -> collinear A B P := by 
+lemma all_points_on_an_extension_are_collinear {A B : Point} : P on extension A B -> collinear A B P := by
   intro PonExtAB
   exact Betweenness.abc_imp_collinear PonExtAB.left
 
 /-- All points on a segment are collinear -/
-lemma all_points_on_a_segment_are_collinear {AneB : A ≠ B} : P on segment A B -> collinear A B P := by 
+lemma all_points_on_a_segment_are_collinear {AneB : A ≠ B} : P on segment A B -> collinear A B P := by
   intro PonSegAB
   apply seg_sub_line at PonSegAB
   exact @all_points_on_a_line_are_collinear A B P AneB PonSegAB
 
 /-- All points on a ray are collinear -/
-lemma all_points_on_a_ray_are_collinear {AneB : A ≠ B} : P on ray A B -> collinear A B P := by 
+lemma all_points_on_a_ray_are_collinear {AneB : A ≠ B} : P on ray A B -> collinear A B P := by
   intro PonAB
   apply ray_sub_line at PonAB
   exact @all_points_on_a_line_are_collinear A B P AneB PonAB
@@ -248,15 +250,16 @@ lemma line_is_bigger_than_ray : ∀ L : Line, ∀ A B : Point, A ≠ B -> ray A 
     have lABeqlCD : line A B = line C D := by
       rwa [LeqLineAB] at lineCD
     rw [LeqLineAB] at LextendsRay
-    have ⟨X, L', XonL', AonL', BonL', XneA, XneB, XAB⟩ := B2.left A B AneB
-    have L'eqL : L' = line A B := Line.equiv AneB
-      ⟨AonL', line_has_definition_points.left, BonL', line_has_definition_points.right⟩
-    have XonL : X on L := by rwa [LeqLineAB, <- L'eqL]
+    have ⟨X, colXAB, distinctXAB, XAB⟩ := B2.left A B AneB
+    have ⟨XneA, XneB⟩ : X ≠ A ∧ X ≠ B := by sorry -- distinguish -- fails here due to simp recursion issues? or maybe index OOB
+    have L'eqL : colXAB.line = line A B := Line.equiv AneB
+      ⟨colXAB.mem A, line_has_definition_points.left, colXAB.mem B, line_has_definition_points.right⟩
+    have XonL : X on L := by rw [LeqLineAB, <- L'eqL]; exact colXAB.mem X
     -- by construction, X is off the ray
     have XoffRayAB : X off ray A B := by
       unfold Ray;
       -- TODO: This could be done under the rcases below, probably cleaner
-      have XoffSegmentAB : X off segment A B := by 
+      have XoffSegmentAB : X off segment A B := by
         unfold Segment
         simp only [mem_setOf_eq]
         by_contra! hNeg
@@ -276,6 +279,7 @@ lemma line_is_bigger_than_ray : ∀ L : Line, ∀ A B : Point, A ≠ B -> ray A 
       repeat contradiction
     -- so X is off the ray but on the line, which can't be if the two things are equal.
     rw [<- LextendsRay] at XoffRayAB
+    have XonL' := colXAB.mem X
     rw [L'eqL] at XonL'
     contradiction
 
@@ -302,7 +306,7 @@ lemma APB_imp_P_on_ray_AB (PneAB : P ≠ A ∧ P ≠ B) :
   A - P - B -> P on the ray A B := by intro h; unfold Ray; simp; tauto;
 
 lemma ABP_imp_P_on_ext_AB (PneAB : P ≠ A ∧ P ≠ B) :
-  A - B - P -> P on the extension A B := by 
+  A - B - P -> P on the extension A B := by
   intro h; unfold Extension; simp only [ne_eq, mem_setOf_eq, B1b];
   rw [B1b] at h
   tauto
@@ -314,7 +318,7 @@ lemma ABP_imp_P_on_ext_AB (PneAB : P ≠ A ∧ P ≠ B) :
 /-     have AneB := by distinguish distinctABP A B -/
 /-     have colABP := Betweenness.abc_imp_collinear ABP -/
 /-     unfold LineThrough -/
-    
+
 /- lemma APB_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/
 /-   A - P - B -> P on the line A B := by -/
 /-     intro hABP; -/

@@ -121,3 +121,12 @@ distinct A B C ... /\ D =/= ...
 ```
 
 I decided I'd talk about this in a vlog, so if I ever post that anywhere I'll edit a link in here.
+
+
+# 2-MAR-2026
+
+## 2145
+
+Got `distinguish` working, I need a lemma, though, to decompose a `distinct` term in the goal to it's relevant ineq goals; and then I get to do more repairs on proofs to get them running again. The `distinguish` stuff was certainly a trip to get working; it's simultaneously very easy and very hard to think about metaprogramming Lean. `collinear` is going to be another headtrip, I think.
+
+Skunks are out, though, so spring is coming soon; and spring means open windows, and open windows are good for math.

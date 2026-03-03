@@ -32,14 +32,8 @@ theorem P1.i : A ≠ B -> (segment A B) = (ray A B) ∩ (ray B A) := by
     by_cases suppose : C = A ∨ C = B
     · tauto
     · /- "... Otherwise, A B and C are three collinear points (by the definition of ray and Axiom B-1)..." -/
-      have ⟨AneC, BneC⟩ : A ≠ C ∧ B ≠ C := by tauto
-      have distinctABC : distinct A B C := by
-        -- FIXME: this is still pretty ugly, maybe worth lemma-fying
-        simp only [ne_eq, List.pairwise_cons, List.mem_cons, List.not_mem_nil, or_false,
-          forall_eq_or_imp, forall_eq, IsEmpty.forall_iff, implies_true, List.Pairwise.nil,
-          and_self, and_true]
-        trivial
-      have colABC : collinear A B C := by 
+      have distinctABC : distinct A B C := by separate; tauto
+      have colABC : collinear A B C := by
         use ray A B
         intro P PinABC
         simp only [List.mem_cons, List.not_mem_nil, or_false] at PinABC

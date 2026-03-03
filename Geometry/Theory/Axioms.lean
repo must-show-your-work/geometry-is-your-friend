@@ -163,7 +163,7 @@ macro_rules
 p.108a "If A - B - C, then A,B,C are distinct points on the same line...
 -/
 @[simp] axiom B1a {A B C : Point} : A - B - C -> distinct A B C ∧ collinear A B C
-  
+
 
 /--
 p.108b ... and [A - B - C iff] C - B - A.""
@@ -191,33 +191,25 @@ line, there is always a point between them.
 /-- Construct a point 'to the left' of points BD on the induced line B D -/
 lemma B2.left : ∀ B D : Point, B ≠ D -> ∃ A : Point, collinear A B D ∧ distinct A B D ∧ (A - B - D) := by
       intro B D BneD
-      have ⟨A, _ , _, colABD, distinctABD, ABD, _, _⟩ := B2 B D BneD
-
-      tauto
+      have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := B2 B D BneD
+      use A
+      simp_all only [ne_eq, B1b, B1a, and_self]
 
 /-- Construct a point 'in between' points BD on the induced line B D -/
-lemma B2.center : ∀ B D : Point, B ≠ D -> ∃ C : Point, ∃ seg : Line,
-    C on seg ∧ B on seg ∧ D on seg ∧ C ≠ B ∧ C ≠ D ∧  B - C - D := by
+lemma B2.center : ∀ B D : Point, B ≠ D -> ∃ C : Point, collinear B C D ∧ distinct B C D ∧ (B - C - D) := by
       intro B D BneD
-      obtain ⟨A, C, E, L, ⟨AonL, BonL, ConL, DonL, EonL⟩, distinctABCDE, ABD, BCD, BDE⟩ := B2 B D BneD
-      simp only [ne_eq, List.pairwise_cons, List.mem_cons, List.not_mem_nil, or_false,
-        forall_eq_or_imp, forall_eq, IsEmpty.forall_iff, implies_true, List.Pairwise.nil, and_self,
-        and_true] at distinctABCDE
-      use C, L
-      tauto
+      have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := B2 B D BneD
+      use C
+      simp_all only [ne_eq, B1b, B1a, and_self]
+
 
 /-- Construct a point 'to the right' points BD on the induced line B D -/
-lemma B2.right : ∀ B D : Point, B ≠ D -> ∃ E : Point, ∃ seg : Line,
-    E on seg ∧ B on seg ∧ D on seg ∧ E ≠ B ∧ E ≠ D ∧  B - D - E := by 
+lemma B2.right : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ distinct B D E ∧ (B - D - E) := by
       intro B D BneD
-      obtain ⟨A, C, E, L, ⟨AonL, BonL, ConL, DonL, EonL⟩, distinctABCDE, ABD, BCD, BDE⟩ := B2 B D BneD
-      simp only [ne_eq, List.pairwise_cons, List.mem_cons, List.not_mem_nil, or_false,
-        forall_eq_or_imp, forall_eq, IsEmpty.forall_iff, implies_true, List.Pairwise.nil, and_self,
-        and_true] at distinctABCDE
-      use E, L
-      tauto
--/
-      
+      have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := B2 B D BneD
+      use E
+      simp_all only [ne_eq, B1b, B1a, and_self]
+
 -- lemma B2.center
 -- lemma B2.right
 
