@@ -59,10 +59,11 @@ theorem P3.left : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> B - C - D 
     have BonInt : B ∈ L ∩ EC := ⟨colABCD.mem B, hNeg⟩
     have BeqC := Intersection.intersection_is_unique L EC LneEC LnparEC ⟨BonInt, ConLintEC⟩
     contradiction
-  have DonL : D on L := by rw [LeqAB]; unfold LineThrough; simp only [mem_setOf_eq]; sorry
+  have BonAB : B on L := colABCD.mem B
+  have DonAB : D on L := colABCD.mem D
   have DoffEC : D off EC := by
     by_contra! hNeg
-    have DonInt : D ∈ L ∩ EC := ⟨DonL, hNeg⟩
+    have DonInt : D ∈ L ∩ EC := ⟨DonAB, hNeg⟩
     have DneC : D ≠ C := CneD.symm
     have DeqC := Intersection.intersection_is_unique L EC LneEC LnparEC ⟨DonInt, ConLintEC⟩
     contradiction
@@ -74,7 +75,11 @@ theorem P3.left : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> B - C - D 
     refine ⟨AneD, ?_⟩
     use C
     -- TODO: This gets cleaner with better collinearity
-    sorry
+    constructor
+    · unfold Segment
+      simp only [mem_setOf_eq]
+      left; exact ACD
+    · assumption
   /- (4) We claim A and B are on the same side of EC. Assume on the contrary that A and B are on opposite sides of EC
      (RAA Hypothesis) -/
   by_cases raa : EC splits A and B
@@ -95,7 +100,14 @@ theorem P3.left : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> B - C - D 
     have AXB : A - X - B := by
       have colAXB : collinear A X B := by
         use L
-        sorry
+        intro P PinAXB
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at PinAXB
+        rcases PinAXB with PeqA | PeqX | PeqB
+        · rw [PeqA, LeqAB]
+          exact Line.line_has_definition_points.left
+        · rwa [PeqX]
+        · rw [PeqB, LeqAB]
+          exact Line.line_has_definition_points.right
       have AneX : A ≠ X := by
         by_contra! hNeg
         rw [hNeg] at AoffEC
@@ -164,8 +176,13 @@ theorem P3.left : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> B - C - D 
       push_neg at ECsplitsBandD
       specialize ECsplitsBandD BoffEC DoffEC
       have ⟨BneD, P, ⟨PonSegBD, PonEC⟩⟩ := ECsplitsBandD
-      have PinBDintEC : P ∈ line B D ∩ EC := by sorry
-      have LeqBD : L = line B D := by sorry
+      have PinBDintEC : P ∈ line B D ∩ EC := by
+        apply Line.seg_sub_line at PonSegBD
+        tauto
+      have LeqBD : L = line B D := by
+        rw [LeqAB]
+        rw [LeqAB] at BonAB DonAB
+        exact Line.equiv BneD ⟨BonAB, Line.line_has_definition_points.left, DonAB, Line.line_has_definition_points.right⟩
       rw [LeqBD] at LintECatC
       rw [LintECatC] at PinBDintEC
       have PeqC : P = C := by tauto

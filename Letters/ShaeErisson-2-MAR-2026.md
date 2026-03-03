@@ -2,9 +2,9 @@ Hey Shae,
 
 We briefly chatted on Mastodon about my excitement around Lean tactic metaprogramming, and you mentioned it would make a good blogpost, and I wanted to agree; but I kind of hate blogging. I've been doing this "LOG.md" thing for a bit; and I like that, but it doesn't _feel_ right for an explanatory blog; I use it more as a journal or engineering log or scratchpad. I've been trying to embrace my hyperlexia, and this is a good way to do it, but is does feel a little weird to write a blog-ish explainer/experience report in it.
 
-I also just don't like the sort of anonymous audience of a blogpost; I know someone _might_ read it, but it feels itchy to write something someone only _might_ read. I spend a lot of time thinking about writing and writing about thinking and I _care_ about it a lot, I think my identity is in it a bit; so it feels bad if I don't know _someone_ will read it. With LOG.md, I know _I'll_ read it, so I don't mind writing, a blogpost, though? All those hits could be bots and crawlers; the comments LLM; just feels lousy to not _know_ someone has really read it, feels like I wasted my time.
+I also just don't like the sort of anonymous audience of a blogpost; I know someone _might_ read it, but it feels itchy to write something someone only _might_ read. I spend a lot of time thinking about writing and writing about thinking and I _care_ about it a lot, I think my identity is in it a bit; so it feels bad if I don't know _someone_ will read it. With LOG.md, I know _I'll_ read it, so I don't mind writing, a blogpost, though? All those hits could be bots and crawlers; the comments just LLMs; just feels lousy to not _know_ someone has really read it, feels like I wasted my time.
 
-But, as sometimes happens when my anxiety spikes about stuff, I had an idea. I may not be able to guarentee that an anonymous audience is nonempty, as a blogpost would require, but an open letter? I can guarantee at least _one_ person reads it, the recipient[1].
+But, as sometimes happens when my anxiety spikes about stuff, I had an idea. I may not be able to ensure that an anonymous audience is nonempty, as a blogpost would require, but an open letter? I can guarantee at least _one_ person reads it, the recipient[1].
 
 A long time ago in #haskell-cafe I posted my then-current phone number in hex because I, beind a college freshman, hadn't yet learned that obfuscation is not the same as encryption. You called my cell, I answered and was confused, then I realized the lesson. I remember chatting a bunch in those salad days on IRC, and I have the sense that you would appreciate this approach to blogging; I hope you don't mind being my test subject.
 
@@ -355,7 +355,6 @@ This integrates everything together along with a couple other helpers; but the s
 > The cool thing, though, is that good _programming_ practices seem to translate naturally to good _mathematical_ practices. Spending time refactoring really does translate 
 > to better quality arguments that feel more elegant. I've long associated refactoring with the feeling of a good proof technique or clever mathematical argument, it's very
 > validating to see it play out in code.
-
 
 Once I've attempted the proof, I check to see if I actually managed to assign the variable (it always should, another benefit to a direct construction would be eliminating this branch), and then assign the goal to the MVar associated with the proof; closing the goal.
 
