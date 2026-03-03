@@ -191,9 +191,6 @@ lemma all_points_on_a_ray_are_collinear {AneB : A ≠ B} : P on ray A B -> colli
   apply ray_sub_line at PonAB
   exact @all_points_on_a_line_are_collinear A B P AneB PonAB
 
-/-- Every `line A B` is a whole line `L` -/
-lemma linethrough_lift_line : ∀ L : Line, ∃ A B : Point, A ≠ B ∧ L = line A B := by
-  sorry
 
 lemma segment_int_extension_is_empty : segment A B ∩ extension A B = ∅ := by
   apply Subset.antisymm
@@ -214,74 +211,9 @@ lemma line_by_definition : ∀ L : Line, L = {P : Point | P on L} := by
 /-- A line is 'bigger' than a ray in the same way that a line is bigger than a segment -/
 lemma line_is_bigger_than_ray : ∀ L : Line, ∀ A B : Point, A ≠ B -> ray A B ≠ L := by
   intro L A B AneB
-  -- there are three cases:
-  -- 1. L ∥ ray A B, in which case they are not equal because A and B aren't on L.
-  -- 2. L intersects ray A B, in which case at least one of A or B aren't on L
-  -- 3. L is line A B, which is not equal to ray A B because it contains points on extension B A
-  have AonRayAB : A on ray A B := Line.ray_has_endpoints.left
-  have BonRayAB : B on ray A B := Line.ray_has_endpoints.right
-  have ⟨C, D, _, lineCD⟩ := (linethrough_lift_line L)
-  rcases line_trichotomy L (ray A B) with LparRay | LintRay | LextendsRay
-  · by_contra! hNeg
-    rw [<- hNeg] at LparRay
-    simp only [inter_self] at LparRay
-    rw [LparRay] at AonRayAB
-    contradiction
-  · obtain ⟨X, LintABatX, Xuniq⟩ := LintRay
-    have AorBoffL : (A off L) ∨ (B off L) := by
-      by_contra! ⟨AonL, BonL⟩
-      have AinInt : A ∈ L ∩ ray A B := by tauto
-      have BinInt : B ∈ L ∩ ray A B := by tauto
-      rw [LintABatX] at *
-      have AeqB : A = B := by
-        have AeqX : A = X := by tauto
-        have BeqX : B = X := by tauto
-        rw [<- BeqX] at AeqX
-        exact AeqX
-      contradiction
-    by_contra! hNeg
-    rw [<- hNeg] at AorBoffL
-    tauto
-  · exfalso
-    have LisPsonL : L = { P | P on L } := line_by_definition L
-    rw [<- LextendsRay] at AonRayAB BonRayAB
-    have LeqLineAB : L = line A B := Line.equiv AneB
-      ⟨AonRayAB, line_has_definition_points.left, BonRayAB, line_has_definition_points.right⟩
-    have lABeqlCD : line A B = line C D := by
-      rwa [LeqLineAB] at lineCD
-    rw [LeqLineAB] at LextendsRay
-    have ⟨X, colXAB, distinctXAB, XAB⟩ := B2.left A B AneB
-    have ⟨XneA, XneB⟩ : X ≠ A ∧ X ≠ B := by sorry -- distinguish -- fails here due to simp recursion issues? or maybe index OOB
-    have L'eqL : colXAB.line = line A B := Line.equiv AneB
-      ⟨colXAB.mem A, line_has_definition_points.left, colXAB.mem B, line_has_definition_points.right⟩
-    have XonL : X on L := by rw [LeqLineAB, <- L'eqL]; exact colXAB.mem X
-    -- by construction, X is off the ray
-    have XoffRayAB : X off ray A B := by
-      unfold Ray;
-      -- TODO: This could be done under the rcases below, probably cleaner
-      have XoffSegmentAB : X off segment A B := by
-        unfold Segment
-        simp only [mem_setOf_eq]
-        by_contra! hNeg
-        rcases hNeg with AXB | AeqX | BeqX
-        · exact Betweenness.absurdity_abc_bac ⟨AXB, XAB⟩
-        · tauto
-        · tauto
-      have XoffExtensionAB : X off extension A B := by
-        unfold Extension
-        simp only [mem_setOf_eq]
-        push_neg
-        intro ABX
-        exfalso;
-        exact Betweenness.absurdity_abc_cab ⟨ABX, XAB⟩
-      by_contra! hNeg
-      rcases hNeg with XinSeg | XinExt
-      repeat contradiction
-    -- so X is off the ray but on the line, which can't be if the two things are equal.
-    rw [<- LextendsRay] at XoffRayAB
-    have XonL' := colXAB.mem X
-    rw [L'eqL] at XonL'
-    contradiction
+  by_contra ABeqL
+  -- idea: construct a point X - A - B, X is on L, by definition, but off AB, also by def. but under the hypothesis L = AB, -><-
+  sorry
 
 /- It helps to be able to commute these around, when we get to congruence this will make part of it trivial -/
 lemma segment_AB_eq_segment_BA : segment A B = segment B A := by

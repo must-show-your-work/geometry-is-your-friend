@@ -17,6 +17,7 @@ abbrev opts : Array LeanOption := #[
   ⟨`weak.linter.mathlibStandardSet, true⟩,
   ⟨`maxSynthPendingDepth, false⟩,
   ⟨`weak.linter.style.longLine, false⟩,
+  -- (`weak.linter.style.emptyLine, false),
   ⟨`weak.linter.style.multiGoal, false⟩ -- FIXME: I don't know why this fires
 ]
 

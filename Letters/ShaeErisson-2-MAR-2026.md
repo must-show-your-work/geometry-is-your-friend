@@ -1,13 +1,12 @@
 Hey Shae,
 
-We briefly chatted on Mastodon about my excitement around Lean tactic metaprogramming, and you mentioned it would make a good blogpost, and I wanted to agree; but I kind of hate blogging. I've been doing this "LOG.md" thing for a bit; and I like that, but it doesn't _feel_ right for
-an explanatory blog; I use it more as a journal or engineering log or scratchpad. I've been trying to embrace my hyperlexia, and this is a good way to do it, but is does feel a little weird to write a blog-ish explainer/experience report in it.
+We briefly chatted on Mastodon about my excitement around Lean tactic metaprogramming, and you mentioned it would make a good blogpost, and I wanted to agree; but I kind of hate blogging. I've been doing this "LOG.md" thing for a bit; and I like that, but it doesn't _feel_ right for an explanatory blog; I use it more as a journal or engineering log or scratchpad. I've been trying to embrace my hyperlexia, and this is a good way to do it, but is does feel a little weird to write a blog-ish explainer/experience report in it.
 
 I also just don't like the sort of anonymous audience of a blogpost; I know someone _might_ read it, but it feels itchy to write something someone only _might_ read. I spend a lot of time thinking about writing and writing about thinking and I _care_ about it a lot, I think my identity is in it a bit; so it feels bad if I don't know _someone_ will read it. With LOG.md, I know _I'll_ read it, so I don't mind writing, a blogpost, though? All those hits could be bots and crawlers; the comments LLM; just feels lousy to not _know_ someone has really read it, feels like I wasted my time.
 
 But, as sometimes happens when my anxiety spikes about stuff, I had an idea. I may not be able to guarentee that an anonymous audience is nonempty, as a blogpost would require, but an open letter? I can guarantee at least _one_ person reads it, the recipient[1].
 
-A long time ago in #haskell-cafe I posted my then-current phone number in hex because I, beind a college freshman, hadn't yet learned that obfuscation is not the same as encryption. You called my cell, I answered and was confused, then I realized the lesson. I remember chatting a bunch in those salad days, and I have the sense that you would appreciate this approach to blogging; I hope you don't mind being my test subject.
+A long time ago in #haskell-cafe I posted my then-current phone number in hex because I, beind a college freshman, hadn't yet learned that obfuscation is not the same as encryption. You called my cell, I answered and was confused, then I realized the lesson. I remember chatting a bunch in those salad days on IRC, and I have the sense that you would appreciate this approach to blogging; I hope you don't mind being my test subject.
 
 Anyway, the meat of the letter, tactic programming in Lean4.
 
@@ -26,8 +25,7 @@ example (A B C D : Point) (h : distinct A B C D) : A ≠ B ∧ B ≠ C ∧ A ≠
   distinguish
 ```
 
-That example also shows the tactic counterpart, `distinguish`; which tries to automatically close goals based on the `distinct` hypotheses it can find in the proofstate. The initial version was just the `distinct` term, and it barely
-worked, resulting in a lot of proofs like this one:
+That example also shows the tactic counterpart, `distinguish`; which tries to automatically close goals based on the `distinct` hypotheses it can find in the proofstate. The initial version was just the `distinct` term, and it barely worked, resulting in a lot of proofs like this one:
 
 ```lean
 /-- p146. Given A-B-C and A-C-D:
@@ -51,8 +49,7 @@ theorem Ex1.a : A - B - C ∧ A - C - D -> distinct A B C D := by
   exact Betweenness.absurdity_abc_acb ⟨ABC, ACD⟩
 ```
 
-This uses an earlier version of `distinguish` which just automates a single proof of a single inequality fact; and
-that only after 
+This uses an earlier version of `distinguish` which just automates a single proof of a single inequality fact; and that only after 
 
 ```lean
 simp only [ne_eq, List.pairwise_cons, List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp,
@@ -89,8 +86,7 @@ AneX : A ≠ X
 ⊢ A ≠ B ∧ (B ≠ C ∧ X ≠ A) ∧ (∀ (P : ℕ), P = 3 → P > 1) ∧ (C ≠ D ∨ V = W)
 ```
 
-This is split into two parts, the `Context`, which contains all the facts you know, and the `Goal`, which comes after the `⊢` and is the term you have to construct out of your pieces, you can have multiple simultaneous goals; which just means you have multiple branches of a conjunction to prove. All this is the 'proofstate' of your theorem. When proving, you
-can either directly construct terms using the underlying dependently typed functional language, like in this part of a proof of prop 2.2:
+This is split into two parts, the `Context`, which contains all the facts you know, and the `Goal`, which comes after the `⊢` and is the term you have to construct out of your pieces, you can have multiple simultaneous goals; which just means you have multiple branches of a conjunction to prove. All this is the 'proofstate' of your theorem. When proving, you can either directly construct terms using the underlying dependently typed functional language, like in this part of a proof of prop 2.2:
 
 ```lean
 -- This lemma was not suggested by the author, but is handy. The proof is not long and simply establishes the
@@ -101,11 +97,9 @@ have hABnotparAC : (AB ∦ AC) := Line.intersecting_lines_are_not_parallel hPonA
 have hBCnotparAC : (BC ∦ AC) := Line.intersecting_lines_are_not_parallel hPonBC hPonAC
 ```
 
-where I construct a proof that a bunch of lines are not parallel to one another by directly invoking the function
-provided by the `Line.intersecting_lines_are_not_parallel` lemma.
+where I construct a proof that a bunch of lines are not parallel to one another by directly invoking the function provided by the `Line.intersecting_lines_are_not_parallel` lemma.
 
-> Aside: You can also see some custom syntax there for 'not parallel', this is very simple to achieve using the simplest
-> notation-related tool in Lean, `notation`
+> Aside: You can also see some custom syntax there for 'not parallel', this is very simple to achieve using the simplest notation-related tool in Lean, `notation`
 >
 > ```lean
 > notation:20 L " ∥ " M => Parallel L M
@@ -122,13 +116,11 @@ In particular, I need three things:
 2. a way to automatically prove inequality goals using available hypotheses in the context
 3. a way to destructure a distinct goal into a right-associated ("flat") conjunction of inequality goals
 
-This would allow me to work with the `distinct` condition as a goal, known fact, and tool to prove these simple cases automatically by automatically
-looking at the lists of known-distinct items and trying to prove the goal without cluttering the proofstate (which is important for performance reasons).
+This would allow me to work with the `distinct` condition as a goal, known fact, and tool to prove these simple cases automatically by automatically looking at the lists of known-distinct items and trying to prove the goal without cluttering the proofstate (which is important for performance reasons).
 
 -- How it works
 
-Here's the lede I've kept buried, the proofstate is just a Monad, it's essentially a little virtual machine that tracks the hypotheses in the `LocalContext` as
-a bunch of `LocalDecls`, which can be easily turned into `Expr`s, which is the type of Lean Statements in the AST after elaboration; the Lean parser is a multilayer system, and `Expr` is the last step before running actual code[2]. This machine is exposed via the `TacticM` monad, which is essentially a DSL for manipulating proofstates. Proofstates themselves are just a collection of variables that get wired together; they come in three flavors of interest:
+Here's the lede I've kept buried, the proofstate is just a Monad, it's essentially a little virtual machine that tracks the hypotheses in the `LocalContext` as a bunch of `LocalDecls`, which can be easily turned into `Expr`s, which is the type of Lean Statements in the AST after elaboration; the Lean parser is a multilayer system, and `Expr` is the last step before running actual code[2]. This machine is exposed via the `TacticM` monad, which is essentially a DSL for manipulating proofstates. Proofstates themselves are just a collection of variables that get wired together; they come in three flavors of interest:
 
 - FVars - Free variables, these are the `A B C D E X V W` above, but also `h` is an FVar, I prefer to think of it as 'FactVariable', which I think is mostly okay.
 - BVars - Bound variables, these are the arguments to functions, so the `P` in the `(∀ (P : ℕ), P = 3 → P > 1)` above is a BVar
@@ -229,17 +221,13 @@ partial def splitAndTagGoals : TacticM (List MVarId × List Nat) := do
   return (mvars, ineqIndices)
 ```
 
-There is a great deal of bookkeeping in this, but it's a pretty simple idea -- grab the goal (`getMainGoal`), then try to break it into its components using the 
-`splitAndExtract` helper; it does this by simple pattern matching on the goal -- if it's a conjunction (`q($a ∧ $b)`, which is a quotation of the literal `A ∧ B` with match placeholder for the left and right sides of the conjunction), then recurse down each side, updating the index of the goal, if it's an inequality (`~q(@Ne _ $a $b)`), mark
-it as such, and otherwise mark it as a non-equality.
+There is a great deal of bookkeeping in this, but it's a pretty simple idea -- grab the goal (`getMainGoal`), then try to break it into its components using the `splitAndExtract` helper; it does this by simple pattern matching on the goal -- if it's a conjunction (`q($a ∧ $b)`, which is a quotation of the literal `A ∧ B` with match placeholder for the left and right sides of the conjunction), then recurse down each side, updating the index of the goal, if it's an inequality (`~q(@Ne _ $a $b)`), mark it as such, and otherwise mark it as a non-equality.
 
 The other part of this function generates (via the `constructor` tactic in the first branch of the match) an `MVar` for each new goal; so the result is a list of `MVarId`s, one for each goal; and a second list which indexes the first to tell us where all the inequality goals are (`ineqIndices`).
 
 Now we've successfully decomposed the goal from a single conjunction tree (that is, it's in some freely associated form, not uniformly right-associated) to a 'flat' (right-associatated) list of goals and an index of where the ones we can prove with distinct are.
 
-One bit that took me a little while to wrap my head around, when you get the goal, it is an `MVarId`, but we need to deal with it's type as a syntactic element that represents
-a fixed proposition. A goal, ultimately, is just a slot that expects a construction assigned to it of the appropriate type; it doesn't carry any information directly with it, so
-in order to talk about it's type, we have to look it up with `goal.getType`, this gives us an `Expr`, which seems like what we need, because `Expr` is the representation of the syntax, but in fact we need to go one step further and work with the `Q`-quoted version of this `Expr`, which allows us to pick it apart without worrying about the constraints of the `Expr` type.
+One bit that took me a little while to wrap my head around, when you get the goal, it is an `MVarId`, but we need to deal with it's type as a syntactic element that represents a fixed proposition. A goal, ultimately, is just a slot that expects a construction assigned to it of the appropriate type; it doesn't carry any information directly with it, so in order to talk about it's type, we have to look it up with `goal.getType`, this gives us an `Expr`, which seems like what we need, because `Expr` is the representation of the syntax, but in fact we need to go one step further and work with the `Q`-quoted version of this `Expr`, which allows us to pick it apart without worrying about the constraints of the `Expr` type.
 
 From the LTPG:
 
@@ -363,8 +351,13 @@ This integrates everything together along with a couple other helpers; but the s
 > pretty liberal using the `tauto` tactic; which more or less brute-forces it's way through a proof by trying to apply `simp`, `contradiction`, and any available hypothesis
 > to the goal to try to resolve it. In small contexts with few active hypotheses, it's quick enough; but on one proof where I had two dozen or so active facts, it ground the 
 > machine to a halt and my file would take tens of seconds to evaluate. Real nasty.
+>
+> The cool thing, though, is that good _programming_ practices seem to translate naturally to good _mathematical_ practices. Spending time refactoring really does translate 
+> to better quality arguments that feel more elegant. I've long associated refactoring with the feeling of a good proof technique or clever mathematical argument, it's very
+> validating to see it play out in code.
 
-Once I've attempted the proof, I check to see if we actually managed to assign the variable (we always should, another benefit to a direct construction would be eliminating this branch), and then assign the goal to the MVar associated with the proof; closing the goal.
+
+Once I've attempted the proof, I check to see if I actually managed to assign the variable (it always should, another benefit to a direct construction would be eliminating this branch), and then assign the goal to the MVar associated with the proof; closing the goal.
 
 After that is just book keeping, marking the goals we solved and updating the proof state. Lean doesn't do that on it's own, so all of this bookkeeping has been to accomplish this step, the actual tactic is very simple, but updating the state is tricky.
 

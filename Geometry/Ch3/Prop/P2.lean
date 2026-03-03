@@ -34,7 +34,7 @@ theorem P2.i : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
   have AneO : A ≠ O := by -- author omits this step
     by_contra!; rw [this] at AoffL; tauto
   have ⟨B, _, _, colBOA, distinctBOA, bBOA, _, _⟩ := B2 O A AneO.symm
-  have AneB : A ≠ B := by distinguish distinctBOA A B -- needed later
+  have AneB : A ≠ B := by distinguish
   have LneAO : L ≠ segment A O := by
     by_contra! hNeg;
     rw [hNeg] at AoffL;
@@ -50,7 +50,8 @@ theorem P2.i : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
     contradiction
   have BoffL : B off L := by
     -- idea: since A is off L, and O is on, the AO intersects L at O, extend AO, since AOB, then B is on this extension.
-    have ⟨_, colBOA⟩ := B1a bBOA
+    have ⟨distinctBOA, colBOA⟩ := B1a bBOA
+    separate at distinctBOA
     have LintAOatO : L intersects segment A O at O := by
       unfold Intersects
       have OonAO : O on segment A O := by tauto
@@ -58,10 +59,7 @@ theorem P2.i : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
       exact (Intersection.single_point_of_intersection O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
     have h := Intersection.lift_seg_ray AneO LintAOatO
     unfold Ray at h
-    have BonExtAO : B on extension A O := by
-      unfold Extension; simp only [ne_eq, mem_setOf_eq]
-      refine ⟨((B1b B O A).mp bBOA), AneB, ?_⟩
-      exact Ne.symm BneO
+    have BonExtAO : B on extension A O := ⟨B1b.mp bBOA, AneB, BneO.symm⟩
     have BonRayAO : B on ray A O := by tauto
     unfold Intersects at h
     by_contra! BonL
@@ -78,7 +76,7 @@ theorem P2.i : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
     unfold Segment
     simp only [mem_setOf_eq]
     left
-    exact (B1b B O A).mp bBOA
+    exact B1b.mp bBOA
   /- "so L has at least two sides." -/
   /- "(5) Let C be any point distinct from A and B not lying on l..."
 
@@ -163,7 +161,7 @@ chair in our 'dining room' (that we didn't really use very much as a dining room
 video tapes, already over ten years old in most cases. I remember one course was recorded well before
 I was born, and the teacher talked excitedly about how, one day, you might even get to own a computer.
 
-I remember jumping online and looking up what kind of personal computers were available in 1982 or 
+I remember jumping online and looking up what kind of personal computers were available in 1982 or
 whatever year it was. I remember thinking that the videos probably weren't going to be where I'd learn
 most of what I'd learn. I remember thinking the internet was a much better place to look for truth. -/
 

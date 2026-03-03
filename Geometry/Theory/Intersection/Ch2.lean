@@ -132,7 +132,7 @@ lemma lift_seg_ray :
       rw [PeqX]; trivial
 
 /-- If L intersects M anywhere, then L cannot be parallel to M -/
-lemma intersections_are_not_parallel : (L intersects M at P) -> (L ∦ M) := by 
+lemma intersections_are_not_parallel : (L intersects M at P) -> (L ∦ M) := by
   intro LintMatP
   unfold Parallel
   push_neg
@@ -141,31 +141,13 @@ lemma intersections_are_not_parallel : (L intersects M at P) -> (L ∦ M) := by
   unfold Intersects at LintMatP
   simp_all only [Line.coincidence_is_coincidence_of_all_points, mem_inter_iff, mem_singleton_iff, ne_eq, not_forall]
 
--- NOTE: Note presently used
-/-/1-- If two lines intersect, they are distinct. -1/ -/
-/-lemma intersecting_lines_are_not_equal {AneB : A ≠ B} : (L intersects line A B at X) -> L ≠ line A B := by -/
-/-  intro LintABatX -/
-/-  have colABX : collinear A B X := by tauto -/
-/-  have AonAB : A on line A B := Line.line_has_definition_points.left -/
-/-  have BonAB : B on line A B := Line.line_has_definition_points.right -/
-/-  have XonL : X on L := inter_touch_left LintABatX -/
-/-  have XonAB : X on line A B := inter_touch_right LintABatX -/
-/-  by_contra! hNeg -/
-/-  rw [hNeg] at LintABatX -/
-/-  unfold Intersects at LintABatX -/
-/-  simp only [inter_self, Line.coincidence_is_coincidence_of_all_points, mem_setOf_eq, mem_singleton_iff] at LintABatX -/
-/-  have AeqX : A = X := (LintABatX A).mp (Collinear.any_two_points_are_collinear AneB) -/
-/-  have BeqX : B = X := (LintABatX B).mp (Collinear.any_two_points_are_collinear AneB) -/
-/-  rw [AeqX, BeqX] at AneB -/
-/-  contradiction -/
-
 /-- If a line intersects a ray, then it intersects the line containing the ray -/
 lemma lift_ray_line {AneB : A ≠ B} : (L intersects ray A B at X) -> (L intersects line A B at X) := by
   intro LintRay
   have XonRayAB : X on ray A B := inter_touch_right LintRay
   have XonL : X on L := inter_touch_left LintRay
   have XABCol := @Line.all_points_on_a_ray_are_collinear A B X AneB XonRayAB
-  have XonLineAB : X on line A B := by sorry
+  have XonLineAB : X on line A B := Line.ray_sub_line XonRayAB
   have XonRayAB : X on ray A B := by tauto
   have XinInter : X ∈ L ∩ line A B := by tauto
   have LnparRayAB : L ∦ ray A B := intersections_are_not_parallel LintRay
