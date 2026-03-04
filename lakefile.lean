@@ -21,12 +21,16 @@ abbrev opts : Array LeanOption := #[
   ⟨`weak.linter.style.multiGoal, false⟩ -- FIXME: I don't know why this fires
 ]
 
+
 -- Main package
 package "geometry-is-your-friend" where
   version := v!"0.2.0"
   -- Global lean options for pretty-printing, synthesis, etc.
   leanOptions := opts
   -- any additional package configuration here
+
+lean_exe "dumpdecls" where
+  root := `scripts.DumpDecls
 
 @[default_target]
 lean_lib «Geometry» where

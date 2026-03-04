@@ -22,7 +22,7 @@ open Geometry.Ch3.Prop
 B4 is the plane-separation axiom, 3.2 here is on the path toward proving the more useful line-separation property later in 3.4.
 I've chosen to notate the halfplanes in the theorem as 'Hl' and 'Hr' for 'left' and 'right' half-plane, respectively.
 -/
-theorem P2.i : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
+theorem P2 : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
   (∀ P : Point, (P on L) -> (P ∉ Hl) ∧ (P ∉ Hr)) ∧ (Hl ∩ Hr = ∅)
 := by
   /- p.112 "(1) There is a point A not lying on l, (Proposition 2.3 [Ch2.Prop.P3])." -/

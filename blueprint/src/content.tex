@@ -6,21 +6,6 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-\begin{theorem}[Distinct nonparallel lines have a common point of intersection]
-    \label{thm:ch2_p1_direct}
-    \lean{Geometry.Ch2.Prop.P1.direct}
-    \leanok
-    Chapter 2, Proposition 2.1 (Directly as stated)
 
-    pp. 71: If $L$ and $M$ are distinct lines that are not parallel, then $L$ and $M$ have a unique point in common
-\end{theorem}
+\input{generated}
 
-\begin{corollary}[Distinct nonparallel lines intersect]
-    \label{thm:ch2_p1}
-    \lean{Geometry.Ch2.Prop.P1}
-    \uses{thm:ch2_p1_direct}
-    \leanok
-    Chapter 2, Proposition 2.1
-
-    A corrolary of the main theorem that is more useful since it uses the ``\_ intersects \_ at \_'' syntax directly.
-\end{corollary}

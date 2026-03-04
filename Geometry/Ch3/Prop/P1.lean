@@ -98,49 +98,5 @@ theorem P1.ii : A ≠ B -> -- Ed. Same as above.
         exact ⟨B1b.mp tween, BneP, AneP⟩
       right; right; exact PonExtBA
 
-/- -- TODO: This is ugly. --
-
-  intro AneB
-  ext P
-  constructor
-  -- Forward Case: Idea, unfold all the set stuff and apply some commutativity rules
-  -- to build everything
-  intro hPonRayUnion
-  rcases hPonRayUnion with hPonRayAB | hPonRayBA
-  · exact Line.all_points_on_a_ray_are_collinear hPonRayAB
-  · simp only [mem_setOf_eq]; unfold Ray at hPonRayBA;
-    rcases hPonRayBA with hPonSegmentBA | hPonExtensionBA
-    · rw [Line.segment_AB_eq_segment_BA] at hPonSegmentBA; exact Line.all_points_on_a_segment_are_collinear hPonSegmentBA
-    · rw [Collinear.commutes.left]; exact Line.all_points_on_an_extension_are_collinear hPonExtensionBA
-      -- Backward Case: Just check all the cases.
-      intro hPonLine
-      unfold LineThrough at *;
-      have ⟨L, ⟨AonL, BonL, PonL⟩⟩ := hPonLine
-      by_cases suppose: P = A ∨ P = B
-      -- Easy case first, this is degenerate
-      -- now if P = A, and P = B, then A = B, which is false.
-      rcases suppose with PeqA | PeqB
-      rw [PeqA]; simp only [mem_union, mem_setOf_eq, true_or, or_true, ne_eq, not_true_eq_false, false_and, and_false, or_false, Line.segment_AB_eq_segment_BA, or_self]
-      rw [PeqB]; simp only [mem_union, mem_setOf_eq, or_true, ne_eq, not_true_eq_false, and_false, or_false, Line.segment_AB_eq_segment_BA, false_and, or_self]
-      -- Now we have that A B and P are distinct
-      have hABPdistinct := by push_neg at suppose; exact suppose
-      -- Assuming P distinct, B3 + Collinearity means only one betweenness is possible:
-      obtain (⟨bABP, nBAP, nAPB⟩ | ⟨nABP, bBAP, nAPB⟩ | ⟨nABP, nBAP, bAPB⟩) := B3 A B P ⟨AneB, hABPdistinct.right.symm, hABPdistinct.left.symm, hPonLine⟩
-      -- the first assumption here is that P is on the extension
-      obtain hPonExtAB : P on the extension A B := Line.ABP_imp_P_on_ext_AB hABPdistinct bABP
-      -- so it's easy to fulfill the definition and do the set algebra
-      unfold Ray; rw [<- Line.segment_AB_eq_segment_BA]; rw [@union_union_union_comm, union_self, union_comm];
-      -- then we just have to dig a little.
-      constructor; left; exact hPonExtAB
-      --
-      -- B - A - P is the same argument in the other direction.
-      obtain hPonExtBA : P on the extension B A := Line.ABP_imp_P_on_ext_AB (id (And.symm hABPdistinct)) bBAP
-      unfold Ray; rw [<- Line.segment_AB_eq_segment_BA]; rw [@union_union_union_comm, union_self, union_comm];
-      constructor; right; exact hPonExtBA
-      --
-      -- APB means we're on the segment, not the extension, otherwise a similar argument
-      obtain hPonsegAB : P on the segment A B := Line.APB_imp_P_on_segment_AB hABPdistinct bAPB
-      unfold Ray; tauto
--/
 
 end Geometry.Ch3.Prop

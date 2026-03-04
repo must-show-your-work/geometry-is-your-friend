@@ -198,7 +198,6 @@ theorem P3.left : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> B - C - D 
 
 
 -- theorem P3.right : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> B - C - D := by sorry
--- theorem P3.left : ∀ A B C D : Point, (A - B - C) ∧ (A - C - D) -> A - B - D := by sorry
 
 
 end Geometry.Ch3.Prop
