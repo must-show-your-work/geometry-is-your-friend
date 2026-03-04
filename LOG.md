@@ -34,7 +34,7 @@ This mostly lets me interleave and get all the ordering right, but it's a bear t
 (Theory.lean) because the order of the tree is wrong, chapters should parent concepts, but then I have the opposite
 problem in the directory structure -- I have to replicate the concept folders over and over.
 
-I _really_ wish that lean just jammed everything into a database, worked out the dependencies, and complained when it
+I _really_ wish that lean just jammed everything into a database, workedout the dependencies, and complained when it
 couldn't. Maybe the module system will fix this? I haven't really looked too much into it except for my initial attempt,
 I'll have to investigate.
 
@@ -127,6 +127,61 @@ I decided I'd talk about this in a vlog, so if I ever post that anywhere I'll ed
 
 ## 2145
 
-Got `distinguish` working, I need a lemma, though, to decompose a `distinct` term in the goal to it's relevant ineq goals; and then I get to do more repairs on proofs to get them running again. The `distinguish` stuff was certainly a trip to get working; it's simultaneously very easy and very hard to think about metaprogramming Lean. `collinear` is going to be another headtrip, I think.
+Got `distinguish` working, I need a lemma, though, to decompose a `distinct` term in the goal to it's relevant ineq
+goals; and then I get to do more repairs on proofs to get them running again. The `distinguish` stuff was certainly a
+trip to get working; it's simultaneously very easy and very hard to think about metaprogramming Lean. `collinear` is
+going to be another headtrip, I think.
 
 Skunks are out, though, so spring is coming soon; and spring means open windows, and open windows are good for math.
+
+# 3-MAR-2026
+
+## 2245
+
+Prop 3.3 is done, but nasty; it's actually been done for a bit but I've been working on something else. A couple things,
+actually.
+
+First I got `separate` working so now `distinct` conditions are pretty easy to deal with. Ex 3.1 is much improved as a
+result.
+
+I started working on generating the blueprint; but there's a ways to go.
+
+The proof of 3.3 is very long, and I have to replicate it pretty heavily to prove the other half of the condition; which
+is pretty gnar. It's the same up to some renaming, but I am having trouble seeing what I could extract. I did do a bit
+to allow `collinear` conditions to stand in directly for lines in all but the case where I'm trying to prove `A on cL`,
+where `cL` is a collinear condition. The prover gets confused about what kind of membership it should use, which breaks
+stuff.
+
+I might try just winging it with the other half and see if I find a shorter approach, I have an advantage of not minding
+tedious cases that maybe would scare off someone in a setting where case-reasoning is cheaper.
+
+# 4-MAR-2026
+
+## 0020
+
+Some thoughts before guitar and bed.
+
+I think I need some work around `concurrence`s, which are groups of concurrent lines.
+
+A frequent headache is managing various appelates of the same line. A set of collinear points induces `O(n^2)` 'line
+throughs' by picking pairs of their points. All of these lines are geometrically identical; but in the prover, they're a
+big ol' pain in the ass. I've been thinking about this in the context of more automation for distinct / collinear, but
+there are a couple properties of these things that are kind of interesting.
+
+1. Any subset of a distinct/collinear/concurrent set is distinct/collinear/concurrent -- follows from the underlying pairwise equality/inequality
+2. for a 'negative' property, like distinct, combining two distinct hypotheses is pretty difficult, it requires `M * N`
+   proofs, where `M` and `N` are the numbers of points in the structure.
+3. for positive properties, it's often possible to satisfy entry much more easily. Collinear points only need to prove
+   they lie on at two induced lines; Concurrent lines only need to prove they're equal to any of the other lines in the
+   set.
+4. Concurrency and collinearity are related -- all those linethroughs are concurrent, and concurrent lines share the
+   same underlying collinear set.
+
+It's neat how being forced into hyperformality here makes it really clear to see some of the dualities -- theorems have
+very similar proofs despite the type change, and even the underlying plumbing is really just considering the
+relationships between points and sets of points.
+
+In any case, the aim is to build some more structures, probably divide up the `theory` section more, I'm not super happy
+with the way it's broken by chapter, I think it's maybe better to try to further divide up things; I believe there
+should be a way to re-export from the various files; so that I don't have to import everything by hand; but to be honest
+the module system (or import system, not really sure which is which) is a mystery.

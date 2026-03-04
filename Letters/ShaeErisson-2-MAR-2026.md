@@ -72,7 +72,7 @@ theorem Ex1.a : A - B - C ∧ A - C - D -> distinct A B C D := by
 ```
 
 This uses an earlier version of `distinguish` which just automates a single proof of a single inequality fact; and that
-only after 
+only after
 
 ```lean
 simp only [ne_eq, List.pairwise_cons, List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp,
@@ -82,7 +82,7 @@ forall_eq, IsEmpty.forall_iff, implies_true, List.Pairwise.nil, and_self, and_tr
 has cluttered my proof. This is ugly, and so I dug into the guts of the tactic mode to figure it out. Eventually, I got
 it working, basically; it took a whole bunch of cajoling and I only understand like, 20% of it; but it works. I went
 through the _Lean Tactic Programming Guide_ and cannot speak highly enough of it as a significantly better introduction
-to the topic then this will be. The Lean tactic system is _really_ neat; and also a _mindfuck_ to understand. It's very
+to the topic then this will be. The Lean tactic system is _really_ neat; and also a _headtrip_ to understand. It's very
 easy to confuse yourself in terms of what level you're thinking at; and I spent a fair few hours confused because I
 hadn't realized I needed to convert from the `LocalDecl` to an actual `Expr` in order to reference a hypothesis inside
 the inequality proof.
@@ -94,10 +94,9 @@ letter is written.
 -- Proofstate
 
 A proof, as you know, is a program; and in particular it is a program of both values and types. Values have Types, and
-Types, in Lean, can depend on Values. This allows for essentially arbitrary formal mathematical statements after I'm
-sure quite a bit of underlying magic done by wizards with beards longer than mine. You can encode a statement using
-relatively natural mathematical syntax without having to resort to LaTeX by using some clever editor features and a bit
-of muscle memory which develops pretty quickly. So something like: 
+Types, in Lean, can depend on Values. The nice thin about Lean's syntax is that it makes heavy use of unicode, so you
+can encode a statement using relatively natural mathematical syntax without having to resort to LaTeX by using some
+clever editor features and a bit of muscle memory which develops pretty quickly. So something like: 
 
 ```lean
 example : distinct A B C D E -> A ≠ X -> A ≠ B ∧ (B ≠ C ∧ X ≠ A) ∧ (∀ P : Nat, P = 3 -> P > 1) ∧ (C ≠ D ∨ V = W) := by
@@ -106,7 +105,7 @@ example : distinct A B C D E -> A ≠ X -> A ≠ B ∧ (B ≠ C ∧ X ≠ A) ∧
 gets entered like
 
 ```lean
-example : distinct A B C D E -> A \ne X -> A \ne B \and (B \ne C \and X \ne A) \and (\forall P : Nat, P = 3 -> P > 1) \and (C \ne D \or V = W) := by 
+example : distinct A B C D E -> A \ne X -> A \ne B \and (B \ne C \and X \ne A) \and (\forall P : Nat, P = 3 -> P > 1) \and (C \ne D \or V = W) := by
 ```
 
 and your preferred editor will do the right thing, assuming your plugins are in order.

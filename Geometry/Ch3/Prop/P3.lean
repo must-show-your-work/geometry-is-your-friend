@@ -99,15 +99,12 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
         intro P PinAXB
         simp only [List.mem_cons, List.not_mem_nil, or_false] at PinAXB
         rcases PinAXB with PeqA | PeqX | PeqB
-        · rw [PeqA, LeqAB]
-          exact Line.line_has_definition_points.left
+        · rw [PeqA, LeqAB]; exact Line.line_has_definition_points.left
         · rwa [PeqX]
-        · rw [PeqB, LeqAB]
-          exact Line.line_has_definition_points.right
+        · rw [PeqB, LeqAB]; exact Line.line_has_definition_points.right
       have AneX : A ≠ X := by by_contra! hNeg; rw [hNeg] at AoffEC; contradiction
       have BneX : B ≠ X := by by_contra! hNeg; rw [hNeg] at BoffEC; contradiction
       have distinctAXB : distinct A X B := by separate; tauto
-      -- TODO: I think a better argument exists here to reject the two alternative cases.
       rcases B3 A X B ⟨distinctAXB, colAXB⟩ with ⟨AXB, _⟩ | reject
       · exact AXB
       · have ECguardsAB : EC guards A and B := by
@@ -120,20 +117,16 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
             · exact APB
             · exfalso; rw [<- AeqP] at PonEC; contradiction
             · exfalso; rw [<- BeqP] at PonEC; contradiction
-          rw [<- LeqAB] at PinIntLine
-          have PeqX : P = X := Intersection.intersection_is_unique cL EC LneEC LnparEC ⟨PinIntLine.symm, XinIntLine⟩
+          have PeqX : P = X := Intersection.intersection_is_unique cL EC LneEC LnparEC ⟨LeqAB.symm ▸ PinIntLine.symm, XinIntLine⟩
           rcases reject with ⟨_, XAB, _⟩ | ⟨_, _, ABX⟩
-          · rw [<- PeqX] at XAB
-            exact Betweenness.absurdity_abc_bac ⟨XAB, APB⟩
-          · rw [<- PeqX] at ABX
-            exact Betweenness.absurdity_abc_acb ⟨APB, ABX⟩
+          · exact Betweenness.absurdity_abc_bac ⟨PeqX.symm ▸ XAB, APB⟩
+          · exact Betweenness.absurdity_abc_acb ⟨APB, PeqX.symm ▸ ABX⟩
         contradiction
     /- (6) That point must be C (Proposition 2.1) -/
     have CeqX : C = X := Intersection.uniq ⟨LintECatC, LintECatX⟩
     /- (7) Thus A - B - C and A - C - B, which contradicts Betweenness Axiom 3. -/
-    have ACB : A - C - B := by rwa [<- CeqX] at AXB
-    exfalso
-    exact Betweenness.absurdity_abc_acb ⟨ABC, ACB⟩
+    have ACB : A - C - B := CeqX.symm ▸ AXB
+    exfalso; exact Betweenness.absurdity_abc_acb ⟨ABC, ACB⟩
   · /- (8) Hence, A and B are on the same side of EC (RAA conclusion) -/
     push_neg at raa
     /- (9) B and D are on opposite sides of EC (steps 3 and 8 and the corrolary to Betweenness Axiom 4). -/
@@ -147,13 +140,9 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
     push_neg at ECsplitsBandD
     specialize ECsplitsBandD BoffEC DoffEC
     have ⟨BneD, P, ⟨PonSegBD, PonEC⟩⟩ := ECsplitsBandD
-    have PinBDintEC : P ∈ line B D ∩ EC := by
-      apply Line.seg_sub_line at PonSegBD
-      tauto
-    have LeqBD : L = line B D := by
-      rw [LeqAB]
-      rw [LeqAB] at BonAB DonAB
-      exact Line.equiv BneD ⟨BonAB, Line.line_has_definition_points.left, DonAB, Line.line_has_definition_points.right⟩
+    have PinBDintEC : P ∈ line B D ∩ EC := ⟨(Line.seg_sub_line PonSegBD), PonEC⟩
+    have LeqBD : cL = line B D := LeqAB ▸ Line.equiv BneD
+      ⟨LeqAB ▸ BonAB, Line.line_has_definition_points.left, LeqAB ▸ DonAB, Line.line_has_definition_points.right⟩
     rw [LeqBD] at LintECatC
     rw [LintECatC] at PinBDintEC
     have PeqC : P = C := by tauto
@@ -163,18 +152,24 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
     · rw [BeqP, <- PeqC] at BneC; contradiction
     · rw [DeqP, <- PeqC] at CneD; contradiction
   /- A similar argument involving EB proves that A - B - D -/
+  
 
   /- TODO: Ed: time to break out `suffices` or some other clever thing... -/
 
 
-theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by 
+theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   intro ⟨ABC, ACD⟩
-  have ⟨distinct
-  apply B3
+  have BCD := P3.left ⟨ABC, ACD⟩
+  have distinctABCD := Ex1.a ⟨ABC, ACD⟩
+  have cL := Ex1.b ⟨ABC, ACD⟩
+  rcases B3 A B D ⟨(by separate; distinguish), cL.sublist (by aesop)⟩
+    with ⟨ABD, _⟩ | ⟨_, BAD, nADB⟩ | ⟨nABD, nBAD, ADB⟩
+  · exact ABD
+  · exfalso ; sorry
+  · exfalso ; sorry
   
-  
-  
-  sorry
+  /- have ⟨distinct -/
+  /- apply B3 -/
 
 
 end Geometry.Ch3.Prop

@@ -5,6 +5,7 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
 import Mathlib.Data.List.Basic
+
 import Geometry.Tactics
 import Geometry.Theory.Axioms
 
@@ -25,8 +26,12 @@ noncomputable instance : Coe {l : List Point // Collinear l} Line where
 noncomputable instance collinearCoe {points : List Point} (h : Collinear points) : CoeDep (Collinear points) h Line where
   coe := h.line
 
+/-- a sublist of a list of collinear points is collinear -/
+@[simp] lemma sublist {l l' : List Point} (h : Collinear l) (hs : List.Sublist l' l) : Collinear l' :=
+  ⟨h.line, fun p hp => h.on_line p (hs.subset hp)⟩
+
 /-- There is a line between any two points, so by definition any two points are collinear -/
-lemma any_two_points_are_collinear : A ≠ B -> collinear A B := by
+@[simp] lemma any_two_points_are_collinear : A ≠ B -> collinear A B := by
   intro AneB
   have ⟨L, ⟨AonL, BonL⟩, _h⟩ := I1 A B AneB
   unfold Collinear
