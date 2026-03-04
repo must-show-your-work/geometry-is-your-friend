@@ -42,6 +42,9 @@ lemma inter_touch_right : (L intersects M at X) -> (X on M) := by
   have XinLintM : X ∈ L ∩ M := by simp_all only [mem_singleton_iff]
   exact mem_of_mem_inter_right XinLintM
 
+/-- If L intersects M at X, then X is on L and M -/
+lemma inter_touch : (L intersects M at X) -> (X on L) ∧ (X on M) := by intro inter; exact ⟨inter_touch_left inter, inter_touch_right inter⟩
+
 /-- If L intersects M at X, then forall P not equal to X, if P on L, then P off M. -/
 lemma uniq_solitary : (L ≠ M) ∧ (L intersects M at X) -> (∀ P : Point, (P ≠ X) ∧ (P on L) -> (P off M)) := by
   intro ⟨LneM, LintMatX⟩ P ⟨PneX, PonL⟩
