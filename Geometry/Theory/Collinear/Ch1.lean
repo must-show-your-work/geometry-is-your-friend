@@ -18,6 +18,13 @@ open Geometry.Theory
 
 namespace Collinear
 
+/-- collinear points can be used in place of a line by using the induced line -/
+noncomputable instance : Coe {l : List Point // Collinear l} Line where
+  coe := fun ⟨_, h⟩ => h.line
+
+noncomputable instance collinearCoe {points : List Point} (h : Collinear points) : CoeDep (Collinear points) h Line where
+  coe := h.line
+
 /-- There is a line between any two points, so by definition any two points are collinear -/
 lemma any_two_points_are_collinear : A ≠ B -> collinear A B := by
   intro AneB
