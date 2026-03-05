@@ -210,9 +210,6 @@ lemma B2.right : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ 
       use E
       simp_all only [ne_eq, B1b, B1a, and_self]
 
--- lemma B2.center
--- lemma B2.right
-
 /-- p.108 "If A, B, and C are three distinct points lying on the same line, then
  one and only one of the points is between the other two."
 -/
