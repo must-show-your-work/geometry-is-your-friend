@@ -5,3 +5,4 @@ blueprint/print
 *.paux
 blueprint/lean_decls
 .venv/
+web/
