@@ -38,6 +38,10 @@ structure Distinct {α : Type*} (points : List α) : Prop where
 
 namespace Distinct
 
+/-- A sublist of a set of distinct items is a set of distinct items -/
+lemma sublist {α : Type*} {l l' : List α} (h : Distinct l) (hs : List.Sublist l' l) : Distinct l' where
+  pairwise := h.pairwise.sublist hs
+
 /-- Get the list of points from a Distinct hypothesis (meta-level) -/
 partial def getPointsExpr (distinctExpr : Expr) : MetaM (Option (List Expr)) := do
   let hypoType ← inferType distinctExpr

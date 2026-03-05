@@ -53,7 +53,7 @@ noncomputable def Collinear.line {points : List Point} (h : Collinear points) : 
 
 lemma Collinear.on_line {points : List Point} (h : Collinear points) : ∀ p ∈ points, p on h.line := Classical.choose_spec h
 
-lemma Collinear.mem {points : List Point} (h : Collinear points) (p : Point) (hp : p ∈ points := by simp) :
+@[simp] lemma Collinear.mem {points : List Point} (h : Collinear points) (p : Point) (hp : p ∈ points := by simp) :
   p on h.line := h.on_line p hp
 
 example : collinear A B C ↔ ∃ L : Line, A on L ∧ B on L ∧ C on L := by

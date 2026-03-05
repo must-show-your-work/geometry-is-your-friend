@@ -1,4 +1,3 @@
-
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
@@ -10,12 +9,14 @@ import Geometry.Ch2.Prop
 import Geometry.Ch3.Prop.P1
 import Geometry.Ch3.Prop.B4iii
 import Geometry.Ch3.Ex.Ex1
+import Geometry.Theory.Distinct
 import Geometry.Theory.Collinear.Ch1
 import Geometry.Theory.Collinear.Ch2
 import Geometry.Theory.Betweenness.Ch1
 import Geometry.Theory.Betweenness.Ch2
 import Geometry.Theory.Line.Ch1
 import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Forgetting
 
 namespace Geometry.Ch3.Prop
 
@@ -44,7 +45,47 @@ lemma Intersection.splits_points {L : Line} {A X B : Point} (AXB : A - X - B) :
   use X
   constructor
   · unfold Segment; simp only [mem_setOf_eq]; left; exact AXB
-  · exact Intersection.inter_touch_left LintAXBatX
+  ·exact Intersection.inter_touch_left LintAXBatX
+
+lemma Line.glue_segment {A B C : Point} : A - B - C -> segment A C = segment A B ∪ segment B C := by
+  intro ABC
+  apply Subset.antisymm
+  · intro P PonAC
+    rcases PonAC with APC | PeqA | PeqC 
+    · sorry
+    · sorry
+    · sorry
+  · intro P PonABorBC
+    rcases PonABorBC with PonAB | PonBC 
+    · sorry
+    · sorry
+
+
+lemma Line.segment_extension {A B C : Point} : A - B - C -> segment A B ⊆ segment A C := by
+  intro ABC P PonAB
+  rcases PonAB with APB | PeqA | PeqB
+  · unfold Segment; simp only [mem_setOf_eq];
+    have dAPC := (Ex1.a ⟨APB, ABC⟩) forgetting B
+    have cAPC := (Ex1.b ⟨APB, ABC⟩) forgetting B
+    rcases B3 A P C ⟨dAPC, cAPC⟩ with ⟨APC, _⟩ | ⟨_, PAC, _⟩ | ⟨_, _, ACP⟩
+    · tauto
+    · exfalso; exact Betweenness.absurdity_abc_bac ⟨sorry, PAC⟩
+    · exfalso; exact Betweenness.absurdity_abc_cab ⟨sorry, ACP⟩
+  · rw [<- PeqA]; exact Line.seg_has_endpoints.left
+  · rw [<- PeqB]; unfold Segment; simp only [mem_setOf_eq] ; left; exact ABC;
+
+lemma Betweenness.split_extend {L : Line} {A B C : Point} : A - B - C -> (L splits A and B) -> (L splits A and C) := by
+  intro ABC LsplitAB
+  have distinctABC := Betweenness.abc_imp_distinct ABC
+  have cABC := Betweenness.abc_imp_collinear ABC
+  unfold SameSide at *; push_neg at *
+  intro AoffL CoffL
+  refine ⟨(by distinguish), ?_⟩
+  by_contra! hNeg
+  have BonAC : B on segment A C := by tauto
+  have BoffL := hNeg B BonAC
+  obtain ⟨_, P, PonAB, PonL⟩ := LsplitAB AoffL BoffL
+  exact (absurd PonL) (hNeg P <| Line.segment_extension ABC <| PonAB)
 
 
 /-- p112. Given A - B - C and A - C - D, then B - C - D and A - B - D (see Figure 3.9) -/
@@ -153,28 +194,19 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
     · rw [BeqP, <- PeqC] at BneC; contradiction
     · rw [DeqP, <- PeqC] at CneD; contradiction
   /- A similar argument involving EB proves that A - B - D -/
-  
-
-  /- TODO: Ed: time to break out `suffices` or some other clever thing... -/
-
 
 theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by
-  /- (1) A, B, C, and D are distinct, collinear points (see Exercise 1). -/
   intro ⟨ABC, ACD⟩
   have distinctABCD := Ex1.a ⟨ABC, ACD⟩
   separate at distinctABCD
   have cL := Ex1.b ⟨ABC, ACD⟩
-  /- (2) There exists a point E not on the line through A,B,C,D (Proposition 2.3) -/
-  have LeqAB : cL = line A B := Line.equiv AneB
-    ⟨cL.mem A, Line.line_has_definition_points.left, cL.mem B, Line.line_has_definition_points.right⟩
+  have LeqCD : cL = line C D := Line.equiv CneD
+    ⟨cL.mem C, Line.line_has_definition_points.left, cL.mem D, Line.line_has_definition_points.right⟩
   have ⟨E, EoffcL⟩ := Ch2.Prop.P3 cL
-  /- (3) Consider line EB. Since (by hypothesis) AD meets this line in point B,... -/
   let EB := line E B
-  -- {Ed} Missing these simple conditions
   -- NOTE: have to be specific here to avoid coercion issues.
-  have BonAB : B on cL.line := cL.mem B
-  have DonAB : D on cL.line := cL.mem D
-  -- TODO: I need better tools for proving lines different from each other
+  have BonAC : B on cL.line := cL.mem B
+  have DonAC : D on cL.line := cL.mem D
   have LneEB : cL ≠ EB := by
     have EonEB : E on EB := Line.line_has_definition_points.left
     by_contra! hNeg; rw [hNeg] at EoffcL; contradiction
@@ -189,42 +221,70 @@ theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   have AoffEB : A off EB := (Intersection.miss_means_off AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
   have CoffEB : C off EB := (Intersection.miss_means_off BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
   have DoffEB : D off EB := (Intersection.miss_means_off BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
-  -- {/Ed}
-  /- ... points A and D are on opposite sides of EB -/
   have EBsplitsAandC : EB splits A and C := Intersection.splits_points ABC (Intersection.symm.mpr LintEBatB)
-  /- (4) We claim A and B are on the same side of EB. Assume on the contrary that A and B are on opposite sides of EB
-     (RAA Hypothesis) -/
-  by_cases raa : EB splits A and B
-  · /- p113. (5) Then EB meets AB in a point between A and B (definition of "opposite sides" [ed. "splits" in our parlance]). -/
-    have ⟨X, LintEBatX, Xuniq⟩ : ∃! X : Point, (cL intersects EB at X) := by
+  by_cases raa : EB splits C and D
+  · have ⟨X, LintEBatX, Xuniq⟩ : ∃! X : Point, (cL intersects EB at X) := by
       rcases Line.line_trichotomy cL EB with LparEB | LintEBatX | LeqEB
       · exfalso; rwa [LparEB] at BonLintEB
       · exact LintEBatX
       · exfalso; rw [<- LeqEB] at AoffEB; contradiction
-    -- {Ed} need this for a step below
     have ⟨XonL, XonEB⟩ := Intersection.inter_touch LintEBatX
-    -- {/Ed}
-    have AXB : A - X - B := by
-      have colAXB : collinear A X B := by
-        use cL
-        intro P PinAXB
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at PinAXB
-        rcases PinAXB with PeqA | PeqX | PeqB
-        · rw [PeqA, LeqAB]; exact Line.line_has_definition_points.left
-        · rwa [PeqX]
-        · rw [PeqB, LeqAB]; exact Line.line_has_definition_points.right
-      have AneX : A ≠ X := by by_contra! hNeg; rw [hNeg] at AoffEB; contradiction
+    have CXD : C - X - D := by
       have BneX : C ≠ X := by by_contra! hNeg; rw [hNeg] at CoffEB; contradiction
-      have distinctAXB : distinct A X B := by separate; sorry
-      rcases B3 A X B ⟨distinctAXB, colAXB⟩ with ⟨AXB, _⟩ | reject
-      · exact AXB
+      have DneX : D ≠ X := by by_contra! hNeg; rw [hNeg] at DoffEB; contradiction
+      have distinctCXD : distinct C X D := by separate; tauto;
+      have colCXD : collinear C X D := by
+        use cL
+        intro P PinCXD
+        simp only [List.mem_cons, List.not_mem_nil, or_false] at PinCXD
+        rcases PinCXD with PeqC | PeqX | PeqD
+        · rw [PeqC, LeqCD]; exact LeqCD ▸ cL.mem C
+        · rwa [PeqX]
+        · rw [PeqD, LeqCD]; exact LeqCD ▸ cL.mem D
+      rcases B3 C X D ⟨distinctCXD, colCXD⟩ with ⟨CXD, _⟩ | reject
+      · exact CXD
       · have EBguardsCD : EB guards C and D := by
-          sorry
-        sorry
-    -- FIXME:  proof gets a little lost here.
-    sorry
+          refine ⟨CoffEB, DoffEB, Or.inr ?_⟩
+          by_contra! hNeg
+          have ⟨P, PonCD, PonEB⟩ := hNeg
+          have PinIntLine : P ∈ EB ∩ (line C D) := Set.inter_subset_inter_right EB Line.seg_sub_line ⟨PonEB, PonCD⟩
+          have CPD : C - P - D := by
+            rcases PonCD with CPD | CeqP | DeqP
+            · exact CPD
+            · exfalso; rw [<- CeqP] at PonEB; contradiction
+            · exfalso; rw [<- DeqP] at PonEB; contradiction
+          have PeqX : P = X := Intersection.intersection_is_unique cL EB LneEB LnparEB ⟨LeqCD ▸ PinIntLine.symm, ⟨XonL, XonEB⟩⟩
+          rcases reject with ⟨_, XCD, _⟩ | ⟨_, _, CDX⟩
+          · exact Betweenness.absurdity_abc_bac ⟨PeqX.symm ▸ XCD, CPD⟩
+          · exact Betweenness.absurdity_abc_acb ⟨CPD, PeqX.symm ▸ CDX⟩
+        contradiction
+    have BeqX : B = X := Intersection.uniq ⟨LintEBatB, LintEBatX⟩
+    have CBD : C - B - D := BeqX.symm ▸ CXD
+    -- NOTE: Interesting that I need the former to prove this, that seems like I got something off somewhere.
+    exfalso; exact Betweenness.absurdity_abc_bac ⟨P3.left ⟨ABC, ACD⟩, CBD⟩
   · push_neg at raa
-    sorry -- FIXME: same as above
-  
+    have EBsplitsAandC : EB splits A and C := by
+      by_contra! EBguardsAandC
+      have h := B4i ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBguardsAandC, raa⟩
+      contradiction
+    have EBsplitsAandD : EB splits A and D := by
+      
+      sorry
+    unfold SameSide at EBsplitsAandC
+    push_neg at EBsplitsAandC
+    specialize EBsplitsAandC AoffEB CoffEB
+    have ⟨AneC, P, ⟨PonSegAC, PonEB⟩⟩ := EBsplitsAandC
+    have PinACintEB : P ∈ line A C ∩ EB := ⟨(Line.seg_sub_line PonSegAC), PonEB⟩
+    ---
+    have LeqAC : cL = line A C := Line.equiv AneC 
+      ⟨cL.mem A, Line.line_has_definition_points.left, cL.mem C, Line.line_has_definition_points.right⟩
+    rw [LeqAC] at LintEBatB
+    rw [LintEBatB] at PinACintEB
+    have PeqB : P = B := by tauto
+    rw [<- PeqB]
+    rcases PonSegAC with APC | AeqP | CeqP
+    · sorry
+    · rw [AeqP, <- PeqB] at AneB; contradiction
+    · rw [CeqP, <- PeqB] at BneC; contradiction
 
 end Geometry.Ch3.Prop
