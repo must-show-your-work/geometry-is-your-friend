@@ -265,6 +265,36 @@ lemma between_splits
   · rw [PeqX] at AeqP ; contradiction
   · rw [PeqX] at BeqP ; contradiction
 
+/-- If X is on a line L, and E is not on L, then:
+  1. L and EX are distinct lines
+  2. L and EX are not parallel
+  3. L intersects EX at X -/
+lemma auxillary_line_through {L : Line} {X E : Point} (XonL : X on L) (EoffL : E off L)
+    : (L ≠ (line E X)) ∧ (L ∦ (line E X)) ∧ (L intersects (line E X) at X) := by
+  have XonEX : X on (line E X) := Line.line_has_definition_points.right
+  have EonEX : E on (line E X) := Line.line_has_definition_points.left
+  have ne : L ≠ (line E X) := by
+    by_contra! hNeg; rw [hNeg] at EoffL; contradiction
+  have npar : L ∦ (line E X) := by
+    intro hpar
+    have XinInter : X ∈ L ∩ (line E X) := ⟨XonL, XonEX⟩
+    rw [Intersection.parallel_intersection_is_empty L (line E X) (by tauto) hpar] at XinInter
+    exact absurd XinInter (Set.notMem_empty X)
+  have XonLintEX : X ∈ L ∩ (line E X) := by tauto
+  have int : L intersects (line E X) at X := (single_point_of_intersection X L (line E X) ⟨ne, npar⟩).mp XonLintEX
+  tauto
+
+/-- If A, B, and Z are on L, a line M passes through L at Z, and Z is not between A and B, then M guards A and B. -/
+lemma guards_when_not_between {L M : Line} {Z A B : Point}
+    (AneZ : A ≠ Z) (BneZ : B ≠ Z)
+    (LintMatZ : L intersects M at Z)
+    (onL : A on L ∧ B on L)
+    (notAZB : ¬(A - Z - B))
+    : M guards A and B := by
+  rcases LotEMGuards with split | guard
+  · exact absurd (Intersection.between_splits AneZ BneZ LintMatZ onL split) notAZB
+  · exact guard
+
 end Intersection
 
 end Geometry.Theory

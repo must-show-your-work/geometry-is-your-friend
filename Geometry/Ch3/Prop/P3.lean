@@ -27,7 +27,6 @@ open Geometry.Ch3.Prop
 open Geometry.Ch3.Ex
 
 
-
 /-- p112. Given A - B - C and A - C - D, then B - C - D and A - B - D (see Figure 3.9) -/
 theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
   /- (1) A, B, C, and D are distinct, collinear points (see Exercise 1). -/
@@ -139,49 +138,55 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
     · exact BPD
     · rw [BeqP, <- PeqC] at BneC; contradiction
     · rw [DeqP, <- PeqC] at CneD; contradiction
-  /- A similar argument involving EB proves that A - B - D -/
 
+/- Ed: I've taken a more 'proof programmer' approach below, extracting out a much terser argument and relying on 
+lemmas elsewhere to reduce duplication. The following are _not_ the argument that the author makes directly, but
+a version of it optimized for tersity in the context of Lean. I think it reads alright, but it atomizes the
+intuitive argument that the author makes into a bunch of type theoretic dust, which isn't my favorite thing in the
+world. -/
+
+/-- p.113 A similar argument involving EB proves that A - B - D (Ex 2(b)) -/
 theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   intro ⟨ABC, ACD⟩
   have distinctABCD := Ex1.a ⟨ABC, ACD⟩
   separate at distinctABCD
   have cL := Ex1.b ⟨ABC, ACD⟩
-  have LeqCD : cL = line C D := Line.equiv CneD
-    ⟨cL.mem C, Line.line_has_definition_points.left, cL.mem D, Line.line_has_definition_points.right⟩
   have ⟨E, EoffcL⟩ := Ch2.Prop.P3 cL
   let EB := line E B
-  -- NOTE: have to be specific here to avoid coercion issues.
-  have BonAC : B on cL.line := cL.mem B
-  have DonAC : D on cL.line := cL.mem D
-  have LneEB : cL ≠ EB := by
-    have EonEB : E on EB := Line.line_has_definition_points.left
-    by_contra! hNeg; rw [hNeg] at EoffcL; contradiction
-  have BonEB : B on EB := Line.line_has_definition_points.right
-  have BonLintEB : B on cL ∩ EB := ⟨cL.mem B, BonEB⟩
-  have LnparEB : cL ∦ EB := by
-    by_contra! hNeg
-    have emptyInter := Intersection.parallel_intersection_is_empty cL EB LneEB hNeg
-    rw [emptyInter] at BonLintEB
-    contradiction
-  have LintEBatB : cL intersects EB at B := (Intersection.single_point_of_intersection B cL EB ⟨LneEB, LnparEB⟩).mp BonLintEB
-  have AoffEB : A off EB := (Intersection.miss_means_off AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
-  have CoffEB : C off EB := (Intersection.miss_means_off BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
-  have DoffEB : D off EB := (Intersection.miss_means_off BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
-  have EBsplitsAandC : EB splits A and C := Intersection.splits_points ABC (Intersection.symm.mpr LintEBatB)
-  by_cases raa : EB splits C and D
-  · have CBD : C - B - D := Intersection.between_splits BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ raa
-    exfalso; exact Betweenness.absurdity_abc_bac ⟨P3.left ⟨ABC, ACD⟩, CBD⟩
-  · push_neg at raa
-    have EBsplitsAandD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAandC, raa⟩
-    exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAandD
+  have ⟨LneEB, LnparEB, LintEBatB⟩ := Intersection.auxillary_line_through (cL.mem B) EoffcL
+  have AoffEB := (Intersection.miss_means_off AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
+  have CoffEB := (Intersection.miss_means_off BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
+  have DoffEB := (Intersection.miss_means_off BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
+  have EBsplitsAC := Intersection.splits_points ABC (Intersection.symm.mpr LintEBatB)
+  have BCD := P3.left ⟨ABC, ACD⟩
+  have notCBD : ¬(C - B - D) := fun CBD => Betweenness.absurdity_abc_bac ⟨BCD, CBD⟩
+  have EBguardsCD := Intersection.guards_when_not_between BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
+  have EBsplitsAD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
+  exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
 /-- p.113, Corollary, Given A-B-C and B-C-D, then A-B-D... -/
 lemma P3.corollary.left : (A - B - C) ∧ (B - C - D) -> A - B - D := by
-  sorry
+  intro ⟨ABC, BCD⟩
+  have distinctABCD := Ex1.a' ⟨ABC, BCD⟩
+  separate at distinctABCD
+  have cL := Ex1.b' ⟨ABC, BCD⟩
+  have ⟨E, EoffcL⟩ := Ch2.Prop.P3 cL
+  let EB := line E B
+  have ⟨LneEB, LnparEB, LintEBatB⟩ := Intersection.auxillary_line_through (cL.mem B) EoffcL
+  have AoffEB := (Intersection.miss_means_off AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
+  have CoffEB := (Intersection.miss_means_off BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
+  have DoffEB := (Intersection.miss_means_off BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
+  have EBsplitsAC := Intersection.splits_points ABC (Intersection.symm.mpr LintEBatB)
+  have notCBD : ¬(C - B - D) := fun CBD => Betweenness.absurdity_abc_bac ⟨BCD, CBD⟩
+  have EBguardsCD := Intersection.guards_when_not_between BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
+  have EBsplitsAD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
+  exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
 /-- p.113 and A-C-D -/
 lemma P3.corollary.right : (A - B - C) ∧ (B - C - D) -> A - C - D := by
-  sorry
+  intro ⟨ABC, BCD⟩
+  have ABD := P3.corollary.left ⟨ABC, BCD⟩
+  exact B1b.mp (P3.right ⟨B1b.mp BCD, B1b.mp ABD⟩)
 
 
 /-

@@ -186,7 +186,7 @@ with the way it's broken by chapter, I think it's maybe better to try to further
 should be a way to re-export from the various files; so that I don't have to import everything by hand; but to be honest
 the module system (or import system, not really sure which is which) is a mystery.
 
-# 5-MAR-2025
+# 5-MAR-2026
 
 ## 1316
 
@@ -210,3 +210,16 @@ I started thinking about a couple tasks I want to do:
 
 I think the plan is to prove the corollaries, merge, then figure out which way to extend; I definitely need to do some
 more refactoring and cleaning, I think the blueprint stuff will help.
+
+# 13-MAY-2026
+
+## 1600
+
+I spent a bit of time refactoring 3.3, extracted a helper, had a small think about how much to tweak the arguments
+Greenberg made for Lean convenience. I went with a hybrid approach, some theorems will get refactored for my own sanity,
+some will be kept all inline so it is clear which chunks of lean correspond to which statements. I think that will help
+identify where Greenberg is making intuitive leaps that are worth examining closely, while still leaving me with tools
+ready for proving other things.
+
+I left this project for a bit while I worked on other things, but I'm going to come back to it now. I'm pleasantly
+surprised at how well Lean has remained in my brain despite a couple months of hiatus.

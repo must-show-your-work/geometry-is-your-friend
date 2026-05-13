@@ -37,7 +37,6 @@ theorem Ex1.a : A - B - C ∧ A - C - D -> distinct A B C D := by
   rw [<- BeqD] at ACD
   exact Betweenness.absurdity_abc_acb ⟨ABC, ACD⟩
 
-
 /-- (b) Prove that A,B,C, and D are collinear -/
 theorem Ex1.b : A - B - C ∧ A - C - D -> collinear A B C D := by
   intro ⟨ABC, ACD⟩
@@ -62,5 +61,36 @@ theorem Ex1.b : A - B - C ∧ A - C - D -> collinear A B C D := by
 /-- (c) Prove the corrolary to B4
 Ed. Note that (c) is covered by the B4iii lemma in it's own file. -/
 alias Ex1.c := B4iii
+
+/-- Ed. These (Ex1 a' and b') are not in the exercise but are quite convenient elsewhere -/
+lemma Ex1.a' : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
+  intro ⟨ABC, BCD⟩
+  have distinctABC := Betweenness.abc_imp_distinct ABC
+  have distinctBCD := Betweenness.abc_imp_distinct BCD
+  separate; distinguish
+  by_contra AeqD
+  rw [AeqD] at ABC
+  exact Betweenness.absurdity_abc_cab ⟨BCD, ABC⟩
+
+lemma Ex1.b' : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
+  intro ⟨ABC, BCD⟩
+  -- we only end up needing A ≠ C, but easy to get the whole thing.
+  have distinctABCD := Ex1.a' ⟨ABC, BCD⟩
+  have BneC : B ≠ C := by distinguish
+  have colABC := Betweenness.abc_imp_collinear ABC
+  have colBCD := Betweenness.abc_imp_collinear BCD
+  have LeqM : colABC.line = colBCD.line := Line.equiv BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
+  use colABC.line
+  intro P PisABCD
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at PisABCD
+  rcases PisABCD with eq | eq | eq | eq
+  · rw [eq]; exact colABC.mem A
+  · rw [eq]; exact colABC.mem B
+  · rw [eq]; exact colABC.mem C
+  · have DonM := colBCD.mem D
+    rw [eq]
+    rw [<- LeqM] at DonM
+    exact DonM
+
 
 end Geometry.Ch3.Ex
