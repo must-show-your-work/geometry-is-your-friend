@@ -42,6 +42,11 @@ namespace Distinct
 lemma sublist {α : Type*} {l l' : List α} (h : Distinct l) (hs : List.Sublist l' l) : Distinct l' where
   pairwise := h.pairwise.sublist hs
 
+/-- A permutation of a list of distinct items is a list of distinct items -/
+lemma perm {α : Type*} {l l' : List α} (d : Distinct l) (h : l.Perm l') : Distinct l' := by
+  refine ⟨(h.pairwise_iff ?_).mp d.pairwise⟩
+  intro a b hab; exact hab.symm
+
 /-- Get the list of points from a Distinct hypothesis (meta-level) -/
 partial def getPointsExpr (distinctExpr : Expr) : MetaM (Option (List Expr)) := do
   let hypoType ← inferType distinctExpr

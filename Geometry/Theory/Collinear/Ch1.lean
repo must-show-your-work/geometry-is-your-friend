@@ -30,6 +30,10 @@ noncomputable instance collinearCoe {points : List Point} (h : Collinear points)
 @[simp] lemma sublist {l l' : List Point} (h : Collinear l) (hs : List.Sublist l' l) : Collinear l' :=
   ⟨h.line, fun p hp => h.on_line p (hs.subset hp)⟩
 
+/-- a permutation of a list of collinear points is collinear -/
+@[simp] lemma perm {l l' : List Point} (c : Collinear l) (h : l.Perm l') : Collinear l' :=
+  ⟨c.line, fun p hp => c.on_line p (h.mem_iff.mpr hp)⟩
+
 /-- There is a line between any two points, so by definition any two points are collinear -/
 @[simp] lemma any_two_points_are_collinear : A ≠ B -> collinear A B := by
   intro AneB

@@ -53,7 +53,7 @@ private partial def buildSublistProof (forgottenExprs : List Expr) (filtered ori
     let α := original.appArg!
     mkAppOptM ``List.Sublist.slnil #[some α]
 
-syntax term " forgetting " term,+ : term
+syntax term " forgetting " ident,+ : term
 
 elab_rules : term
   | `($col forgetting $[$ps],*) => do
