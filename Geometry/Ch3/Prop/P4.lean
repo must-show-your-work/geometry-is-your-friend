@@ -34,9 +34,10 @@ P lies either on ray A B or on the opposite ray A C. -/
 theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
   /- Ed. Some mise en place -/
   have distinctABCP : distinct A B C P := by
-    have dABC : distinct A B C := (Betweenness.abc_imp_distinct CAB) arranged A B C;
+    have dABC : distinct A B C := ((Betweenness.abc_imp_distinct CAB) arranged A B C)
     separate; distinguish
     
+     
     sorry
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
@@ -44,7 +45,8 @@ theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on r
     have ABisSameLine : line A B = cABC.line := Line.equiv AneB
       ⟨Line.line_has_definition_points.left, cABC.mem A, Line.line_has_definition_points.right, cABC.mem B⟩
     rw [ABisSameLine] at PonL
-    
+    have cABCP : collinear A B C P := by extending
+    exact cABCP
     sorry
   /- (1) Either P lies on ray A B or it does not (Law of the Excluded Middle) -/
   rcases Classical.em (P on ray A B) with PonRayAB | PoffRayAB
@@ -100,6 +102,29 @@ end Geometry.Ch3.Prop
 
 namespace Line
 
+/-- P3.4 has a specific name, the line separation property, and so we alias it into the Line namespace for
+ clarity later -/
 alias separation := Geometry.Ch3.Prop.P4
 
 end Line
+
+/-
+
+When you are left to your own devices, and you're clever and interested in creative abuse of the rules, you rapidly find
+all sorts of creative ways to avoid the boring stuff and just do what you want. In my case, plopping a bored kid with
+some sort of undiagnosed neuroatypicality was a great way to find new ways to not do schoolwork and instead watch
+M*A*S*H or stand up comedy or whatever else sated my curiosity. Ultimately Cable TV from the late '90s and early '00s
+provided more of my education than did the VLA. I still reflexivly quote the Franscisco Pablo special where he does an
+impression of an Arnold Schwarzenegger movie trailer.
+
+... in a world...
+
+Anyway.
+
+The whole process worked fine, I did my homework (since it was easy anyway), I made sure the videos needed to be
+rewound, I made sure the forms filled in, I made sure it _looked_ like I was being educated by the propagandists
+on the old CRT; but the majority of teaching came from Alan Alda and whoever was on Comedy Central. I read subtitles
+more than textbooks, lips more than subtitles, and spent most of middle school shirking homework in favor of whichever
+rerun of Star Trek was on at 11AM on any given tuesday.
+
+-/

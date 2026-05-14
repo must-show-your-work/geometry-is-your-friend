@@ -155,14 +155,14 @@ theorem P2 : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
     contradiction
   tauto
 
-/- I was frequently left to my own devices with respect to school. We did a correspondence video thing,
-I'd sit in the same room, for a while it was the couch in the living room, later it was a hard dining
-chair in our 'dining room' (that we didn't really use very much as a dining room), and watch hours of
-video tapes, already over ten years old in most cases. I remember one course was recorded well before
-I was born, and the teacher talked excitedly about how, one day, you might even get to own a computer.
+/- I was frequently left to my own devices with respect to school. We did a correspondence video thing.
+I'd sit in the same room, for a while it was the couch in the living room, later it was a hard dining chair in our
+'dining room' (that we didn't really use very much as a dining room). I'd watch hours of video taped lectures, most
+already over ten years old in most cases. I remember one course was recorded well before I was born, and the teacher
+talked excitedly about how, one day, you might even get to own a computer.
 
-I remember jumping online and looking up what kind of personal computers were available in 1982 or
-whatever year it was. I remember thinking that the videos probably weren't going to be where I'd learn
-most of what I'd learn. I remember thinking the internet was a much better place to look for truth. -/
+I remember jumping online and looking up what kind of personal computers were available in 1982 or whatever year it was.
+I remember thinking that the videos probably weren't going to be where I'd learn most of what I'd learn. I remember
+thinking the internet was a much better place to look for truth. -/
 
 end Geometry.Ch3.Prop
