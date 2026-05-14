@@ -30,12 +30,16 @@ theorem Ex1.a : A - B - C ∧ A - C - D -> distinct A B C D := by
   intro ⟨ABC, ACD⟩
   have distinctABC := Betweenness.abc_imp_distinct ABC
   have distinctACD := Betweenness.abc_imp_distinct ACD
-  -- The majority of cases are handled by the custom tactics
-  separate; distinguish
-  -- The remaining case is to disprove BeqD under the betweenness hypotheses
-  by_contra! BeqD
-  rw [<- BeqD] at ACD
-  exact Betweenness.absurdity_abc_acb ⟨ABC, ACD⟩
+  separate at distinctABC
+  separate at distinctACD
+  have BneD : B ≠ D := by
+    by_contra! BeqD
+    rw [<- BeqD] at ACD
+    exact Betweenness.absurdity_abc_acb ⟨ABC, ACD⟩
+  refine ⟨?_⟩
+  simp [Finset.card_insert_of_notMem, Finset.card_singleton,
+        Finset.mem_insert, Finset.mem_singleton,
+        AneB, AneC, AneD, BneC, BneD, CneD]
 
 /-- (b) Prove that A,B,C, and D are collinear -/
 theorem Ex1.b : A - B - C ∧ A - C - D -> collinear A B C D := by
@@ -48,7 +52,7 @@ theorem Ex1.b : A - B - C ∧ A - C - D -> collinear A B C D := by
   have LeqM : colABC.line = colACD.line := Line.equiv AneC ⟨colABC.mem A, colACD.mem A, colABC.mem C, colACD.mem C⟩
   use colABC.line
   intro P PisABCD
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at PisABCD
+  simp only [Finset.mem_insert, Finset.mem_singleton] at PisABCD
   rcases PisABCD with eq | eq | eq | eq
   · rw [eq]; exact colABC.mem A
   · rw [eq]; exact colABC.mem B
@@ -67,10 +71,16 @@ lemma Ex1.a' : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
   intro ⟨ABC, BCD⟩
   have distinctABC := Betweenness.abc_imp_distinct ABC
   have distinctBCD := Betweenness.abc_imp_distinct BCD
-  separate; distinguish
-  by_contra AeqD
-  rw [AeqD] at ABC
-  exact Betweenness.absurdity_abc_cab ⟨BCD, ABC⟩
+  separate at distinctABC
+  separate at distinctBCD
+  have AneD : A ≠ D := by
+    by_contra! AeqD
+    rw [AeqD] at ABC
+    exact Betweenness.absurdity_abc_cab ⟨BCD, ABC⟩
+  refine ⟨?_⟩
+  simp [Finset.card_insert_of_notMem, Finset.card_singleton,
+        Finset.mem_insert, Finset.mem_singleton,
+        AneB, AneC, AneD, BneC, BneD, CneD]
 
 lemma Ex1.b' : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
   intro ⟨ABC, BCD⟩
@@ -82,7 +92,7 @@ lemma Ex1.b' : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
   have LeqM : colABC.line = colBCD.line := Line.equiv BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
   use colABC.line
   intro P PisABCD
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at PisABCD
+  simp only [Finset.mem_insert, Finset.mem_singleton] at PisABCD
   rcases PisABCD with eq | eq | eq | eq
   · rw [eq]; exact colABC.mem A
   · rw [eq]; exact colABC.mem B

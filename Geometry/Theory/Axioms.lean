@@ -4,7 +4,8 @@ proofs. -/
 import Geometry.Tactics
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
-import Mathlib.Data.List.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Insert
 
 import Geometry.Theory.Distinct
 
@@ -12,6 +13,11 @@ namespace Geometry.Theory
 
 /-- A point is the fundamental, opaque type we're working with. -/
 axiom Point : Type
+
+/-- Greenberg reasons classically throughout. Granting decidable equality on `Point`
+    via `Classical.decEq` lets us use `Finset Point` and the associated decidable
+    membership/cardinality machinery. -/
+noncomputable instance : DecidableEq Point := Classical.decEq Point
 
 /-- Ed: In the text, the author ends up using the 'Line is a Set of points' to define segments, rays, and implicitly
 uses the intuitive idea ("A line is the set of collinear points that contain at least two known points"). However, Ch2
@@ -30,30 +36,30 @@ macro_rules (kind := onNotation)
 
 ---- COLLINEARITY (FINITE) AND POINTWISE (INFINITE)
 
--- Collinear: finite list of points on a common line
-def Collinear (points : List Point) : Prop := ∃ L : Line, ∀ p ∈ points, p ∈ L
+-- Collinear: finite set of points on a common line
+def Collinear (points : Finset Point) : Prop := ∃ L : Line, ∀ p ∈ points, p ∈ L
 
 -- Syntax: collinear A B C (space-separated)
 syntax "collinear" ident+ : term
 
 macro_rules
-  | `(collinear $xs*) => `(Collinear [$xs,*])
+  | `(collinear $x $xs*) => do
+      let allArgs := #[x] ++ xs
+      let last := allArgs[allArgs.size - 1]!
+      let front := allArgs.pop
+      let mut acc ← `((Singleton.singleton $last : Finset _))
+      for y in front.reverse do
+        acc ← `(insert $y $acc)
+      `(Collinear $acc)
 
--- Pretty printer
-open Lean in
-@[app_unexpander Collinear]
-def unexpandCollinear : PrettyPrinter.Unexpander
-  | `(Collinear [$[$xs],*]) => do
-    let ids := xs.map (⟨·.raw⟩ : TSyntax `term → TSyntax `ident)
-    `(collinear $ids*)
-  | _ => throw ()
+-- Pretty printer: TODO restore after Finset-literal unexpander is written
 
 -- Extract the line from collinearity
-noncomputable def Collinear.line {points : List Point} (h : Collinear points) : Line := Classical.choose h
+noncomputable def Collinear.line {points : Finset Point} (h : Collinear points) : Line := Classical.choose h
 
-lemma Collinear.on_line {points : List Point} (h : Collinear points) : ∀ p ∈ points, p on h.line := Classical.choose_spec h
+lemma Collinear.on_line {points : Finset Point} (h : Collinear points) : ∀ p ∈ points, p on h.line := Classical.choose_spec h
 
-@[simp] lemma Collinear.mem {points : List Point} (h : Collinear points) (p : Point) (hp : p ∈ points := by simp) :
+@[simp] lemma Collinear.mem {points : Finset Point} (h : Collinear points) (p : Point) (hp : p ∈ points := by simp) :
   p on h.line := h.on_line p hp
 
 example : collinear A B C ↔ ∃ L : Line, A on L ∧ B on L ∧ C on L := by
@@ -63,8 +69,7 @@ example : collinear A B C ↔ ∃ L : Line, A on L ∧ B on L ∧ C on L := by
   · rintro ⟨L, AonL, BonL, ConL⟩
     use L
     intro P PinABC
-    -- FIXME: I dislike that this is necessary, but I don't have a way of `rcases`-ing my way through the list membership
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at PinABC
+    simp only [Finset.mem_insert, Finset.mem_singleton] at PinABC
     rcases PinABC with eq | eq | eq
     repeat rwa [eq]
 

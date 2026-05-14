@@ -19,7 +19,6 @@ import Geometry.Theory.Betweenness.Ch2
 import Geometry.Theory.Line.Ch1
 import Geometry.Theory.Line.Ch2
 import Geometry.Theory.Forgetting
-import Geometry.Theory.Arranged
 
 namespace Geometry.Ch3.Prop
 
@@ -34,27 +33,29 @@ P lies either on ray A B or on the opposite ray A C. -/
 theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
   /- Ed. Some mise en place -/
   have distinctABCP : distinct A B C P := by
-    have dABC : distinct A B C := ((Betweenness.abc_imp_distinct CAB) arranged A B C)
-    separate; distinguish
-    
-     
+    have dABC : distinct A B C :=
+      (Betweenness.abc_imp_distinct CAB).of_eq (by ext x; simp [Finset.mem_insert, Finset.mem_singleton]; tauto)
+    separate
+    -- Ed. Remaining: A ≠ P, B ≠ P, C ≠ P from `PonL : P on line A B` and `CAB`.
     sorry
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
-    have cABC : collinear A B C := (Betweenness.abc_imp_collinear CAB) arranged A B C
+    have cABC : collinear A B C :=
+      (Betweenness.abc_imp_collinear CAB).of_eq (by ext x; simp [Finset.mem_insert, Finset.mem_singleton]; tauto)
     have ABisSameLine : line A B = cABC.line := Line.equiv AneB
       ⟨Line.line_has_definition_points.left, cABC.mem A, Line.line_has_definition_points.right, cABC.mem B⟩
     rw [ABisSameLine] at PonL
-    have cABCP : collinear A B C P := by extending
-    exact cABCP
-    sorry
+    exact (Collinear.insert cABC PonL).of_eq
+      (by ext x; simp [Finset.mem_insert, Finset.mem_singleton]; tauto)
+  /- Expose the pairwise inequalities for the `forgetting` casts below. -/
+  separate at distinctABCP
   /- (1) Either P lies on ray A B or it does not (Law of the Excluded Middle) -/
   rcases Classical.em (P on ray A B) with PonRayAB | PoffRayAB
   · /- (2) If P does lie on ray A B, we are done... -/
     left; trivial
   · /- ... so assume it doesn't; then P - A - B (Betweenness Axiom 3) -/
     have PAB : P - A - B := by
-      have h := B3 P A B ⟨distinctABCP forgetting C arranged P A B, colABCP forgetting C arranged P A B⟩
+      have h := B3 P A B ⟨distinctABCP forgetting C, colABCP forgetting C⟩
       rcases h with ⟨PAB,_,_⟩ | ⟨_,APB,_⟩ | ⟨_, _, ABP⟩
       · exact PAB
       · have PonSegAB : P on segment A B := obvious
@@ -67,11 +68,11 @@ theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on r
     · /- ... then P lies on ray A C (by definition) -/
       obvious
     · /- so assume P ≠ C; then exactly one of the relations C-A-P, C-P-A, or P-C-A holds (Betweeness Axiom 3 again). -/
-      have hCAP := B3 C A P ⟨distinctABCP forgetting B arranged C A P, colABCP forgetting B arranged C A P⟩
+      have hCAP := B3 C A P ⟨distinctABCP forgetting B, colABCP forgetting B⟩
       /- (4) Suppose the relation C-A-P holds (RAA Hypothesis) -/
       rcases Classical.em (C - A - P) with CAP | nCAP
       · /- (5) We know (by Betweenness Axiom 3) that exactly one of the relations P-C-B, C-P-B, or C-B-P holds. -/
-        have hPBC := B3 P B C ⟨distinctABCP forgetting A arranged P B C, colABCP forgetting A arranged P B C⟩
+        have hPBC := B3 P B C ⟨distinctABCP forgetting A, colABCP forgetting A⟩
         rcases hPBC with ⟨PBC,_,_⟩ | ⟨_,BPC,_⟩ | ⟨_, _, PCB⟩
         · /- (6) If P-B-C, then combining this with P-A-B (step 2) gives A-B-C (Proposition 3.3), contradiction the
               hypothesis. -/
@@ -83,15 +84,13 @@ theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on r
         · /- (8) If B-C-P, then combining this with B-A-C (hypothesis and Betweenness Axiom 1) gives A-C-P (Proposition 3.3),
              contradicting step 4. -/
           exfalso
-          exact Betweenness.absurdity_abc_bac ⟨P3.left ⟨PCB, CAB⟩, CAP⟩
+          exact Betweenness.absurdity_abc_bac ⟨P3.left ⟨B1b.mp CAB, B1b.mp PCB⟩, CAP⟩
       · /- (9) Since we obtain a contradiction in all three cases, C-A-P does not hold (RAA conclusion). -/
         -- Ed. this is covered by the above .em elimination
         /- (10) Therefore, C-P-A or P-C-A (step 3), which means that P lies on the opposite ray A C. ∎ -/
         rcases hCAP with ⟨CAP,_,_⟩ | ⟨_,ACP,_⟩ | ⟨_,_,CPA⟩
         · contradiction -- covered above
-        · have PonRayAC : P on ray A C := by
-            obvious
-            exact eq_or_ne C P
+        · have PonRayAC : P on ray A C := by obvious
           right; trivial
         · have PonSegAB : P on segment A C := by obvious
           apply Line.seg_sub_ray at PonSegAB

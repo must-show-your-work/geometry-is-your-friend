@@ -84,14 +84,18 @@ theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
       have colAXB : collinear A X B := by
         use cL
         intro P PinAXB
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at PinAXB
+        simp only [Finset.mem_insert, Finset.mem_singleton] at PinAXB
         rcases PinAXB with PeqA | PeqX | PeqB
         · rw [PeqA, LeqAB]; exact Line.line_has_definition_points.left
         · rwa [PeqX]
         · rw [PeqB, LeqAB]; exact Line.line_has_definition_points.right
       have AneX : A ≠ X := by by_contra! hNeg; rw [hNeg] at AoffEC; contradiction
       have BneX : B ≠ X := by by_contra! hNeg; rw [hNeg] at BoffEC; contradiction
-      have distinctAXB : distinct A X B := by separate; tauto
+      have distinctAXB : distinct A X B := by
+        refine ⟨?_⟩
+        rw [Finset.card_insert_of_notMem (by simp [AneX, AneB])]
+        rw [Finset.card_insert_of_notMem (by simp [BneX.symm])]
+        rfl
       rcases B3 A X B ⟨distinctAXB, colAXB⟩ with ⟨AXB, _⟩ | reject
       · exact AXB
       · have ECguardsAB : EC guards A and B := by

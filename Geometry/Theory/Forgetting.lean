@@ -1,93 +1,84 @@
-/- Lemmas relating to collinearity requiring only the content of Ch1 -/
+/- The `forgetting` operator: drops named elements from a `Distinct` or `Collinear`
+   over `Finset`. Under Finset the operation is just `Finset.erase`, and the
+   side conditions are decidable. -/
 
-import Mathlib.Data.Set.Basic
-import Mathlib.Data.Set.Defs
-import Mathlib.Data.Set.Insert
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Insert
+import Mathlib.Data.Finset.Erase
+import Mathlib.Data.Finset.Card
 
 import Geometry.Theory.Axioms
-import Geometry.Theory.Ch1
-import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Distinct
+import Geometry.Theory.Collinear.Ch1
 
 import Geometry.Tactics
-import Geometry.Ch2.Prop
 
 namespace Geometry.Theory
 
-open Set
-open Geometry.Theory
-open Geometry.Ch2.Prop
-open Lean Expr Meta Elab.Term
-
 namespace Forgetting
 
-private partial def filterForgotten (forgottenExprs : List Expr) (e : Expr) : MetaM Expr := do
-  if e.isAppOfArity ``List.cons 3 then
-    let head := e.appFn!.appArg!
-    let tail := e.appArg!
-    let filteredTail ← filterForgotten forgottenExprs tail
-    let forgotten ← forgottenExprs.anyM (fun f => isDefEq head f)
-    if forgotten then
-      return filteredTail
-    else
-      mkAppM ``List.cons #[head, filteredTail]
-  else
-    return e
+open Lean Meta Elab Term
 
-private partial def buildSublistProof (forgottenExprs : List Expr) (filtered original : Expr) : MetaM Expr := do
-  if original.isAppOfArity ``List.cons 3 then
-    let head := original.appFn!.appArg!
-    let tail := original.appArg!
-    let forgotten ← forgottenExprs.anyM (fun f => isDefEq head f)
-    if forgotten then
-      let rest ← buildSublistProof forgottenExprs filtered tail
-      mkAppOptM ``List.Sublist.cons #[none, none, none, some head, some rest]
-    else
-      -- filtered must also be cons since head is kept
-      if filtered.isAppOfArity ``List.cons 3 then
-        let filteredTail := filtered.appArg!
-        let rest ← buildSublistProof forgottenExprs filteredTail tail
-        mkAppOptM ``List.Sublist.cons₂ #[none, none, none, some head, some rest]
-      else
-        throwError "buildSublistProof: filtered list shorter than expected"
-  else
-    let α := original.appArg!
-    mkAppOptM ``List.Sublist.slnil #[some α]
+syntax term " forgetting " ident+ : term
 
-syntax term " forgetting " ident,+ : term
+/-- `forgetting`: drops named elements from a `Distinct` or `Collinear` Finset.
+    Single-element: dispatches to `Collinear.subset` or `Distinct.erase_step`.
+    Multi-element: chained via left-associative single-element applications.
 
+    When the consumer expects a Finset literal in a different insertion order than
+    `s.erase X` reduces to, we fall back to `.of_eq` and discharge the Finset
+    equality via `Finset.eq_of_subset_of_card_le`: the subset direction
+    (`s.erase X ⊆ target`) needs only forward disjunctive reasoning (no `Ne.symm`,
+    so `tauto` works), and the cardinality side is closed by simp + omega.
+
+    Multi-element calls chain left-associatively. Type-dispatch happens via
+    elaboration on `$col`'s type, so `Distinct`-specific machinery (`DecidableEq`,
+    `card_eq`) doesn't get applied to `Collinear` hypotheses. -/
 elab_rules : term
-  | `($col forgetting $[$ps],*) => do
+  | `($col forgetting $p:ident) => do
     let colExpr ← elabTerm col none
-    let colType ← inferType colExpr
-    let forgottenExprs ← ps.toList.mapM (fun p => elabTerm p none)
-    if isAppOfArity colType ``Collinear 1 then
-      let listExpr := colType.getAppArgs[0]!
-      let filteredList ← filterForgotten forgottenExprs listExpr
-      let sublistProof ← buildSublistProof forgottenExprs filteredList listExpr
-      mkAppM ``Collinear.sublist #[colExpr, sublistProof]
-    else if isAppOfArity colType ``Distinct 2 then
-      let listExpr := colType.getAppArgs[1]!
-      let α := colType.getAppArgs[0]!
-      let filteredList ← filterForgotten forgottenExprs listExpr
-      let sublistProof ← buildSublistProof forgottenExprs filteredList listExpr
-      mkAppOptM ``Distinct.sublist #[some α, none, none, some colExpr, some sublistProof]
+    let colType ← instantiateMVars (← inferType colExpr)
+    let colType := colType.consumeMData
+    if colType.isAppOfArity ``Geometry.Theory.Collinear 1 then
+      let stx ← `(by
+        first
+        | exact Collinear.subset $col (Finset.erase_subset $p _)
+        | (refine Collinear.of_eq (Collinear.subset $col (Finset.erase_subset $p _)) ?_;
+           apply Finset.eq_of_subset_of_card_le
+           · intro x hx;
+             simp only [Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton] at hx ⊢;
+             tauto
+           · rw [Finset.card_erase_of_mem (by simp)];
+             simp_all [Finset.card_insert_eq_ite, Finset.card_singleton,
+                       Finset.mem_insert, Finset.mem_singleton, eq_comm]
+             try omega))
+      elabTerm stx none
+    else if colType.isAppOfArity ``Geometry.Theory.Distinct 3 then
+      let stx ← `(by
+        first
+        | exact Distinct.erase_step (a := $p) $col (by simp)
+        | (refine Distinct.of_eq (Distinct.erase_step (a := $p) $col (by simp)) ?_;
+           apply Finset.eq_of_subset_of_card_le
+           · intro x hx;
+             simp only [Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton] at hx ⊢;
+             tauto
+           · rw [Finset.card_erase_of_mem (by simp), ($col).card_eq];
+             simp only [Finset.card_insert_eq_ite, Finset.card_singleton,
+                        Finset.mem_insert, Finset.mem_singleton];
+             split_ifs <;> omega))
+      elabTerm stx none
     else
-      throwError "forgetting: expected Collinear or Distinct, got {colType}"
+      throwError "forgetting: expected `Collinear _` or `Distinct _ _` term, got {colType}"
+  | `($col forgetting $p:ident $q:ident $ps:ident*) => do
+    let stx ← `(($col forgetting $p) forgetting $q $ps*)
+    elabTerm stx none
 
 
-example : distinct A B C D -> distinct A B C := by
-  intro dABCD
-  exact dABCD forgetting D
+-- Tests
 
-example : distinct A B C D E F G H I J -> distinct A B C D E F G H := by
-  intro dABCD
-  exact (dABCD forgetting J) forgetting I
-
-example : distinct A B C D E F G H I J -> distinct A B C D E F G H := by
-  intro dABCD
-  exact dABCD forgetting I, J
+example (A B C : Point) (c : collinear A B C) : Collinear (({A, B, C} : Finset _).erase B) :=
+  c forgetting B
 
 end Forgetting
 
 end Geometry.Theory
-

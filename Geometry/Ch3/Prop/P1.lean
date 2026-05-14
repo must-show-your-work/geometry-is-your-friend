@@ -32,11 +32,17 @@ theorem P1.i : A ≠ B -> (segment A B) = (ray A B) ∩ (ray B A) := by
     by_cases suppose : C = A ∨ C = B
     · tauto
     · /- "... Otherwise, A B and C are three collinear points (by the definition of ray and Axiom B-1)..." -/
-      have distinctABC : distinct A B C := by separate; tauto
+      have distinctABC : distinct A B C := by
+        push_neg at suppose
+        obtain ⟨CneA, CneB⟩ := suppose
+        refine ⟨?_⟩
+        simp only [Finset.card_insert_eq_ite, Finset.card_singleton,
+                   Finset.mem_insert, Finset.mem_singleton,
+                   AneB, CneA.symm, CneB.symm, if_false, or_false]
       have colABC : collinear A B C := by
         use ray A B
         intro P PinABC
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at PinABC
+        simp only [Finset.mem_insert, Finset.mem_singleton] at PinABC
         rcases PinABC with eq | eq | eq
         · rw [eq]; exact Line.ray_has_endpoints.left
         · rw [eq]; exact Line.ray_has_endpoints.right

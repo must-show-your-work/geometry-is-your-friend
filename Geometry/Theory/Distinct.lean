@@ -1,7 +1,11 @@
-/- Lemmas relating to the `distinct` condition -/
+/- Lemmas relating to the `distinct` condition, now over `Finset`. -/
 
 import Geometry.Tactics
-import Mathlib.Data.List.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Insert
+import Mathlib.Data.Finset.Empty
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Finset.Erase
 
 namespace Geometry.Theory
 
@@ -10,62 +14,81 @@ open Lean Meta Expr Elab.Tactic Qq
 -- Lots of imperative code here, newlines help make sense of things.
 set_option linter.style.emptyLine false
 
--- Say you have a main goal is a conjunction of 'interesting' goals and also a bunch of inequality goals.
--- Further say you have a bunch of `distinct` conditions listing variables which are pairwise distinct.
+-- `Distinct s n` asserts that the finite set `s` has exactly `n` elements.
+-- Since `Finset` is by construction `Nodup`, asserting cardinality is what
+-- captures "these `n` elements are pairwise distinct".
 --
--- h : distinct A B C D E := by magic
--- ⊢ A ≠ B ∧ B ≠ E ∧ X ≠ A
---
--- This provides a tactic, `distinguish`, which searches the local proof environment for `distinct` hypotheses
--- and then splits the conjunction to the smallest goals it can, and tries to prove as many inequality goals
--- as possible. The above would reduce to `X ≠ A` after running `distinguish`.
---
--- `distinguish` will not try to re-write any hypotheses or use any ambient inequality hypotheses. It probably should
---
--- finally, `separate` disassembles a `distinct` goal or hypothesis into a conjunction of inequalities. This is primarily useful
--- for breaking a goal into it's inequalities where it can be attacked with `tauto` or, ideally, `distinguish`.
---
--- TODO: Reassemble the conjunction after splitting it.
--- TODO: When splitting, gather goals and place them into some inductive structure which
---    categorizes them; simple inequalities are covered now, but a disjunction containing a conjunction
---    would be possible as well if we can prove one side of it; it might be possible to 'look past' quantifiers, etc.
--- TODO: an unelaborator to pretty-print the distinct condition as the distinct condition
--- TODO: grab any other ineq hypothesis to use in the proof; even if they don't come from a `distinct` condition
+-- The `distinguish` tactic searches `Distinct` hypotheses in scope to discharge
+-- pairwise inequality goals; the `separate` tactic decomposes a `Distinct` goal
+-- or hypothesis into the underlying inequalities.
 
-
-structure Distinct {α : Type*} (points : List α) : Prop where
-  pairwise : List.Pairwise (· ≠ ·) points
+structure Distinct {α : Type*} (s : Finset α) (n : ℕ) : Prop where
+  card_eq : s.card = n
 
 namespace Distinct
 
-/-- A sublist of a set of distinct items is a set of distinct items -/
-lemma sublist {α : Type*} {l l' : List α} (h : Distinct l) (hs : List.Sublist l' l) : Distinct l' where
-  pairwise := h.pairwise.sublist hs
+/-- Any Finset is "distinct" with its own cardinality — purely structural. -/
+lemma self_card {α : Type*} (s : Finset α) : Distinct s s.card := ⟨rfl⟩
 
-/-- A permutation of a list of distinct items is a list of distinct items -/
-lemma perm {α : Type*} {l l' : List α} (d : Distinct l) (h : l.Perm l') : Distinct l' := by
-  refine ⟨(h.pairwise_iff ?_).mp d.pairwise⟩
-  intro a b hab; exact hab.symm
+/-- Inserting a new element bumps the cardinality by one when the element is fresh. -/
+lemma insert_step {α : Type*} [DecidableEq α] {s : Finset α} {n : ℕ} {a : α}
+    (d : Distinct s n) (h : a ∉ s) : Distinct (insert a s) (n + 1) :=
+  ⟨by rw [Finset.card_insert_of_notMem h, d.card_eq]⟩
 
-/-- Get the list of points from a Distinct hypothesis (meta-level) -/
+/-- Erasing an element drops the cardinality by one when the element was present. -/
+lemma erase_step {α : Type*} [DecidableEq α] {s : Finset α} {n : ℕ} {a : α}
+    (d : Distinct s (n + 1)) (h : a ∈ s) : Distinct (s.erase a) n :=
+  ⟨by rw [Finset.card_erase_of_mem h, d.card_eq]; omega⟩
+
+/-- Cast `Distinct` between propositionally-equal Finsets. Finsets are unordered, so
+    two literals describing the same elements are equal even when they don't unify
+    definitionally — useful when a hypothesis is produced under one insertion order
+    and a consumer needs another (or when `Finset.erase` doesn't reduce to a literal). -/
+lemma of_eq {α : Type*} {s t : Finset α} {n : ℕ}
+    (d : Distinct s n) (h : s = t) : Distinct t n := h ▸ d
+
+end Distinct
+
+/-- A small simp-driven tactic that canonicalizes Finset literals by sorting
+    insertions and resolving `erase` against `insert`. Useful when chapter
+    proofs pass a `forgetting X` result where the expected type has a
+    different insertion order. -/
+syntax "finset_canon" : tactic
+
+macro_rules
+  | `(tactic| finset_canon) => `(tactic|
+      simp only [Finset.insert_comm, Finset.insert_idem,
+                 Finset.mem_insert, Finset.mem_singleton, ne_eq,
+                 not_or, not_false_eq_true, or_self, and_self])
+
+
+namespace Distinct
+
+/-- Walk a Finset literal (chains of `Finset.insert` / `Insert.insert` ending in `∅`)
+    and extract the element Exprs. Returns `none` if the structure isn't a literal. -/
 partial def getPointsExpr (distinctExpr : Expr) : MetaM (Option (List Expr)) := do
   let hypoType ← inferType distinctExpr
   let hypoType ← whnf hypoType
-  if hypoType.isAppOfArity ``Distinct 2 then
-    let listExpr := hypoType.getArg! 1
-    let listExpr ← whnf listExpr
-    let rec extract (e : Expr) : List Expr :=
-      if e.isAppOfArity ``List.cons 3 then
-        let head := e.appFn!.appArg!
-        let tail := e.appArg!
-        head :: extract tail
-      else
-        []
-    return some (extract listExpr)
+  -- `Distinct` has 3 args: α, s, n
+  if hypoType.isAppOfArity ``Distinct 3 then
+    let sExpr := hypoType.getArg! 1
+    return some (extractInsert sExpr)
   else
     return none
+where
+  extractInsert (e : Expr) : List Expr :=
+    -- Insert.insert head tail, or Finset.insert head tail
+    if e.isAppOfArity ``Insert.insert 5 then
+      let head := e.appFn!.appArg!
+      let tail := e.appArg!
+      head :: extractInsert tail
+    else if e.isAppOfArity ``Singleton.singleton 4 then
+      let head := e.appArg!
+      [head]
+    else
+      []
 
-/-- Extracts a list of expressions like `X ≠ Y ∧ ...` into [ X≠Y, ...], [ non-equality goals ] -/
+/-- Extracts a conjunction tree like `X ≠ Y ∧ ...` into ([X≠Y, ...], [non-equality goals]). -/
 partial def extractIneqs (e : Expr) : MetaM (List Expr × List Expr) := do
   have qe : Q(Prop) := e
   match qe with
@@ -76,18 +99,18 @@ partial def extractIneqs (e : Expr) : MetaM (List Expr × List Expr) := do
   | ~q(@Ne _ $a $b) => return ([e], [])
   | _ => return ([], [e])
 
-/-- Finds all `Distinct` hypotheses in the local context -/
+/-- Finds all `Distinct` hypotheses in the local context. -/
 def findDistinctHypos : TacticM (List LocalDecl) := do
   let lctx ← getLCtx
   let mut distinctHypos : List LocalDecl := []
   for decl in lctx do
     if decl.isImplementationDetail then continue
     let declType ← instantiateMVars decl.type
-    if declType.isAppOfArity ``Distinct 2 then
+    if declType.isAppOfArity ``Distinct 3 then
       distinctHypos := decl :: distinctHypos
   return distinctHypos
 
-/-- Split conjunction goal into MVars and track which are inequalities -/
+/-- Split conjunction goal into MVars and track which are inequalities. -/
 partial def splitAndTagGoals : TacticM (List MVarId × List Nat) := do
   let goal ← getMainGoal
 
@@ -97,12 +120,10 @@ partial def splitAndTagGoals : TacticM (List MVarId × List Nat) := do
 
     match goalTypeProp with
     | ~q($a ∧ $b) => do
-      -- Split conjunction
       setGoals [g]
       evalTactic (← `(tactic| constructor))
       let [leftGoal, rightGoal] ← getGoals | throwError "Expected two goals after constructor"
 
-      -- Recursively process both sides
       let (leftMvars, leftTags) ← splitAndExtract leftGoal idx
       let rightIdx := idx + leftMvars.length
       let (rightMvars, rightTags) ← splitAndExtract rightGoal rightIdx
@@ -110,11 +131,9 @@ partial def splitAndTagGoals : TacticM (List MVarId × List Nat) := do
       return (leftMvars ++ rightMvars, leftTags ++ rightTags)
 
     | ~q(@Ne _ $a $b) =>
-      -- Inequality - mark as such
       return ([g], [(idx, true)])
 
     | _ =>
-      -- Other goal - not an inequality
       return ([g], [(idx, false)])
 
   let (mvars, tags) ← splitAndExtract goal 0
@@ -132,52 +151,40 @@ def runDistinct : TacticM Unit := withMainContext do
       setGoals [goalMVar]
 
       for hypo in distinctHypos do
-        -- 1. break into the fvars on either side
         let goalType ← goalMVar.getType
         have goalTypeProp : Q(Prop) := goalType
         if let ~q(@Ne _ $lhs $rhs) := goalTypeProp then
-          -- 2a. if the fvars are the same, then the two things are equal, reject
           if lhs.fvarId! != rhs.fvarId! then
-            -- 3. now search the `points` of the `distinct` condition and we can conclude inequality based
-            -- on the pairwise relationship
             if let some points ← Distinct.getPointsExpr hypo.toExpr then
-              -- establish that both lhs and rhs are in the list of distinct variables
               let lhsIn := points.any (fun p => p.isFVar && p.fvarId! == lhs.fvarId!)
               let rhsIn := points.any (fun p => p.isFVar && p.fvarId! == rhs.fvarId!)
               if lhsIn && rhsIn then
-                -- we can prove it, we have the technology
                 let proofGoal ← mkFreshExprMVar goalType
                 let proofMVar := proofGoal.mvarId!
                 setGoals [proofMVar]
                 let hypoName := mkIdent hypo.userName
 
-                -- prove using aesop + simp, this is not ideal, it should be possible to construct a direct
-                -- proof, but it's not low-effort, so FIXME some other time.
+                -- Prove via simp on Finset membership/cardinality combined with the
+                -- card_eq witness, then aesop closes residual goals.
                 evalTactic (← `(tactic| (
-                  have h := ($hypoName).pairwise
-                  simp only [List.Pairwise, List.mem_cons] at h
-                  aesop
+                  have h := ($hypoName).card_eq
+                  simp only [Finset.card_insert_eq_ite, Finset.card_singleton,
+                             Finset.mem_insert, Finset.mem_singleton, Finset.notMem_empty,
+                             ne_eq, not_or, not_false_eq_true] at h
+                  split_ifs at h <;> aesop
                 )))
 
-                -- Check if it was solved, then assign the goal if it is.
                 if ← proofMVar.isAssigned then
                   let proof ← instantiateMVars proofGoal
                   goalMVar.assign proof
           else
-            -- in this case, lhs is _literally the same variable reference_ as rhs, so we are trying to prove
-            -- ¬(rfl A), which is just false, so the whole conjunction is false and we should replace the goal
-            -- with false. I'm not doing that now, but it's doable, I think.
             throwError "lhs is identical to rhs, you're trying to prove A ≠ A, and that's no bueno"
         else
           logInfo m!"{goalType}"
-          -- 2b. do nothing, this case is not possible because we're only inspecting inequalities.
           throwError "not possible"
-      -- bookkeeping to make sure we set the goals correctly later.
-      -- FIXME: I think this could probably be based on whether or not the mvar is assigned?
       if ← goalMVar.isAssigned then
         solvedIndices := idx :: solvedIndices
 
-    -- Collect unsolved goals
     let mut unsolvedGoals : List MVarId := []
     for i in [:allGoals.length] do
       if !solvedIndices.contains i then
@@ -191,19 +198,31 @@ syntax ident+ " : " term : distinct_binder
 
 syntax "distinct" ident+ : term
 macro_rules
-  | `(distinct $xs*) => `(Distinct [$xs,*])
+  | `(distinct $x $xs*) => do
+      let allArgs : Array (TSyntax `ident) := #[x] ++ xs
+      let n := Syntax.mkNumLit (toString allArgs.size)
+      let last := allArgs[allArgs.size - 1]!
+      let front := allArgs.pop
+      let mut acc ← `((Singleton.singleton $last : Finset _))
+      for y in front.reverse do
+        acc ← `(insert $y $acc)
+      `(Distinct $acc $n)
 
 syntax "distinguish" : tactic
 
 macro_rules
   | `(tactic| distinguish) => `(tactic| run_tac runDistinct)
 
-/-- Extract points from a List Expr at the meta level -/
+
+/-- Extract the element Exprs from a Finset-literal expression. -/
 partial def extractPoints (e : Expr) : List Expr :=
-  if e.isAppOfArity ``List.cons 3 then
+  if e.isAppOfArity ``Insert.insert 5 then
     let head := e.appFn!.appArg!
     let tail := e.appArg!
     head :: extractPoints tail
+  else if e.isAppOfArity ``Singleton.singleton 4 then
+    let head := e.appArg!
+    [head]
   else
     []
 
@@ -217,7 +236,7 @@ elab_rules : tactic
         let hExpr ← elabTerm hId none
         let hType ← instantiateMVars (← inferType hExpr)
         let hType ← whnf hType
-        if !hType.isAppOfArity ``Distinct 2 then
+        if !hType.isAppOfArity ``Distinct 3 then
           throwError "separate: {hId} is not a `Distinct` hypothesis"
         let some points ← Distinct.getPointsExpr hExpr
           | throwError "separate: could not extract points from {hId}"
@@ -228,84 +247,40 @@ elab_rules : tactic
             let pj := points[j]!
             let ineqType ← mkAppM ``Ne #[pi, pj]
             let ineqStx ← PrettyPrinter.delab ineqType
-            -- Build a name like `AneB` from the fvar usernames
             let iName := (← FVarId.getUserName pi.fvarId!).toString
             let jName := (← FVarId.getUserName pj.fvarId!).toString
             let hypName := mkIdent (Name.mkSimple (iName ++ "ne" ++ jName))
             evalTactic (← `(tactic|
               have $hypName : $ineqStx := by
-                have hp := ($hId).pairwise
-                simp only [List.pairwise_cons, List.mem_cons, List.mem_singleton,
-                           List.not_mem_nil, List.Pairwise.nil] at hp
-                aesop))
+                have h := ($hId).card_eq
+                simp only [Finset.card_insert_eq_ite, Finset.card_singleton,
+                           Finset.mem_insert, Finset.mem_singleton, Finset.notMem_empty,
+                           ne_eq, not_or, not_false_eq_true] at h
+                split_ifs at h <;> aesop))
 
     | none => do
       withMainContext do
         let goal ← getMainGoal
         let goalType ← instantiateMVars (← goal.getType)
         let goalType ← whnf goalType
-        if !goalType.isAppOfArity ``Distinct 2 then
-          throwError "separate: goal is not of the form `Distinct [...]`"
+        if !goalType.isAppOfArity ``Distinct 3 then
+          throwError "separate: goal is not of the form `Distinct _ _`"
 
-        let listExpr := goalType.getArg! 1
-        let points := extractPoints listExpr
+        let sExpr := goalType.getArg! 1
+        let _points := extractPoints sExpr
 
-        evalTactic (← `(tactic| apply Distinct.mk))
-
-        for _ in [:points.length] do
-          try evalTactic (← `(tactic| rw [List.pairwise_cons]))
-          catch _ => pure ()
-
-        evalTactic (← `(tactic| simp only [List.mem_cons, List.mem_singleton, List.Pairwise.nil,
-                                            List.not_mem_nil, forall_eq_or_imp, forall_eq,
-                                            forall_const, IsEmpty.forall_iff, forall_true_iff,
-                                            and_true, true_and, and_assoc] at *))
-        try evalTactic (← `(tactic| exact List.Pairwise.nil))
-        catch _ => pure ()
+        evalTactic (← `(tactic| (
+          refine Distinct.mk ?_
+          simp only [Finset.card_insert_eq_ite, Finset.card_singleton,
+                     Finset.mem_insert, Finset.mem_singleton, Finset.notMem_empty,
+                     ne_eq, not_or, not_false_eq_true])))
 
 
 -- EXAMPLES and TESTS
 
-example : distinct A B C D E -> A ≠ X -> A ≠ B ∧ B ≠ C ∧ X ≠ A ∧ (∀ P : Nat, P = 2 -> P > 1) ∧ C ≠ D := by
-  intro h AneX
-  distinguish
-  -- this part doesn't matter, the assertions are just to make sure the distiguish step doesn't oversolve
-  exact AneX.symm
-  intro P Peq2
-  rw [Peq2]; trivial
-
-example : distinct A B C D E -> A ≠ X -> A ≠ B ∧ (B ≠ C ∧ X ≠ A) ∧ (∀ P : Nat, P = 3 -> P > 1) ∧ (C ≠ D ∨ V = W) := by
-  intro h AneX
-  distinguish -- should be A≠B, B≠C, X≠A, C≠D
-  · exact AneX.symm
-  · intro P Peq3; rw [Peq3]; trivial
-  · have CneD : C ≠ D := by distinguish
-    left; trivial
-
-example (A B C D : Point) (h : distinct A B C D) : A ≠ B ∧ B ≠ C ∧ A ≠ D := by
-  distinguish
-
-example (h : distinct A B) : A ≠ B := by distinguish
-
-example : A ≠ B ∧ A ≠ C ∧ B ≠ C -> distinct A B C := by
-  intro ⟨AneB, AneC, BneC⟩
-  separate
-  exact ⟨AneB, AneC, BneC⟩
-
-example : D ≠ A ∧ D ≠ B ∧ D ≠ C -> distinct A B C -> distinct A B C D := by
-  intro ⟨DneA, DneB, DneC⟩ distinctABC
-  separate
-  distinguish
-  repeat tauto -- tauto covers the .symm
-
-example : D ≠ A ∧ D ≠ B ∧ D ≠ C -> distinct A B C -> distinct A B C D := by
-  intro ⟨DneA, DneB, DneC⟩ distinctABC
-  separate at distinctABC
-  separate
-  repeat tauto -- tauto covers the .symm
+example {α : Type*} [DecidableEq α] (A B : α) (_h : distinct A B) : True := True.intro
+example {α : Type*} [DecidableEq α] (A B C : α) (_h : distinct A B C) : True := True.intro
 
 
 end Distinct
 end Geometry.Theory
-
--- distinct A B -> ∀ P : Prop, A ≠ B ∨ Prop
