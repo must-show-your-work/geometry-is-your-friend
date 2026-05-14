@@ -266,6 +266,27 @@ syntax (name := intersectsAt) term " intersects " term " at " term : term
 macro_rules (kind := intersectsAt)
   | `($L intersects $M at $X) => `(Intersects $L $M $X)
 
+/-- Attempts to unfold any geometric objects in the vicinity and eliminate booleans
+ and the like. Tries to capture the author's intuition for 'by definition' in the text -/
+macro "obvious" : tactic =>
+  `(tactic| first
+      | simp_all only [
+          -- set
+          Set.mem_setOf_eq, Set.mem_union, Set.mem_inter_iff,
+          Set.mem_singleton_iff,
+          -- line parts
+          Segment, Ray, Extension, LineThrough,
+          -- betweenness normalizing
+          B1b, 
+          -- propositional stuff
+          ne_eq, true_or, or_true, false_or, or_false, or_self,
+          true_and, and_true, false_and, and_false, and_self,
+          not_true_eq_false, not_false_eq_true, not_or, not_and, not_not
+        ]
+      | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
+      | (unfold Segment Ray Extension LineThrough at *; tauto))
+
+macro "obvious" : term => `(by obvious)
 
 
 end Geometry.Theory
