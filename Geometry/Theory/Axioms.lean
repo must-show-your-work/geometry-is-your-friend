@@ -374,53 +374,63 @@ macro "obvious" : term => `(by obvious)
 syntax "clearly " term " := " "by " tacticSeq : tactic
 syntax "clearly " term : tactic
 
-open Lean Elab Tactic in
-elab_rules : tactic
-  | `(tactic| clearly $prop) => do
-    -- Bare `clearly P` form: try `obvious` as the body; if it closes the negation
-    -- branch, behave as `clearly P := by obvious`.
-    evalTactic (← `(tactic| clearly $prop := by obvious))
-  | `(tactic| clearly $prop := by $body) => do
-    match prop with
-    | `($lhs:ident ≠ $rhs:ident) =>
-      let lName := lhs.getId.toString
-      let rName := rhs.getId.toString
-      let eqIdent := mkIdent (Name.mkSimple s!"{lName}eq{rName}")
-      let neIdent := mkIdent (Name.mkSimple s!"{lName}ne{rName}")
-      -- `Classical.em (A = B)` yields `A = B ∨ A ≠ B`. The body discharges the
-      -- equality branch; the inequality branch flows through as the open goal.
-      evalTactic (← `(tactic| (
-        rcases Classical.em ($lhs = $rhs) with $eqIdent:ident | $neIdent:ident
-        · $body)))
-    | `($lhs:ident = $rhs:ident) =>
-      let lName := lhs.getId.toString
-      let rName := rhs.getId.toString
-      let eqIdent := mkIdent (Name.mkSimple s!"{lName}eq{rName}")
-      let neIdent := mkIdent (Name.mkSimple s!"{lName}ne{rName}")
-      evalTactic (← `(tactic| (
-        rcases Classical.em ($lhs = $rhs) with $eqIdent:ident | $neIdent:ident
-        swap
-        · $body)))
-    | `($P:ident on $L:ident) =>
-      let pName := P.getId.toString
-      let lName := L.getId.toString
-      let onIdent := mkIdent (Name.mkSimple s!"{pName}on{lName}")
-      let offIdent := mkIdent (Name.mkSimple s!"{pName}off{lName}")
-      -- `Classical.em (P ∈ L)` yields `P ∈ L ∨ P ∉ L`, i.e. `P on L ∨ P off L`.
-      -- The body discharges the `off` branch; the `on` branch flows through.
-      evalTactic (← `(tactic| (
-        rcases Classical.em ($P ∈ $L) with $onIdent:ident | $offIdent:ident
-        swap
-        · $body)))
-    | `($P:ident off $L:ident) =>
-      let pName := P.getId.toString
-      let lName := L.getId.toString
-      let onIdent := mkIdent (Name.mkSimple s!"{pName}on{lName}")
-      let offIdent := mkIdent (Name.mkSimple s!"{pName}off{lName}")
-      evalTactic (← `(tactic| (
-        rcases Classical.em ($P ∈ $L) with $onIdent:ident | $offIdent:ident
-        · $body)))
-    | _ => throwError "clearly: expected `A ≠ B`, `A = B`, `P on L`, or `P off L`"
+/-- Derive an auto-name component from a term used in a `clearly` clause.
+    Identifiers map to their user-name; line-part expressions get short
+    capitalized prefixes (`segment A B` → `SegAB`, `line A B` → `LineAB`, etc.). -/
+private def clearlyTermName (s : Lean.Syntax) : Lean.MacroM String := do
+  match s with
+  | `($id:ident) => return id.getId.toString
+  | `(segment $A:ident $B:ident) => return s!"Seg{A.getId}{B.getId}"
+  | `(ray $A:ident $B:ident) => return s!"Ray{A.getId}{B.getId}"
+  | `(extension $A:ident $B:ident) => return s!"Ext{A.getId}{B.getId}"
+  | `(line $A:ident $B:ident) => return s!"Line{A.getId}{B.getId}"
+  | _ => Lean.Macro.throwError "clearly: cannot derive an auto-name from this term"
+
+-- `macro_rules` (rather than `elab_rules`) expansion keeps the resulting tactics
+-- visible to the LSP. However, see FIXME below.
+--
+-- FIXME: LSP doesn't render the body-side hypothesis (e.g. `ConL` inside a
+-- `clearly C off L := by ...` block) in the goal panel at intermediate lines of
+-- the body, even though it IS in scope (usable in the proof and visible via
+-- `trace_state`). The other-side hypothesis (e.g. `CoffL` on the line after the
+-- `clearly` block) renders fine. Suspected cause: macro-introduced `rcases` /
+-- `case inl =>` tokens get synthetic source positions that the LSP's info-tree
+-- walker doesn't query against. Workaround: put a `trace_state` at the body's
+-- start to confirm the hypothesis is there.
+macro_rules
+  | `(tactic| clearly $prop) => `(tactic| clearly $prop := by obvious)
+  | `(tactic| clearly $lhs ≠ $rhs := by $body) => do
+    let lName ← clearlyTermName lhs
+    let rName ← clearlyTermName rhs
+    let eqIdent := Lean.mkIdent (.mkSimple s!"{lName}eq{rName}")
+    let neIdent := Lean.mkIdent (.mkSimple s!"{lName}ne{rName}")
+    `(tactic| (
+      rcases Classical.em ($lhs = $rhs) with $eqIdent:ident | $neIdent:ident
+      case inl => $body))
+  | `(tactic| clearly $lhs = $rhs := by $body) => do
+    let lName ← clearlyTermName lhs
+    let rName ← clearlyTermName rhs
+    let eqIdent := Lean.mkIdent (.mkSimple s!"{lName}eq{rName}")
+    let neIdent := Lean.mkIdent (.mkSimple s!"{lName}ne{rName}")
+    `(tactic| (
+      rcases Classical.em ($lhs = $rhs) with $eqIdent:ident | $neIdent:ident
+      case inr => $body))
+  | `(tactic| clearly $P on $L := by $body) => do
+    let pName ← clearlyTermName P
+    let lName ← clearlyTermName L
+    let onIdent := Lean.mkIdent (.mkSimple s!"{pName}on{lName}")
+    let offIdent := Lean.mkIdent (.mkSimple s!"{pName}off{lName}")
+    `(tactic| (
+      rcases Classical.em ($P ∈ $L) with $onIdent:ident | $offIdent:ident
+      case inr => $body))
+  | `(tactic| clearly $P off $L := by $body) => do
+    let pName ← clearlyTermName P
+    let lName ← clearlyTermName L
+    let onIdent := Lean.mkIdent (.mkSimple s!"{pName}on{lName}")
+    let offIdent := Lean.mkIdent (.mkSimple s!"{pName}off{lName}")
+    `(tactic| (
+      rcases Classical.em ($P ∈ $L) with $onIdent:ident | $offIdent:ident
+      case inl => $body))
 
 
 end Geometry.Theory
