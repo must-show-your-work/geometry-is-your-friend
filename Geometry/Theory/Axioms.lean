@@ -271,13 +271,54 @@ syntax (name := intersectsAt) term " intersects " term " at " term : term
 macro_rules (kind := intersectsAt)
   | `($L intersects $M at $X) => `(Intersects $L $M $X)
 
+/-- `normalize_eq` walks the local context and flips `=` / `≠` hypotheses between
+    free variables so the LHS comes lex-before the RHS by user-name. Useful when
+    a downstream tactic (`simp`, `tauto`) doesn't know about `Ne.symm` / `Eq.symm`
+    and is stuck on an inequality whose orientation is "backwards". -/
+syntax "normalize_eq" : tactic
+
+open Lean Meta Elab.Tactic in
+elab_rules : tactic
+  | `(tactic| normalize_eq) => withMainContext do
+    -- Snapshot the list of hypotheses to flip; applying them mutates the local
+    -- context, so collect first and apply after.
+    let lctx ← getLCtx
+    let mut toFlip : Array (Name × Bool) := #[]  -- (hypothesis name, isEq?)
+    for ldecl in lctx do
+      if ldecl.isImplementationDetail then continue
+      let ty ← instantiateMVars ldecl.type
+      let (isEq, a?, b?) ←
+        if ty.isAppOfArity ``Eq 3 then
+          pure (true, some (ty.getArg! 1), some (ty.getArg! 2))
+        else if ty.isAppOfArity ``Ne 3 then
+          pure (false, some (ty.getArg! 1), some (ty.getArg! 2))
+        else
+          pure (false, none, none)
+      match a?, b? with
+      | some a, some b =>
+        if a.isFVar && b.isFVar then
+          let aName := (← a.fvarId!.getUserName).toString
+          let bName := (← b.fvarId!.getUserName).toString
+          if aName > bName then
+            toFlip := toFlip.push (ldecl.userName, isEq)
+      | _, _ => pure ()
+    for (hName, isEq) in toFlip do
+      let hIdent := mkIdent hName
+      let symIdent := mkIdent (if isEq then ``Eq.symm else ``Ne.symm)
+      evalTactic (← `(tactic| replace $hIdent:ident := $symIdent:ident $hIdent:ident))
+
 /-- Attempts to unfold any geometric objects in the vicinity and eliminate booleans
  and the like. Tries to capture the author's intuition for 'by definition' in the text.
 
  The last alternative handles Finset literal equality (`{A,B,C} = {C,A,B}` etc.) by
- reducing to membership and tautology — convenient since Finsets are unordered. -/
+ reducing to membership and tautology — convenient since Finsets are unordered.
+
+ `normalize_eq` runs first to canonicalize `=` / `≠` orientations so `simp_all` can
+ close hypotheses regardless of which side they were originally written on. -/
 macro "obvious" : tactic =>
-  `(tactic| first
+  `(tactic| (
+      normalize_eq
+      first
       | (simp_all only [
           -- set
           Set.mem_setOf_eq, Set.mem_union, Set.mem_inter_iff,
@@ -291,13 +332,11 @@ macro "obvious" : tactic =>
           -- propositional stuff
           ne_eq, true_or, or_true, false_or, or_false, or_self,
           true_and, and_true, false_and, and_false, and_self,
-          not_true_eq_false, not_false_eq_true, not_or, not_and, not_not,
-          -- symmetry — keeps `≠` and `=` from getting stuck on orientation
-          ne_comm, eq_comm
+          not_true_eq_false, not_false_eq_true, not_or, not_and, not_not
         ]; done)
       | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
       | (unfold Segment Ray Extension LineThrough at *; tauto)
-      | (ext; simp only [Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, ne_eq]; tauto))
+      | (ext; simp only [Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, ne_eq]; tauto)))
 
 macro "obvious" : term => `(by obvious)
 
