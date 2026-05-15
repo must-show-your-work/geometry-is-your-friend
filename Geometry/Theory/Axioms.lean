@@ -278,7 +278,7 @@ macro_rules (kind := intersectsAt)
  reducing to membership and tautology — convenient since Finsets are unordered. -/
 macro "obvious" : tactic =>
   `(tactic| first
-      | simp_all only [
+      | (simp_all only [
           -- set
           Set.mem_setOf_eq, Set.mem_union, Set.mem_inter_iff,
           Set.mem_singleton_iff,
@@ -291,8 +291,10 @@ macro "obvious" : tactic =>
           -- propositional stuff
           ne_eq, true_or, or_true, false_or, or_false, or_self,
           true_and, and_true, false_and, and_false, and_self,
-          not_true_eq_false, not_false_eq_true, not_or, not_and, not_not
-        ]
+          not_true_eq_false, not_false_eq_true, not_or, not_and, not_not,
+          -- symmetry — keeps `≠` and `=` from getting stuck on orientation
+          ne_comm, eq_comm
+        ]; done)
       | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
       | (unfold Segment Ray Extension LineThrough at *; tauto)
       | (ext; simp only [Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, ne_eq]; tauto))

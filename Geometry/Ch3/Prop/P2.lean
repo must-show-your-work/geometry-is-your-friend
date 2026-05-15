@@ -73,10 +73,7 @@ theorem P2 : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
     push_neg
     intro AoffL BoffL
     refine ⟨AneB, O, ?_, OonL⟩
-    unfold Segment
-    simp only [mem_setOf_eq]
-    left
-    exact B1b.mp bBOA
+    obvious
   /- "so L has at least two sides." -/
   /- "(5) Let C be any point distinct from A and B not lying on l..."
 

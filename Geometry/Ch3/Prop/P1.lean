@@ -89,19 +89,13 @@ theorem P1.ii : A ≠ B -> -- Ed. Same as above.
     · exfalso; exact absurd eq.symm AneP
     · exfalso; exact absurd eq.symm BneP
     -- the case where P is on the segment
-    · have PonSegAB : P on segment A B := by
-        simp only [mem_setOf_eq]
-        left; exact tween
+    · have PonSegAB : P on segment A B := obvious
       exact mem_union_left (ray B A) (Line.seg_sub_ray PonSegAB)
     -- this is where we need the PneA and PneB conditions
-    · have PonExtAB : P on extension A B := by
-        simp only [mem_setOf_eq]
-        exact ⟨tween, AneP, BneP⟩
+    · have PonExtAB : P on extension A B := obvious
       left; right; exact PonExtAB
     -- here too, P is on the other extension
-    · have PonExtBA : P on extension B A := by
-        simp only [mem_setOf_eq]
-        exact ⟨B1b.mp tween, BneP, AneP⟩
+    · have PonExtBA : P on extension B A := obvious
       right; right; exact PonExtBA
 
 

@@ -33,20 +33,17 @@ P lies either on ray A B or on the opposite ray A C. -/
 theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
   /- Ed. Some mise en place -/
   have distinctABCP : distinct A B C P := by
-    have dABC : distinct A B C :=
-      (Betweenness.abc_imp_distinct CAB).of_eq (by ext x; simp [Finset.mem_insert, Finset.mem_singleton]; tauto)
+    have dABC : distinct A B C := (Betweenness.abc_imp_distinct CAB).of_eq obvious
     separate
     distinguish
     all_goals sorry
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
-    have cABC : collinear A B C :=
-      (Betweenness.abc_imp_collinear CAB).of_eq (by ext x; simp [Finset.mem_insert, Finset.mem_singleton]; tauto)
+    have cABC : collinear A B C := (Betweenness.abc_imp_collinear CAB).of_eq obvious
     have ABisSameLine : line A B = cABC.line := Line.equiv AneB
       ⟨Line.line_has_definition_points.left, cABC.mem A, Line.line_has_definition_points.right, cABC.mem B⟩
     rw [ABisSameLine] at PonL
-    exact (Collinear.insert cABC PonL).of_eq
-      (by ext x; simp [Finset.mem_insert, Finset.mem_singleton]; tauto)
+    exact (Collinear.insert cABC PonL).of_eq obvious
   /- Expose the pairwise inequalities for the `forgetting` casts below. -/
   separate at distinctABCP
   /- (1) Either P lies on ray A B or it does not (Law of the Excluded Middle) -/

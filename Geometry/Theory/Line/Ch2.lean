@@ -186,16 +186,13 @@ lemma segment_AB_sub_ray_BA : segment A B ⊆ ray B A := by
   simp_all only [mem_setOf_eq, mem_union, segment_AB_eq_segment_BA, true_or]
 
 lemma APB_imp_P_on_segment_AB (PneAB : P ≠ A ∧ P ≠ B) :
-  A - P - B -> P on the segment A B := by intro h; unfold Segment; simp; tauto;
+  A - P - B -> P on the segment A B := by intro _; obvious
 
 lemma APB_imp_P_on_ray_AB (PneAB : P ≠ A ∧ P ≠ B) :
-  A - P - B -> P on the ray A B := by intro h; unfold Ray; simp; tauto;
+  A - P - B -> P on the ray A B := by intro _; obvious
 
 lemma ABP_imp_P_on_ext_AB (PneAB : P ≠ A ∧ P ≠ B) :
-  A - B - P -> P on the extension A B := by
-  intro h; unfold Extension; simp only [ne_eq, mem_setOf_eq, B1b];
-  rw [B1b] at h
-  tauto
+  A - B - P -> P on the extension A B := by intro _; obvious
 
 /- lemma ABP_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/
 /-   A - B - P -> P on the line A B := by -/
