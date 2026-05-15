@@ -301,5 +301,45 @@ macro "obvious" : tactic =>
 
 macro "obvious" : term => `(by obvious)
 
+/-- `clearly P := by body` introduces `P` as a fact for the rest of the proof, having
+    discharged the negation branch — i.e. the body proves the main goal under the
+    assumption `¬P`. The reading is: "clearly P, because if not, the goal is immediate
+    (`body`); proceeding under `P`".
+
+    For `P` of the form `A ≠ B` or `A = B`, the hypothesis introduced for the rest of
+    the proof is auto-named `AneB` / `AeqB` from the LHS/RHS identifiers; inside the
+    body the dual hypothesis is in scope (`AeqB` / `AneB` respectively). -/
+syntax "clearly " term " := " "by " tacticSeq : tactic
+syntax "clearly " term : tactic
+
+open Lean Elab Tactic in
+elab_rules : tactic
+  | `(tactic| clearly $prop) => do
+    -- Bare `clearly P` form: try `obvious` as the body; if it closes the negation
+    -- branch, behave as `clearly P := by obvious`.
+    evalTactic (← `(tactic| clearly $prop := by obvious))
+  | `(tactic| clearly $prop := by $body) => do
+    match prop with
+    | `($lhs:ident ≠ $rhs:ident) =>
+      let lName := lhs.getId.toString
+      let rName := rhs.getId.toString
+      let eqIdent := mkIdent (Name.mkSimple s!"{lName}eq{rName}")
+      let neIdent := mkIdent (Name.mkSimple s!"{lName}ne{rName}")
+      -- `Classical.em (A = B)` yields `A = B ∨ A ≠ B`. The body discharges the
+      -- equality branch; the inequality branch flows through as the open goal.
+      evalTactic (← `(tactic| (
+        rcases Classical.em ($lhs = $rhs) with $eqIdent:ident | $neIdent:ident
+        · $body)))
+    | `($lhs:ident = $rhs:ident) =>
+      let lName := lhs.getId.toString
+      let rName := rhs.getId.toString
+      let eqIdent := mkIdent (Name.mkSimple s!"{lName}eq{rName}")
+      let neIdent := mkIdent (Name.mkSimple s!"{lName}ne{rName}")
+      evalTactic (← `(tactic| (
+        rcases Classical.em ($lhs = $rhs) with $eqIdent:ident | $neIdent:ident
+        swap
+        · $body)))
+    | _ => throwError "clearly: expected proposition of the form `A ≠ B` or `A = B`"
+
 
 end Geometry.Theory

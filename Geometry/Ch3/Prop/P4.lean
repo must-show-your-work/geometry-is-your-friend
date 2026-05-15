@@ -32,11 +32,12 @@ open Geometry.Ch3.Ex
 P lies either on ray A B or on the opposite ray A C. -/
 theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
   /- Ed. Some mise en place -/
+  clearly A ≠ P; clearly B ≠ P; clearly C ≠ P
   have distinctABCP : distinct A B C P := by
     have dABC : distinct A B C := (Betweenness.abc_imp_distinct CAB).of_eq obvious
     separate
     distinguish
-    all_goals sorry
+    repeat assumption
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
     have cABC : collinear A B C := (Betweenness.abc_imp_collinear CAB).of_eq obvious
