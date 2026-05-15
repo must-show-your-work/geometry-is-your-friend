@@ -75,9 +75,9 @@ example : collinear A B C ↔ ∃ L : Line, A on L ∧ B on L ∧ C on L := by
 
 ---- END COLLINEARITY
 
-notation:80 P " off " L => P ∉ L
-notation:80 L " has " P => P ∈ L
-notation:80 L " avoids " P => P ∉ L
+notation:80 P:81 " off " L:81 => P ∉ L
+notation:80 L:81 " has " P:81 => P ∈ L
+notation:80 L:81 " avoids " P:81 => P ∉ L
 
 -- -- GEOMETRIC AXIOMS
 
@@ -265,11 +265,32 @@ sides of L, then A and C are on the same side of L."
 
 @[reducible] def Intersects (L M : Line) (X : Point) : Prop := L ∩ M = {X}
 
--- Syntax for "L intersects M at X"
-syntax (name := intersectsAt) term " intersects " term " at " term : term
+/-- Bare form of `L intersects M` — asserts there is a (unique) point shared by
+    both sets. Kept as an opaque `def` so the goal stays readable; the unexpander
+    below renders this as `L intersects M` in proof states. -/
+def IntersectsSome (L M : Set Point) : Prop := ∃ X, L ∩ M = {X}
+
+/-- Extract the intersection witness: `L intersects M → ∃ X, L intersects M at X`.
+    This is the main consumer of a bare `intersects` hypothesis. -/
+lemma IntersectsSome.exists_at {L M : Set Point} (h : IntersectsSome L M) :
+    ∃ X, L ∩ M = {X} := h
+
+-- Syntax for "L intersects M at X" (specific intersection point) and the bare
+-- form "L intersects M" asserting a unique shared point exists.
+syntax:50 (name := intersectsAt) term:51 " intersects " term:51 " at " term:50 : term
+syntax:50 (name := intersectsBare) term:51 " intersects " term:51 : term
 
 macro_rules (kind := intersectsAt)
   | `($L intersects $M at $X) => `(Intersects $L $M $X)
+
+macro_rules (kind := intersectsBare)
+  | `($L intersects $M) => `(IntersectsSome $L $M)
+
+-- Pretty-print `IntersectsSome L M` as `L intersects M` so the goal stays readable
+@[app_unexpander IntersectsSome]
+def IntersectsSome.unexpander : Lean.PrettyPrinter.Unexpander
+  | `($_ $L $M) => `($L intersects $M)
+  | _ => throw ()
 
 /-- `normalize_eq` walks the local context and flips `=` / `≠` hypotheses between
     free variables so the LHS comes lex-before the RHS by user-name. Useful when
