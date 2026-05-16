@@ -265,15 +265,20 @@ sides of L, then A and C are on the same side of L."
 
 @[reducible] def Intersects (L M : Line) (X : Point) : Prop := L ∩ M = {X}
 
-/-- Bare form of `L intersects M` — asserts there is a (unique) point shared by
-    both sets. Kept as an opaque `def` so the goal stays readable; the unexpander
-    below renders this as `L intersects M` in proof states. -/
-def IntersectsSome (L M : Set Point) : Prop := ∃ X, L ∩ M = {X}
+/-- Bare form of `L intersects M` — asserts the intersection is non-empty (i.e.
+    `L` and `M` share *at least one* point, allowing the "L coincides with M"
+    case). Kept as an opaque `def` so the goal stays readable; the unexpander
+    below renders this as `L intersects M` in proof states.
 
-/-- Extract the intersection witness: `L intersects M → ∃ X, L intersects M at X`.
-    This is the main consumer of a bare `intersects` hypothesis. -/
+    Going from this to a unique intersection point (`L intersects M at X`)
+    requires extra work — typically `Intersection.specification` for lines,
+    which uses `line_trichotomy` to rule out coincidence. -/
+def IntersectsSome (L M : Set Point) : Prop := Set.Nonempty (L ∩ M)
+
+/-- Extract a point in the intersection from a bare `intersects` hypothesis.
+    Note: the returned `X` is *some* shared point, not necessarily a unique one. -/
 lemma IntersectsSome.intersection_point {L M : Set Point} (h : IntersectsSome L M) :
-    ∃ X, L ∩ M = {X} := h
+    ∃ X, X ∈ L ∩ M := h
 
 -- Syntax for "L intersects M at X" (specific intersection point) and the bare
 -- form "L intersects M" asserting a unique shared point exists.
@@ -431,6 +436,58 @@ macro_rules
     `(tactic| (
       rcases Classical.em ($P ∈ $L) with $onIdent:ident | $offIdent:ident
       case inl => $body))
+
+
+/-- `by_exhaustion h` where `h : P ∈ {A, B, C, ...}` (a Finset literal) splits
+    the proof into one goal per element, with the corresponding equality
+    auto-named like `clearly`: `PeqA`, `PeqB`, etc.
+
+    Stands in for `fin_cases h` (which requires a computable `DecidableEq` and
+    thus doesn't apply to `Point`). Internally: `simp` unfolds Finset membership
+    to a disjunction, then `rcases` destructures with the generated names. -/
+syntax "by_exhaustion " ident : tactic
+
+open Lean Meta Elab Elab.Tactic in
+elab_rules : tactic
+  | `(tactic| by_exhaustion $h:ident) => withMainContext do
+    -- Step 1: unfold Finset membership into a disjunction of equalities.
+    evalTactic (← `(tactic|
+      simp only [Finset.mem_insert, Finset.mem_singleton] at $h:ident))
+
+    -- Step 2: walk the resulting Or chain, collecting auto-names like `<lhs>eq<rhs>`.
+    withMainContext do
+      let hFVar ← getFVarId h
+      let hType ← instantiateMVars (← hFVar.getType)
+      let getName : Expr → MetaM String := fun e => do
+        match e with
+        | .fvar fid => return (← fid.getUserName).toString
+        | _ => return "x"
+      let extractEq (e : Expr) : MetaM (Option String) := do
+        if e.isAppOfArity ``Eq 3 then
+          let lN ← getName (e.getArg! 1)
+          let rN ← getName (e.getArg! 2)
+          return some s!"{lN}eq{rN}"
+        else
+          return none
+      let mut names : Array String := #[]
+      let mut current := hType
+      while current.isAppOfArity ``Or 2 do
+        if let some n ← extractEq (current.getArg! 0) then
+          names := names.push n
+        current := current.getArg! 1
+      if let some n ← extractEq current then
+        names := names.push n
+
+      if names.isEmpty then
+        throwError "by_exhaustion: could not extract eq disjuncts from hypothesis type"
+
+      -- Step 3: build and run `rcases h with name_1 | name_2 | ...` via string parse.
+      let patStr := String.intercalate " | " names.toList
+      let tacStr := s!"rcases {h.getId} with {patStr}"
+      match Parser.runParserCategory (← getEnv) `tactic tacStr with
+      | .ok stx => evalTactic stx
+      | .error err =>
+          throwError s!"by_exhaustion: failed to build rcases tactic from '{tacStr}': {err}"
 
 
 end Geometry.Theory
