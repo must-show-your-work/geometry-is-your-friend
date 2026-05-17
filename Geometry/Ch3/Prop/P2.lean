@@ -27,15 +27,15 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
   : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
   (∀ P : Point, (P on L) -> (P ∉ Hl) ∧ (P ∉ Hr)) ∧ (Hl ∩ Hr = ∅)
 := by
-  /- p.112 "(1) There is a point A not lying on l, (Proposition 2.3 [Ch2.Prop.P3])." -/
+  /- p.112 "(1) There is a point A not lying on l, (Proposition 2.3 [proposition 2.3])." -/
   intro L LeqLineAB AneB
-  obtain ⟨A, AoffL⟩ := Ch2.Prop.P3 L
-  /- "(2) There is a point O lying on l (Incidence Axiom 2 [I2])."-/
-  obtain ⟨O, _, _, OonL, _⟩ := I2 L
-  /- "(3) There is a point B such that B * O * A (Betweenness Axiom 2 [B2])"-/
+  obtain ⟨A, AoffL⟩ := proposition 2.3 L
+  /- "(2) There is a point O lying on l (Incidence Axiom 2 [ref axiom I.2])."-/
+  obtain ⟨O, _, _, OonL, _⟩ := ref axiom I.2 L
+  /- "(3) There is a point B such that B * O * A (Betweenness Axiom 2 [ref axiom B.2])"-/
   have AneO : A ≠ O := by -- author omits this step
     by_contra!; rw [this] at AoffL; tauto
-  have ⟨B, _, _, colBOA, distinctBOA, bBOA, _, _⟩ := B2 O A AneO.symm
+  have ⟨B, _, _, colBOA, distinctBOA, bBOA, _, _⟩ := ref axiom B.2 O A AneO.symm
   have AneB : A ≠ B := by distinguish
   have LneAO : L ≠ segment A O := by
     by_contra! hNeg;
@@ -47,21 +47,21 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
     unfold Parallel at hNeg
     have ⟨LneAO, parCondition⟩ := hNeg
     push_neg at parCondition
-    have OonAO : O on segment A O := Line.seg_has_endpoints.right
+    have OonAO : O on segment A O := ref lemma 1.0.20
     specialize parCondition O OonL
     contradiction
   have BoffL : B off L := by
     -- idea: since A is off L, and O is on, the AO intersects L at O, extend AO, since AOB, then B is on this extension.
-    have ⟨distinctBOA, colBOA⟩ := B1a bBOA
+    have ⟨distinctBOA, colBOA⟩ := «A-B-C implies A B C are distinct and collinear» bBOA
     separate at distinctBOA
     have LintAOatO : L intersects segment A O at O := by
       unfold Intersects
       have OonAO : O on segment A O := by tauto
       have OonInt : O on L ∩ segment A O := by tauto
-      exact (Intersection.single_point_of_intersection O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
-    have h := Intersection.lift_seg_ray AneO LintAOatO
+      exact (ref lemma 2.0.20 O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
+    have h := ref lemma 2.0.21 AneO LintAOatO
     unfold Ray at h
-    have BonExtAO : B on extension A O := ⟨B1b.mp bBOA, AneB, BneO.symm⟩
+    have BonExtAO : B on extension A O := ⟨«Betweenness is invariant under endpoint reversal».mp bBOA, AneB, BneO.symm⟩
     have BonRayAO : B on ray A O := by tauto
     unfold Intersects at h
     by_contra! BonL
@@ -82,7 +82,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
   Ed. Construct point C off L and distinct from A and B as follows.
 
   1. Take AB and find it's intersection by L, call it O (since that's where it is)
-  2. Examine segment A O with B2, we want C with A - C - O
+  2. Examine segment A O with ref axiom B.2, we want C with A - C - O
   3. Use C.
   -/
   /- Here are the sets we require -/
@@ -104,7 +104,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
         intro LsplitsBC
         /- then C and A are on the same side of L (by the law of the excluded middle and Betweenness Axiom 4(ii))." -/
         by_contra LsplitsAC
-        have LguardsAB := B4ii ⟨AoffL, CoffL, BoffL⟩ ⟨LsplitsAC, Betweenness.splits_commutes LsplitsBC⟩
+        have LguardsAB := «Two opposite-side relations chain to a same-side relation» ⟨AoffL, CoffL, BoffL⟩ ⟨LsplitsAC, ref lemma 2.0.31 LsplitsBC⟩
         contradiction
       by_cases suppose: L splits B and C
       · specialize AseparatefromB suppose
@@ -124,7 +124,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       · obtain ⟨BoffL, CoffL, hOpts⟩ := CinHr
         tauto
   /- "(6) If C were on both sides (RAA Hypothesis), then A and B would be on the
-  same side (Axiom 4(i) [B4i]), contradicting step 4; hence the two sides are
+  same side (Axiom 4(i) [«Same-side is transitive across a common middle point»]), contradicting step 4; hence the two sides are
   disjoint." -/
   have HlintHrempty : Hl ∩ Hr = ∅ := by
     apply Subset.antisymm
@@ -132,9 +132,9 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       obtain ⟨PinHl, PinHr⟩ := PinInt
       have LguardsAandP : L guards A and P := PinHl
       have LguardsBandP : L guards B and P := PinHr
-      have LguardsPandB : L guards P and B := Betweenness.guards_commutes LguardsBandP
+      have LguardsPandB : L guards P and B := ref lemma 2.0.30 LguardsBandP
       have PoffL : P off L := by tauto
-      have LguardsAandB : L guards A and B := B4i ⟨AoffL, PoffL, BoffL⟩ ⟨LguardsAandP, LguardsPandB⟩
+      have LguardsAandB : L guards A and B := «Same-side is transitive across a common middle point» ⟨AoffL, PoffL, BoffL⟩ ⟨LguardsAandP, LguardsPandB⟩
       contradiction
     · intro P PinEmpty
       contradiction
@@ -154,7 +154,6 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
     contradiction
   tauto
 
-alias P2 := «Every line bounds exactly two disjoint half-planes»
 
 /- I was frequently left to my own devices with respect to school. We did a correspondence video thing.
 I'd sit in the same room, for a while it was the couch in the living room, later it was a hard dining chair in our

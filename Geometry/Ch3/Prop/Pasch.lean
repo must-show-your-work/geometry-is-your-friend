@@ -52,17 +52,17 @@ atlas proposition 3.7 "Pasch's Postulate"
       contradiction
     clearly L ≠ segment A C := by
       constructor
-      · rw [LeqSegAC]; left; exact Intersection.coincident_lines_intersect_everywhere
+      · rw [LeqSegAC]; left; exact ref lemma 3.0.2
       · intro CoffL; rw [LeqSegAC] at CoffL
-        exact absurd Line.seg_has_endpoints.right CoffL
+        exact absurd ref lemma 1.0.20 CoffL
     clearly L ≠ segment B C := by
       constructor
-      · rw [LeqSegBC]; right; exact Intersection.coincident_lines_intersect_everywhere
+      · rw [LeqSegBC]; right; exact ref lemma 3.0.2
       · intro CoffL; rw [LeqSegBC] at CoffL
-        exact absurd Line.seg_has_endpoints.right CoffL
+        exact absurd ref lemma 1.0.20 CoffL
     /- (1) Either C lies on L or it does not; if it does, the theorem holds (law the excluded middle) -/
     clearly C off L := by
-      have ConAC : C on segment A C := Line.seg_has_endpoints.right
+      have ConAC : C on segment A C := ref lemma 1.0.20
       have CinInt : C ∈ L ∩ segment A C := by tauto
       have LintersectsAC : L intersects segment A C := by use C
       constructor
@@ -94,8 +94,8 @@ atlas proposition 3.7 "Pasch's Postulate"
           use segment B C; intro P PisABC
           by_exhaustion PisABC
           · rw [PeqA]; trivial
-          · rw [PeqB]; exact Line.seg_has_endpoints.left
-          · rw [PeqC]; exact Line.seg_has_endpoints.right
+          · rw [PeqB]; exact ref lemma 1.0.19
+          · rw [PeqC]; exact ref lemma 1.0.20
         contradiction
       constructor
       · obvious
@@ -129,7 +129,6 @@ namespace Geometry.Theory
 /- Ed: this is a 'standard' geometric theorem that is necessary for results regardless of underlying axiomatization, so 
 I'm aliasing it to the top level 'Theory' namespace so it can be referenced as such, similar to P4's aliasing into the
 Line namespace. There is no other natural namespace for Pasch so I put it here. -/
-alias pasch := Geometry.Ch3.Prop.«Pasch's Postulate»
 
 end Geometry.Theory
 

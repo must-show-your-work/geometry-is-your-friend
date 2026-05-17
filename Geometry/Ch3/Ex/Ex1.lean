@@ -30,31 +30,30 @@ open Geometry.Ch3.Ex
 atlas exercise 3.1 "Exercise 1(a): four points from chained betweenness are distinct"
   : A - B - C ∧ A - C - D -> distinct A B C D := by
   intro ⟨ABC, ACD⟩
-  have distinctABC := Betweenness.abc_imp_distinct ABC
-  have distinctACD := Betweenness.abc_imp_distinct ACD
+  have distinctABC := ref lemma 1.0.39 ABC
+  have distinctACD := ref lemma 1.0.39 ACD
   separate at distinctABC
   separate at distinctACD
   have BneD : B ≠ D := by
     by_contra! BeqD
     rw [<- BeqD] at ACD
-    exact Betweenness.absurdity_abc_acb ⟨ABC, ACD⟩
+    exact ref lemma 1.0.37 ⟨ABC, ACD⟩
   refine ⟨?_⟩
   simp [Finset.card_insert_of_notMem, Finset.card_singleton,
         Finset.mem_insert, Finset.mem_singleton,
         AneB, AneC, AneD, BneC, BneD, CneD]
 
-alias Ex1.a := «Exercise 1(a): four points from chained betweenness are distinct»
 
 /-- (b) Prove that A,B,C, and D are collinear -/
 atlas exercise 3.1 "Exercise 1(b): four points from chained betweenness are collinear"
   : A - B - C ∧ A - C - D -> collinear A B C D := by
   intro ⟨ABC, ACD⟩
   -- we only end up needing A ≠ C, but easy to get the whole thing.
-  have distinctABCD := Ex1.a ⟨ABC, ACD⟩
+  have distinctABCD := exercise 3.1 ⟨ABC, ACD⟩
   have AneC : A ≠ C := by distinguish
-  have colABC := Betweenness.abc_imp_collinear ABC
-  have colACD := Betweenness.abc_imp_collinear ACD
-  have LeqM : colABC.line = colACD.line := Line.equiv AneC ⟨colABC.mem A, colACD.mem A, colABC.mem C, colACD.mem C⟩
+  have colABC := ref lemma 1.0.40 ABC
+  have colACD := ref lemma 1.0.40 ACD
+  have LeqM : colABC.line = colACD.line := ref lemma 2.0.2 AneC ⟨colABC.mem A, colACD.mem A, colABC.mem C, colACD.mem C⟩
   use colABC.line
   intro P PisABCD
   simp only [Finset.mem_insert, Finset.mem_singleton] at PisABCD
@@ -67,40 +66,36 @@ atlas exercise 3.1 "Exercise 1(b): four points from chained betweenness are coll
     rw [<- LeqM] at DonM
     exact DonM
 
-alias Ex1.b := «Exercise 1(b): four points from chained betweenness are collinear»
 
-/-- (c) Prove the corrolary to B4
-Ed. Note that (c) is covered by the B4iii lemma in it's own file. -/
-alias Ex1.c := «Corollary to B-4: splits + guards transitivity»
+/- (c) Prove the corollary to B-4 — covered by the `B.4.iii` corollary in its own file. -/
 
 /-- Ed. These (Ex1 a' and b') are not in the exercise but are quite convenient elsewhere -/
-atlas lemma "Distinct four points from shifted chained betweenness (A-B-C and B-C-D)"
+atlas lemma 3.0.3 "Distinct four points from shifted chained betweenness (A-B-C and B-C-D)"
   : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
   intro ⟨ABC, BCD⟩
-  have distinctABC := Betweenness.abc_imp_distinct ABC
-  have distinctBCD := Betweenness.abc_imp_distinct BCD
+  have distinctABC := ref lemma 1.0.39 ABC
+  have distinctBCD := ref lemma 1.0.39 BCD
   separate at distinctABC
   separate at distinctBCD
   have AneD : A ≠ D := by
     by_contra! AeqD
     rw [AeqD] at ABC
-    exact Betweenness.absurdity_abc_cab ⟨BCD, ABC⟩
+    exact ref lemma 1.0.38 ⟨BCD, ABC⟩
   refine ⟨?_⟩
   simp [Finset.card_insert_of_notMem, Finset.card_singleton,
         Finset.mem_insert, Finset.mem_singleton,
         AneB, AneC, AneD, BneC, BneD, CneD]
 
-alias Ex1.a' := «Distinct four points from shifted chained betweenness (A-B-C and B-C-D)»
 
-atlas lemma "Collinear four points from shifted chained betweenness (A-B-C and B-C-D)"
+atlas lemma 3.0.4 "Collinear four points from shifted chained betweenness (A-B-C and B-C-D)"
   : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
   intro ⟨ABC, BCD⟩
   -- we only end up needing A ≠ C, but easy to get the whole thing.
-  have distinctABCD := Ex1.a' ⟨ABC, BCD⟩
+  have distinctABCD := ref lemma 3.0.3 ⟨ABC, BCD⟩
   have BneC : B ≠ C := by distinguish
-  have colABC := Betweenness.abc_imp_collinear ABC
-  have colBCD := Betweenness.abc_imp_collinear BCD
-  have LeqM : colABC.line = colBCD.line := Line.equiv BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
+  have colABC := ref lemma 1.0.40 ABC
+  have colBCD := ref lemma 1.0.40 BCD
+  have LeqM : colABC.line = colBCD.line := ref lemma 2.0.2 BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
   use colABC.line
   intro P PisABCD
   simp only [Finset.mem_insert, Finset.mem_singleton] at PisABCD
@@ -113,6 +108,5 @@ atlas lemma "Collinear four points from shifted chained betweenness (A-B-C and B
     rw [<- LeqM] at DonM
     exact DonM
 
-alias Ex1.b' := «Collinear four points from shifted chained betweenness (A-B-C and B-C-D)»
 
 end Geometry.Ch3.Ex

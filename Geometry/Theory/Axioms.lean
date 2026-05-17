@@ -7,7 +7,9 @@ import Mathlib.Data.Set.Defs
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 
+import Mathlib.Tactic.Lemma  -- explicitly bring in Mathlib's bare-`lemma` syntax
 import Geometry.Theory.Distinct
+import Atlas
 
 namespace Geometry.Theory
 
@@ -57,10 +59,13 @@ macro_rules
 -- Extract the line from collinearity
 noncomputable def Collinear.line {points : Finset Point} (h : Collinear points) : Line := Classical.choose h
 
-lemma Collinear.on_line {points : Finset Point} (h : Collinear points) : ∀ p ∈ points, p on h.line := Classical.choose_spec h
+-- Natural projections from the Collinear def — not book content, not atlas'd.
+lemma Collinear.on_line {points : Finset Point} (h : Collinear points)
+  : ∀ p ∈ points, p on h.line := Classical.choose_spec h
 
-@[simp] lemma Collinear.mem {points : Finset Point} (h : Collinear points) (p : Point) (hp : p ∈ points := by simp) :
-  p on h.line := h.on_line p hp
+@[simp] lemma Collinear.mem
+  {points : Finset Point} (h : Collinear points) (p : Point) (hp : p ∈ points := by simp)
+  : p on h.line := h.on_line p hp
 
 example : collinear A B C ↔ ∃ L : Line, A on L ∧ B on L ∧ C on L := by
   constructor
@@ -88,12 +93,20 @@ notation:80 L:81 " avoids " P:81 => P ∉ L
 /--
 For any two distinct points P and Q, there exists a unique line L which has P and Q
 -/
-@[simp] axiom I1 : ∀ P Q : Point, P ≠ Q -> ∃! L : Line, (P on L) ∧ (Q on L)
+atlas axiom I.1 "Two distinct points determine a unique line through them"
+  : ∀ P Q : Point, P ≠ Q -> ∃! L : Line, (P on L) ∧ (Q on L)
+attribute [simp] «Two distinct points determine a unique line through them»
+
 /-- For any line, there are at least two distinct points on it -/
-@[simp] axiom I2 : ∀ L : Line, ∃ A B : Point, A ≠ B ∧ (A on L) ∧ (B on L)
+atlas axiom I.2 "Every line contains at least two distinct points"
+  : ∀ L : Line, ∃ A B : Point, A ≠ B ∧ (A on L) ∧ (B on L)
+attribute [simp] «Every line contains at least two distinct points»
+
 /-- There exists three distinct points not on any single line ("There exists
 three non-collinear points", but without mentioning the undefined notion of collinearity) -/
-@[simp] axiom I3 : ∃ A B C : Point, (A ≠ B ∧ A ≠ C ∧ B ≠ C) ∧ (∀ (L : Line), (A on L) → (B on L) → (C off L))
+atlas axiom I.3 "There exist three points not all lying on a common line"
+  : ∃ A B C : Point, (A ≠ B ∧ A ≠ C ∧ B ≠ C) ∧ (∀ (L : Line), (A on L) → (B on L) → (C off L))
+attribute [simp] «There exist three points not all lying on a common line»
 
 /--
 p.70 "Three ... lines ... are _concurrent_ if there exists a point incident with all of them"
@@ -167,7 +180,9 @@ macro_rules
 /--
 p.108a "If A - B - C, then A,B,C are distinct points on the same line...
 -/
-@[simp] axiom B1a {A B C : Point} : A - B - C -> distinct A B C ∧ collinear A B C
+atlas axiom ["B.1.a"] "A-B-C implies A B C are distinct and collinear"
+  {A B C : Point} : A - B - C -> distinct A B C ∧ collinear A B C
+attribute [simp] «A-B-C implies A B C are distinct and collinear»
 
 
 /--
@@ -178,7 +193,9 @@ a bit easier. The author even notes, "The second part (C * B * A) makes the obvi
 that 'betwen A and C' means the same as 'between C and A'" Making it a separate axiom means
 I won't have to dig it out of the pile of parts that is 1a.
 -/
-@[simp] axiom B1b {A B C : Point} : A - B - C ↔ C - B - A
+atlas axiom ["B.1.b"] "Betweenness is invariant under endpoint reversal"
+  {A B C : Point} : A - B - C ↔ C - B - A
+attribute [simp] «Betweenness is invariant under endpoint reversal»
 
 
 /--
@@ -189,39 +206,48 @@ Ed. I like to call this the 'density' axiom because, used recursively, it posits
 something like the density of rationals -- for any two distinct points on a
 line, there is always a point between them.
 -/
-@[simp] axiom B2 : ∀ B D : Point, B ≠ D ->
+atlas axiom B.2 "Two distinct points admit a left, middle, and right witness on their line"
+  : ∀ B D : Point, B ≠ D ->
   ∃ A C E : Point, collinear A B C D E ∧ distinct A B C D E ∧ (A - B - D) ∧ (B - C - D) ∧ (B - D - E)
+attribute [simp] «Two distinct points admit a left, middle, and right witness on their line»
 
 
 /-- Construct a point 'to the left' of points BD on the induced line B D -/
-lemma B2.left : ∀ B D : Point, B ≠ D -> ∃ A : Point, collinear A B D ∧ distinct A B D ∧ (A - B - D) := by
+atlas lemma 1.0.5 "Density axiom witness: a point left of two distinct points"
+  : ∀ B D : Point, B ≠ D -> ∃ A : Point, collinear A B D ∧ distinct A B D ∧ (A - B - D) := by
       intro B D BneD
-      have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := B2 B D BneD
+      have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := ref axiom B.2 B D BneD
       use A
-      simp_all only [ne_eq, B1b, B1a, and_self]
+      simp_all only [ne_eq, «Betweenness is invariant under endpoint reversal», «A-B-C implies A B C are distinct and collinear», and_self]
+
 
 /-- Construct a point 'in between' points BD on the induced line B D -/
-lemma B2.center : ∀ B D : Point, B ≠ D -> ∃ C : Point, collinear B C D ∧ distinct B C D ∧ (B - C - D) := by
+atlas lemma 1.0.6 "Density axiom witness: a point between two distinct points"
+  : ∀ B D : Point, B ≠ D -> ∃ C : Point, collinear B C D ∧ distinct B C D ∧ (B - C - D) := by
       intro B D BneD
-      have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := B2 B D BneD
+      have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := ref axiom B.2 B D BneD
       use C
-      simp_all only [ne_eq, B1b, B1a, and_self]
+      simp_all only [ne_eq, «Betweenness is invariant under endpoint reversal», «A-B-C implies A B C are distinct and collinear», and_self]
 
 
 /-- Construct a point 'to the right' points BD on the induced line B D -/
-lemma B2.right : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ distinct B D E ∧ (B - D - E) := by
+atlas lemma 1.0.7 "Density axiom witness: a point right of two distinct points"
+  : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ distinct B D E ∧ (B - D - E) := by
       intro B D BneD
-      have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := B2 B D BneD
+      have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := ref axiom B.2 B D BneD
       use E
-      simp_all only [ne_eq, B1b, B1a, and_self]
+      simp_all only [ne_eq, «Betweenness is invariant under endpoint reversal», «A-B-C implies A B C are distinct and collinear», and_self]
+
 
 /-- p.108 "If A, B, and C are three distinct points lying on the same line, then
  one and only one of the points is between the other two."
 -/
-@[simp] axiom B3 : ∀ A B C : Point, distinct A B C ∧ collinear A B C ->
+atlas axiom B.3 "Three distinct collinear points have exactly one between-arrangement"
+  : ∀ A B C : Point, distinct A B C ∧ collinear A B C ->
   ( (A - B - C) ∧ ¬(B - A - C) ∧ ¬(A - C - B)) ∨
   (¬(A - B - C) ∧  (B - A - C) ∧ ¬(A - C - B)) ∨
   (¬(A - B - C) ∧ ¬(B - A - C) ∧  (A - C - B))
+attribute [simp] «Three distinct collinear points have exactly one between-arrangement»
 
 /--
 p.110 "Definition. Let L be any line, and A and B points that do not lie on L. If A = B or if the segment A B
@@ -241,27 +267,25 @@ notation:20 L " splits " A " and " B => ¬(SameSide A B L)
 notation:20 L " guards " A " and " B => SameSide A B L
 
 /--
-Ed. The author refers to the law of the excluded middle, Lean does not include it by default and
-generally I want to avoid including it everywhere, this is a limited application of it which
-should help our purpose.
--/
-@[simp] axiom LotEMGuards : (L splits A and B) ∨ (L guards A and B)
-
-/--
 p.110 "Betweenness Axiom 4 (Plane Separation). For every line L and for any
 three points A, B, and C not on L: (i) If A and B are on the same side of L and
 if B and C are on the same side of L, the A and C are on the same side of L..."
 -/
-@[simp] axiom B4i {A B C : Point} {L : Line} :
+atlas axiom ["B.4.i"] "Same-side is transitive across a common middle point"
+  {A B C : Point} {L : Line} :
   (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L guards A and B) ∧ (L guards B and C) -> (L guards A and C)
+attribute [simp] «Same-side is transitive across a common middle point»
+
 /--
 "... (ii) If A and B are on opposite sides of L and if B and C are opposite
 sides of L, then A and C are on the same side of L."
 -/
-@[simp] axiom B4ii {A B C : Point} {L : Line} :
+atlas axiom ["B.4.ii"] "Two opposite-side relations chain to a same-side relation"
+  {A B C : Point} {L : Line} :
   (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L splits A and B) ∧ (L splits B and C) -> (L guards A and C)
+attribute [simp] «Two opposite-side relations chain to a same-side relation»
 
 @[reducible] def Intersects (L M : Line) (X : Point) : Prop := L ∩ M = {X}
 
@@ -271,14 +295,15 @@ sides of L, then A and C are on the same side of L."
     below renders this as `L intersects M` in proof states.
 
     Going from this to a unique intersection point (`L intersects M at X`)
-    requires extra work — typically `Intersection.specification` for lines,
+    requires extra work — typically `ref lemma 3.0.1` for lines,
     which uses `line_trichotomy` to rule out coincidence. -/
 def IntersectsSome (L M : Set Point) : Prop := Set.Nonempty (L ∩ M)
 
 /-- Extract a point in the intersection from a bare `intersects` hypothesis.
     Note: the returned `X` is *some* shared point, not necessarily a unique one. -/
-lemma IntersectsSome.intersection_point {L M : Set Point} (h : IntersectsSome L M) :
-    ∃ X, X ∈ L ∩ M := h
+lemma IntersectsSome.intersection_point {L M : Set Point} (h : IntersectsSome L M)
+  : ∃ X, X ∈ L ∩ M := h
+
 
 -- Syntax for "L intersects M at X" (specific intersection point) and the bare
 -- form "L intersects M" asserting a unique shared point exists.
@@ -354,7 +379,7 @@ macro "obvious" : tactic =>
           -- line parts
           Segment, Ray, Extension, LineThrough,
           -- betweenness normalizing
-          B1b,
+          «Betweenness is invariant under endpoint reversal»,
           -- propositional stuff
           ne_eq, true_or, or_true, false_or, or_false, or_self,
           true_and, and_true, false_and, and_false, and_self,

@@ -12,7 +12,7 @@ open Geometry.Theory
 atlas proposition 2.4 "Every point has at least one line not through it"
   (P : Point) : ∃ L : Line, (P off L) := by
     -- Similar to 2.3, but using 2.2's configuration.
-    obtain ⟨L, M, N, hDistinct, hNC⟩ := Geometry.Ch2.Prop.P2
+    obtain ⟨L, M, N, hDistinct, hNC⟩ := proposition 2.2
     unfold Concurrent at hNC
     by_contra! hNeg
     push_neg at *
@@ -21,6 +21,5 @@ atlas proposition 2.4 "Every point has at least one line not through it"
     have PoffN := hNC (hNeg L) (hNeg M)
     contradiction
 
-alias P4 := «Every point has at least one line not through it»
 
 end Geometry.Ch2.Prop

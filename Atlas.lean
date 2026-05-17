@@ -176,10 +176,25 @@ initialize registerBuiltinAttribute {
 
 declare_syntax_cat atlasNum
 -- Lean lexes `3.4` / `0.1` as a single `scientific` token, NOT as
--- `num "." num` (which would require whitespace). For text-style refs
--- like `I.1`, use `ident "." num`.
+-- `num "." num` (which would require whitespace).
+--
+-- Supported forms:
+--   * `3.4` — single scientific (book chapter . prop number)
+--   * `I.1` — `ident "." num` for letter-prefixed axioms
+--   * `2.0.1` — `scientific "." num` for theory lemmas keyed
+--     `chapter . level . index`
+--
+-- For compound book labels like `B.1.a` (Greenberg's Betweenness Axiom
+-- 1, part a), the bare-dotted form `B.1.a` cannot be written: Lean's
+-- lexer reads `1.` as the start of a decimal literal and then errors
+-- on the trailing letter. Use a bracketed-string fallback instead:
+-- `atlas axiom ["B.1.a"] "Title" : T`. The brackets disambiguate from
+-- the un-numbered `atlas <kind> "Title" ...` form (which has only one
+-- leading string).
 syntax scientific  : atlasNum
 syntax ident "." num : atlasNum
+syntax scientific "." num : atlasNum
+syntax "[" str "]"   : atlasNum
 
 /-- Pull the source text out of a parsed scientific-literal node.
     Lean wraps the literal in a node whose first child is the atom. -/
@@ -189,13 +204,18 @@ private def scientificAtomText (s : TSyntax `scientific) : Option String :=
   | _ => none
 
 /-- Render an `atlasNum` syntax tree to the canonical string we store
-    and look up. `3.4` → `"3.4"`, `I.1` → `"I.1"`. -/
+    and look up. `3.4` → `"3.4"`, `I.1` → `"I.1"`, `"B.1.a"` → `"B.1.a"`. -/
 def atlasNumToString : TSyntax `atlasNum → MacroM String
+  | `(atlasNum| $s:scientific . $n:num) =>
+    match scientificAtomText s with
+    | some str => return s!"{str}.{n.getNat}"
+    | none     => Macro.throwUnsupported
   | `(atlasNum| $s:scientific) =>
     match scientificAtomText s with
     | some str => return str
     | none     => Macro.throwUnsupported
   | `(atlasNum| $i:ident . $n:num) => return s!"{i.getId}.{n.getNat}"
+  | `(atlasNum| [ $s:str ]) => return s.getString
   | _ => Macro.throwUnsupported
 
 /-! ## Command macros -/
@@ -262,22 +282,24 @@ private def expandAtlasDef
   | none =>
     `(@[atlas $kindLit $numLit $title] def $ident $binders* : $ty := $body)
 
--- Every kind is reached by prefixing `atlas` to the kind keyword. This
--- sidesteps the parser conflict for `theorem`/`lemma`/`axiom` — `atlas`
--- isn't reserved, so the production is unambiguous. Uniform shape:
+-- Every atlas decl carries a number — this is what lets us add the
+-- uniform term-position `atlas <kind> <num>` form below without parser
+-- ambiguity. (An un-numbered command form would compete with that term
+-- form on the `atlas <ident>` prefix and prevent backtracking.)
 --
---     atlas proposition 3.4 "Pasch's Postulate" : T := by …
---     atlas theorem     3.7 "Major Result"      : T := by …
---     atlas axiom       I.1 "Two-point line"    : T
+-- For theory lemmas without a book reference, use the three-part
+-- `<chapter>.<level>.<index>` scheme — `<chapter>` is the book chapter
+-- the file belongs to, `<level>` is the proposition number that the
+-- lemma's deps require (0 if independent), `<index>` is sequential.
+--
 -- The kind word is parsed as `rawIdent` — accepts any identifier
 -- including those reserved as keywords elsewhere (Mathlib's `lemma`,
--- Lean's `axiom`, etc.). This is what lets `atlas lemma "Title"` coexist
--- with bare `lemma X : T := body` in the same module: no token shadowing.
--- The kind ident's text is validated in `macro_rules` below.
+-- Lean's `axiom`, etc.). This is what lets `atlas lemma <num> "Title"`
+-- coexist with bare `lemma X : T := body` in the same module: no
+-- token shadowing. The kind ident's text is validated in `macro_rules`
+-- below.
 syntax (docComment)? "atlas" rawIdent atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" rawIdent atlasNum str (bracketedBinder)* ":" term            : command
-syntax (docComment)? "atlas" rawIdent str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" rawIdent str (bracketedBinder)* ":" term            : command
 
 -- Known kinds that expand to `def`; everything else expands to
 -- `theorem` (or `axiom` for the body-less arm).
@@ -302,23 +324,6 @@ macro_rules
         Macro.throwErrorAt k
           s!"atlas {kind} requires `:= body` (only `atlas axiom` is body-less)"
       expandAtlasAxiom kind (← atlasNumToString n) t bs doc? ty
-  -- Un-numbered, body-having.
-  | `($[$doc?:docComment]? atlas $k:ident $t:str $bs:bracketedBinder* : $ty := $b) => do
-      let kind := k.raw.getId.toString
-      if kind == "axiom" then
-        Macro.throwErrorAt k
-          "atlas axiom takes no `:= body`; write `atlas axiom \"<title>\" : <type>`"
-      if isDefKind kind then
-        expandAtlasDef kind "" t bs doc? ty b
-      else
-        expandAtlasTheorem kind "" t bs doc? ty b
-  -- Un-numbered axiom.
-  | `($[$doc?:docComment]? atlas $k:ident $t:str $bs:bracketedBinder* : $ty) => do
-      let kind := k.raw.getId.toString
-      if kind != "axiom" then
-        Macro.throwErrorAt k
-          s!"atlas {kind} requires `:= body` (only `atlas axiom` is body-less)"
-      expandAtlasAxiom kind "" t bs doc? ty
 
 /-! ## Reference (term-position) elaboration -/
 
@@ -333,12 +338,25 @@ private def elabAtlasRefAux (kind : String) (num : TSyntax `atlasNum)
       match scientificAtomText s with
       | some str => pure str
       | none     => throwError "atlas: malformed number reference (scientific)"
+    | `(atlasNum| $s:scientific . $n:num) =>
+      match scientificAtomText s with
+      | some str => pure s!"{str}.{n.getNat}"
+      | none     => throwError "atlas: malformed number reference (scientific.num)"
     | `(atlasNum| $i:ident . $n:num) => pure s!"{i.getId}.{n.getNat}"
+    | `(atlasNum| [ $s:str ]) => pure s.getString
     | _ => throwError "atlas: malformed number reference"
   let env ← getEnv
   match atlasLookupByNumber env kind numStr with
   | []  => throwError s!"atlas: no {kind} tagged `{numStr}` found"
-  | [n] => Lean.Meta.mkConstWithFreshMVarLevels n
+  | [n] =>
+    -- Delegate to the standard term elaborator on a synthesised identifier
+    -- so implicit-arg metavars are inserted the same way they would be
+    -- when the user writes the constant name directly. Plain
+    -- `mkConstWithFreshMVarLevels` returns the Π-typed constant without
+    -- opening its implicit binders, which fails when the ref is used in
+    -- application position against an expected type that already has
+    -- those implicits resolved.
+    Lean.Elab.Term.elabTerm (mkIdent n) none
   | ns  =>
     -- Multiple decls share this (kind, number). Refuse to pick one
     -- silently; list the titles so the user can disambiguate via the
@@ -371,6 +389,15 @@ syntax:max "remark"      atlasNum : term
 syntax:max "postulate"   atlasNum : term
 syntax:max "definition"  atlasNum : term
 
+-- Uniform `atlas <kind> <num>` term-position form. Works for *every*
+-- atlas kind including `lemma`/`axiom`/`theorem` (which can't have bare
+-- term keywords because that would reserve those tokens and break bare
+-- command parsing of `lemma X.Y {b}: T := body`). The leading `"atlas"`
+-- keyword disambiguates from the command form: command needs a string
+-- title next, term form takes an `atlasNum` (none of whose variants
+-- start with `"`, since the string-form is bracketed as `["..."]`).
+syntax:max "ref" rawIdent atlasNum : term
+
 elab_rules : term
   | `(term| proposition $n:atlasNum) => elabAtlasRefAux "proposition" n
   | `(term| alternate   $n:atlasNum) => elabAtlasRefAux "alternate"   n
@@ -379,5 +406,7 @@ elab_rules : term
   | `(term| remark      $n:atlasNum) => elabAtlasRefAux "remark"      n
   | `(term| postulate   $n:atlasNum) => elabAtlasRefAux "postulate"   n
   | `(term| definition  $n:atlasNum) => elabAtlasRefAux "definition"  n
+  | `(term| ref $k:ident $n:atlasNum) =>
+      elabAtlasRefAux k.getId.toString n
 
 end Atlas

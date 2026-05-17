@@ -26,20 +26,19 @@ atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct pr
     intro Q
     by_contra! ⟨hQonLM, hNeg⟩
     -- idea, PQ = L, PQ = M, but L != M
-    obtain ⟨PQ, _, hPQUniq⟩ := I1 P Q hNeg.symm
+    obtain ⟨PQ, _, hPQUniq⟩ := ref axiom I.1 P Q hNeg.symm
     have hLisPQ := hPQUniq L ⟨hPonLM.left, hQonLM.left⟩
     have hMisPQ := hPQUniq M ⟨hPonLM.right, hQonLM.right⟩
     have hLeqM : (L = M) := by
         rw [hMisPQ, hLisPQ]
     contradiction
 
--- Compatibility aliases: original names were `P1.direct` and `P1`.
-alias P1.direct := «Distinct non-parallel lines share a unique point (direct proof)»
+-- Compatibility aliases: original names were `alternate 2.1` and `P1`.
 
 /-- A corrolary of the main theorem that is more useful since it uses the syntax directly. -/
 atlas proposition 2.1 "Distinct non-parallel lines share a unique point"
   (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M at X := by
-    obtain ⟨P, ⟨PonL, PonM⟩, Puniq⟩ := P1.direct LneM LnoparM
+    obtain ⟨P, ⟨PonL, PonM⟩, Puniq⟩ := alternate 2.1 LneM LnoparM
     use P
     constructor
     · unfold Intersects
@@ -60,6 +59,5 @@ atlas proposition 2.1 "Distinct non-parallel lines share a unique point"
       tauto
 
 -- Compatibility alias for the original simple-name reference.
-alias P1 := «Distinct non-parallel lines share a unique point»
 
 end Geometry.Ch2.Prop

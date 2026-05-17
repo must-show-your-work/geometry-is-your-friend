@@ -33,13 +33,13 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
   : (A - B - C) ∧ (A - C - D) -> B - C - D := by
   /- (1) A, B, C, and D are distinct, collinear points (see Exercise 1). -/
   intro ⟨ABC, ACD⟩
-  have distinctABCD := Ex1.a ⟨ABC, ACD⟩
+  have distinctABCD := «Exercise 1(a): four points from chained betweenness are distinct» ⟨ABC, ACD⟩
   separate at distinctABCD
-  have cL := Ex1.b ⟨ABC, ACD⟩
+  have cL := «Exercise 1(b): four points from chained betweenness are collinear» ⟨ABC, ACD⟩
   /- (2) There exists a point E not on the line through A,B,C,D (Proposition 2.3) -/
-  have LeqAB : cL = line A B := Line.equiv AneB
-    ⟨cL.mem A, Line.line_has_definition_points.left, cL.mem B, Line.line_has_definition_points.right⟩
-  have ⟨E, EoffcL⟩ := Ch2.Prop.P3 cL
+  have LeqAB : cL = line A B := ref lemma 2.0.2 AneB
+    ⟨cL.mem A, ref lemma 1.0.23, cL.mem B, ref lemma 1.0.24⟩
+  have ⟨E, EoffcL⟩ := proposition 2.3 cL
   /- (3) Consider line EC. Since (by hypothesis) AD meets this line in point C,... -/
   let EC := line E C
   -- {Ed} Missing these simple conditions
@@ -48,26 +48,29 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
   have DonAB : D on cL.line := cL.mem D
   -- TODO: I need better tools for proving lines different from each other
   have LneEC : cL ≠ EC := by
-    have EonEC : E on EC := Line.line_has_definition_points.left
+    have EonEC : E on EC := ref lemma 1.0.23
     by_contra! hNeg; rw [hNeg] at EoffcL; contradiction
-  have ConEC : C on EC := Line.line_has_definition_points.right
+  have ConEC : C on EC := ref lemma 1.0.24
   have ConLintEC : C on cL ∩ EC := ⟨cL.mem C, ConEC⟩
   have LnparEC : cL ∦ EC := by
     by_contra! hNeg
-    have emptyInter := Intersection.parallel_intersection_is_empty cL EC LneEC hNeg
+    have emptyInter := ref lemma 2.0.19 cL EC LneEC hNeg
     rw [emptyInter] at ConLintEC
     contradiction
-  have LintECatC : cL intersects EC at C := (Intersection.single_point_of_intersection C cL EC ⟨LneEC, LnparEC⟩).mp ConLintEC
-  have AoffEC : A off EC := (Intersection.miss_means_off AneC LintECatC).resolve_left (not_not.mpr (cL.mem A))
-  have BoffEC : B off EC := (Intersection.miss_means_off BneC LintECatC).resolve_left (not_not.mpr (cL.mem B))
-  have DoffEC : D off EC := (Intersection.miss_means_off CneD.symm LintECatC).resolve_left (not_not.mpr (cL.mem D))
+  have LintECatC : cL intersects EC at C := (ref lemma 2.0.20 C cL EC ⟨LneEC, LnparEC⟩).mp ConLintEC
+  have AoffEC : A off EC := (ref lemma 2.0.26 AneC LintECatC).resolve_left (not_not.mpr (cL.mem A))
+  have BoffEC : B off EC := (ref lemma 2.0.26 BneC LintECatC).resolve_left (not_not.mpr (cL.mem B))
+  have DoffEC : D off EC := (ref lemma 2.0.26 CneD.symm LintECatC).resolve_left (not_not.mpr (cL.mem D))
   -- {/Ed}
   /- ... points A and D are on opposite sides of EC -/
-  have ECsplitsAandD : EC splits A and D := Intersection.splits_points ACD (Intersection.symm.mpr LintECatC)
+  -- TODO[refactor]: nested ref-in-ref ("Demeter violation for proofs") — `ref lemma
+  -- 2.0.25 _ ((ref lemma 1.0.31).mpr _)` chains two atlas refs through a `.mpr`. Lift
+  -- the inner symm-application out into a `have`, or introduce a small adapter lemma.
+  have ECsplitsAandD : EC splits A and D := ref lemma 2.0.25 ACD ((ref lemma 1.0.31).mpr LintECatC)
   /- (4) We claim A and B are on the same side of EC. Assume on the contrary that A and B are on opposite sides of EC
      (RAA Hypothesis)
 
-     {Ed} This section is proved without the use of Intersection.between_splits, which matches the book closely, but the core
+     {Ed} This section is proved without the use of ref lemma 2.0.27, which matches the book closely, but the core
      argument is not extracted, just left to intuition. This is fine for humans, but it means a very long and inscrutable
      proof in Lean, replicated ~4 times over, which sucks. So this matches the book, the other branches of this will use the
      lemma. {/Ed}
@@ -75,12 +78,12 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
   by_cases raa : EC splits A and B
   · /- p113. (5) Then EC meets AB in a point between A and B (definition of "opposite sides" [ed. "splits" in our parlance]). -/
     have ⟨X, LintECatX, Xuniq⟩ : ∃! X : Point, (cL intersects EC at X) := by
-      rcases Line.line_trichotomy cL EC with LparEC | LintECatX | LeqEC
+      rcases ref lemma 2.0.1 cL EC with LparEC | LintECatX | LeqEC
       · exfalso; rwa [LparEC] at ConLintEC
       · exact LintECatX
       · exfalso; rw [<- LeqEC] at AoffEC; contradiction
     -- {Ed} need this for a step below
-    have ⟨XonL, XonEC⟩ := Intersection.inter_touch LintECatX
+    have ⟨XonL, XonEC⟩ := ref lemma 1.0.34 LintECatX
     -- {/Ed}
     have AXB : A - X - B := by
       have colAXB : collinear A X B := by
@@ -88,9 +91,9 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
         intro P PinAXB
         simp only [Finset.mem_insert, Finset.mem_singleton] at PinAXB
         rcases PinAXB with PeqA | PeqX | PeqB
-        · rw [PeqA, LeqAB]; exact Line.line_has_definition_points.left
+        · rw [PeqA, LeqAB]; exact ref lemma 1.0.23
         · rwa [PeqX]
-        · rw [PeqB, LeqAB]; exact Line.line_has_definition_points.right
+        · rw [PeqB, LeqAB]; exact ref lemma 1.0.24
       have AneX : A ≠ X := by by_contra! hNeg; rw [hNeg] at AoffEC; contradiction
       have BneX : B ≠ X := by by_contra! hNeg; rw [hNeg] at BoffEC; contradiction
       have distinctAXB : distinct A X B := by
@@ -98,34 +101,34 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
         rw [Finset.card_insert_of_notMem (by simp [AneX, AneB])]
         rw [Finset.card_insert_of_notMem (by simp [BneX.symm])]
         rfl
-      rcases B3 A X B ⟨distinctAXB, colAXB⟩ with ⟨AXB, _⟩ | reject
+      rcases ref axiom B.3 A X B ⟨distinctAXB, colAXB⟩ with ⟨AXB, _⟩ | reject
       · exact AXB
       · have ECguardsAB : EC guards A and B := by
           refine ⟨AoffEC, BoffEC, Or.inr ?_⟩
           by_contra! hNeg
           have ⟨P, PonAB, PonEC⟩ := hNeg
-          have PinIntLine : P ∈ EC ∩ (line A B) := Set.inter_subset_inter_right EC Line.seg_sub_line ⟨PonEC, PonAB⟩
+          have PinIntLine : P ∈ EC ∩ (line A B) := Set.inter_subset_inter_right EC ref lemma 2.0.5 ⟨PonEC, PonAB⟩
           have APB : A - P - B := by
             rcases PonAB with APB | AeqP | BeqP
             · exact APB
             · exfalso; rw [<- AeqP] at PonEC; contradiction
             · exfalso; rw [<- BeqP] at PonEC; contradiction
-          have PeqX : P = X := Intersection.intersection_is_unique cL EC LneEC LnparEC ⟨LeqAB.symm ▸ PinIntLine.symm, ⟨XonL, XonEC⟩⟩
+          have PeqX : P = X := ref lemma 2.0.18 cL EC LneEC LnparEC ⟨LeqAB.symm ▸ PinIntLine.symm, ⟨XonL, XonEC⟩⟩
           rcases reject with ⟨_, XAB, _⟩ | ⟨_, _, ABX⟩
-          · exact Betweenness.absurdity_abc_bac ⟨PeqX.symm ▸ XAB, APB⟩
-          · exact Betweenness.absurdity_abc_acb ⟨APB, PeqX.symm ▸ ABX⟩
+          · exact ref lemma 1.0.36 ⟨PeqX.symm ▸ XAB, APB⟩
+          · exact ref lemma 1.0.37 ⟨APB, PeqX.symm ▸ ABX⟩
         contradiction
     /- (6) That point must be C (Proposition 2.1) -/
-    have CeqX : C = X := Intersection.uniq ⟨LintECatC, LintECatX⟩
+    have CeqX : C = X := ref lemma 1.0.30 ⟨LintECatC, LintECatX⟩
     /- (7) Thus A - B - C and A - C - B, which contradicts Betweenness Axiom 3. -/
     have ACB : A - C - B := CeqX.symm ▸ AXB
-    exfalso; exact Betweenness.absurdity_abc_acb ⟨ABC, ACB⟩
+    exfalso; exact ref lemma 1.0.37 ⟨ABC, ACB⟩
   · /- (8) Hence, A and B are on the same side of EC (RAA conclusion) -/
     push_neg at raa
     /- (9) B and D are on opposite sides of EC (steps 3 and 8 and the corrolary to Betweenness Axiom 4). -/
     have ECsplitsBandD : EC splits B and D := by
       by_contra! ECguardsBandD
-      have h := B4i ⟨AoffEC, BoffEC, DoffEC⟩ ⟨raa, ECguardsBandD⟩
+      have h := «Same-side is transitive across a common middle point» ⟨AoffEC, BoffEC, DoffEC⟩ ⟨raa, ECguardsBandD⟩
       contradiction
     /- (10) Hence, the point C of intersection of lines EC and BD lies between B and D (definition of "opposite sides";
        Proposition 2.1, i.e., that the point of intersection is unique). -/
@@ -133,9 +136,9 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
     push_neg at ECsplitsBandD
     specialize ECsplitsBandD BoffEC DoffEC
     have ⟨BneD, P, ⟨PonSegBD, PonEC⟩⟩ := ECsplitsBandD
-    have PinBDintEC : P ∈ line B D ∩ EC := ⟨(Line.seg_sub_line PonSegBD), PonEC⟩
-    have LeqBD : cL = line B D := LeqAB ▸ Line.equiv BneD
-      ⟨LeqAB ▸ BonAB, Line.line_has_definition_points.left, LeqAB ▸ DonAB, Line.line_has_definition_points.right⟩
+    have PinBDintEC : P ∈ line B D ∩ EC := ⟨(ref lemma 2.0.5 PonSegBD), PonEC⟩
+    have LeqBD : cL = line B D := LeqAB ▸ ref lemma 2.0.2 BneD
+      ⟨LeqAB ▸ BonAB, ref lemma 1.0.23, LeqAB ▸ DonAB, ref lemma 1.0.24⟩
     rw [LeqBD] at LintECatC
     rw [LintECatC] at PinBDintEC
     have PeqC : P = C := by tauto
@@ -151,59 +154,57 @@ a version of it optimized for tersity in the context of Lean. I think it reads a
 intuitive argument that the author makes into a bunch of type theoretic dust, which isn't my favorite thing in the
 world. -/
 
-alias P3.left := «Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D»
 
 /-- p.113 A similar argument involving EB proves that A - B - D (Ex 2(b)) -/
 atlas proposition 3.3 "Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D"
   : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   intro ⟨ABC, ACD⟩
-  have distinctABCD := Ex1.a ⟨ABC, ACD⟩
+  have distinctABCD := «Exercise 1(a): four points from chained betweenness are distinct» ⟨ABC, ACD⟩
   separate at distinctABCD
-  have cL := Ex1.b ⟨ABC, ACD⟩
-  have ⟨E, EoffcL⟩ := Ch2.Prop.P3 cL
+  have cL := «Exercise 1(b): four points from chained betweenness are collinear» ⟨ABC, ACD⟩
+  have ⟨E, EoffcL⟩ := proposition 2.3 cL
   let EB := line E B
-  have ⟨LneEB, LnparEB, LintEBatB⟩ := Intersection.auxillary_line_through (cL.mem B) EoffcL
-  have AoffEB := (Intersection.miss_means_off AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
-  have CoffEB := (Intersection.miss_means_off BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
-  have DoffEB := (Intersection.miss_means_off BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
-  have EBsplitsAC := Intersection.splits_points ABC (Intersection.symm.mpr LintEBatB)
-  have BCD := P3.left ⟨ABC, ACD⟩
-  have notCBD : ¬(C - B - D) := fun CBD => Betweenness.absurdity_abc_bac ⟨BCD, CBD⟩
-  have EBguardsCD := Intersection.guards_when_not_between BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
-  have EBsplitsAD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
-  exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
+  have ⟨LneEB, LnparEB, LintEBatB⟩ := ref lemma 2.0.28 (cL.mem B) EoffcL
+  have AoffEB := (ref lemma 2.0.26 AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
+  have CoffEB := (ref lemma 2.0.26 BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
+  have DoffEB := (ref lemma 2.0.26 BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
+  -- TODO[refactor]: same ref-in-ref pattern as `ECsplitsAandD` above.
+  have EBsplitsAC := ref lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
+  have BCD := «Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D» ⟨ABC, ACD⟩
+  have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
+  have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
+  have EBsplitsAD := corollary ["B.4.iii"] ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
+  exact ref lemma 2.0.27 AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
-alias P3.right := «Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D»
 
 /-- p.113, Corollary, Given A-B-C and B-C-D, then A-B-D... -/
 atlas corollary 3.3 "Corollary: A-B-D from chained betweenness A-B-C and B-C-D"
   : (A - B - C) ∧ (B - C - D) -> A - B - D := by
   intro ⟨ABC, BCD⟩
-  have distinctABCD := Ex1.a' ⟨ABC, BCD⟩
+  have distinctABCD := ref lemma 3.0.3 ⟨ABC, BCD⟩
   separate at distinctABCD
-  have cL := Ex1.b' ⟨ABC, BCD⟩
-  have ⟨E, EoffcL⟩ := Ch2.Prop.P3 cL
+  have cL := ref lemma 3.0.4 ⟨ABC, BCD⟩
+  have ⟨E, EoffcL⟩ := proposition 2.3 cL
   let EB := line E B
-  have ⟨LneEB, LnparEB, LintEBatB⟩ := Intersection.auxillary_line_through (cL.mem B) EoffcL
-  have AoffEB := (Intersection.miss_means_off AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
-  have CoffEB := (Intersection.miss_means_off BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
-  have DoffEB := (Intersection.miss_means_off BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
-  have EBsplitsAC := Intersection.splits_points ABC (Intersection.symm.mpr LintEBatB)
-  have notCBD : ¬(C - B - D) := fun CBD => Betweenness.absurdity_abc_bac ⟨BCD, CBD⟩
-  have EBguardsCD := Intersection.guards_when_not_between BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
-  have EBsplitsAD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
-  exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
+  have ⟨LneEB, LnparEB, LintEBatB⟩ := ref lemma 2.0.28 (cL.mem B) EoffcL
+  have AoffEB := (ref lemma 2.0.26 AneB LintEBatB).resolve_left (not_not.mpr (cL.mem A))
+  have CoffEB := (ref lemma 2.0.26 BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
+  have DoffEB := (ref lemma 2.0.26 BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
+  -- TODO[refactor]: same ref-in-ref pattern as `ECsplitsAandD` above.
+  have EBsplitsAC := ref lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
+  have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
+  have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
+  have EBsplitsAD := corollary ["B.4.iii"] ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
+  exact ref lemma 2.0.27 AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
-alias P3.corollary.left := «Corollary: A-B-D from chained betweenness A-B-C and B-C-D»
 
 /-- p.113 and A-C-D -/
 atlas corollary 3.3 "Corollary: A-C-D from chained betweenness A-B-C and B-C-D"
   : (A - B - C) ∧ (B - C - D) -> A - C - D := by
   intro ⟨ABC, BCD⟩
-  have ABD := P3.corollary.left ⟨ABC, BCD⟩
-  exact B1b.mp (P3.right ⟨B1b.mp BCD, B1b.mp ABD⟩)
+  have ABD := «Corollary: A-B-D from chained betweenness A-B-C and B-C-D» ⟨ABC, BCD⟩
+  exact «Betweenness is invariant under endpoint reversal».mp («Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D» ⟨«Betweenness is invariant under endpoint reversal».mp BCD, «Betweenness is invariant under endpoint reversal».mp ABD⟩)
 
-alias P3.corollary.right := «Corollary: A-C-D from chained betweenness A-B-C and B-C-D»
 
 
 /-

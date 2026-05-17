@@ -26,7 +26,7 @@ atlas proposition 3.1 "Two rays from common endpoints intersect in their segment
   · /- "Proof of (i):
        (1) By the definition of segment and ray, the segment A B ⊆ the ray A B [and ⊆ ray B A],
        so by definition of intersection, the segment AB ⊆ (ray A B ∩ ray B A)." -/
-    exact subset_inter Line.seg_sub_ray Line.segment_AB_sub_ray_BA
+    exact subset_inter ref lemma 2.0.4 ref lemma 2.0.14
   · /- (2) Conversely, let the point C belong to the intersection, `(ray A B ∩ ray B A)`; we wish
         to show that C belongs to the segment A B. -/
     intro C CinInt
@@ -46,16 +46,16 @@ atlas proposition 3.1 "Two rays from common endpoints intersect in their segment
         intro P PinABC
         simp only [Finset.mem_insert, Finset.mem_singleton] at PinABC
         rcases PinABC with eq | eq | eq
-        · rw [eq]; exact Line.ray_has_endpoints.left
-        · rw [eq]; exact Line.ray_has_endpoints.right
+        · rw [eq]; exact ref lemma 1.0.21
+        · rw [eq]; exact ref lemma 1.0.22
         · rw [eq]; exact CinInt.left
       /- "so exactly one of A - C - B, A - B - C, or C - A - B holds (Axiom B-3). ..." -/
       have ⟨ConAB, ConBA⟩ : C on ray A B ∧ C on ray B A := by tauto
-      rcases B3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, _, _⟩ | ⟨_, CAB, _⟩ | ⟨_, _ACB⟩
+      rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, _, _⟩ | ⟨_, CAB, _⟩ | ⟨_, _ACB⟩
       · /- "... (4) If A - B - C holds, then C is not on the ray B A; ..." -/
         exfalso;
         have CoffBA : C off ray B A := by
-          simp only [mem_union, mem_setOf_eq, B1b, ne_eq, not_or, not_and, not_not]
+          simp only [mem_union, mem_setOf_eq, «Betweenness is invariant under endpoint reversal», ne_eq, not_or, not_and, not_not]
           tauto
         contradiction
       · /- "... if C - A - B holds, then C is not on the ray A B. ..." -/
@@ -69,7 +69,6 @@ atlas proposition 3.1 "Two rays from common endpoints intersect in their segment
           cases)." -/
         tauto
 
-alias P1.i := «Two rays from common endpoints intersect in their segment»
 
 /-- p.109 "... (ii) Ray A B ∪ Ray B A = LineThrough A B" -/
 atlas proposition 3.1 "Two rays from common endpoints union to their line"
@@ -79,15 +78,15 @@ atlas proposition 3.1 "Two rays from common endpoints union to their line"
   apply Subset.antisymm
   · intro P PinUnion
     rcases PinUnion with PinAB | PinBA
-    · exact Line.ray_sub_line PinAB
-    · apply Line.ray_sub_line at PinBA
-      rwa [(@Line.commutes A B AneB)]
+    · exact ref lemma 1.0.18 PinAB
+    · apply ref lemma 1.0.18 at PinBA
+      rwa [(@Line.«Line A B equals line B A when A ≠ B» A B AneB)]
   · intro P PinLine
     -- Need to handle the equality cases first, we'll refer to these later in the proof
     by_cases AneP : A = P
-    · rw [<- AneP]; exact mem_union_left (ray B A) Line.ray_has_endpoints.left
+    · rw [<- AneP]; exact mem_union_left (ray B A) ref lemma 1.0.21
     by_cases BneP : B = P
-    · rw [<- BneP]; exact mem_union_left (ray B A) Line.ray_has_endpoints.right
+    · rw [<- BneP]; exact mem_union_left (ray B A) ref lemma 1.0.22
     -- the main proof
     rcases PinLine with eq | eq | tween | tween | tween
     -- the equality cases are handled separately above
@@ -95,7 +94,7 @@ atlas proposition 3.1 "Two rays from common endpoints union to their line"
     · exfalso; exact absurd eq.symm BneP
     -- the case where P is on the segment
     · have PonSegAB : P on segment A B := obvious
-      exact mem_union_left (ray B A) (Line.seg_sub_ray PonSegAB)
+      exact mem_union_left (ray B A) (ref lemma 2.0.4 PonSegAB)
     -- this is where we need the PneA and PneB conditions
     · have PonExtAB : P on extension A B := obvious
       left; right; exact PonExtAB
@@ -103,6 +102,5 @@ atlas proposition 3.1 "Two rays from common endpoints union to their line"
     · have PonExtBA : P on extension B A := obvious
       right; right; exact PonExtBA
 
-alias P1.ii := «Two rays from common endpoints union to their line»
 
 end Geometry.Ch3.Prop
