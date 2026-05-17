@@ -145,8 +145,12 @@ initialize registerBuiltinAttribute {
       throwError "atlas: `title` cannot be empty"
     let env := (← getEnv)
     let st  := atlasExt.getState env
-    if let some existing := st.byKindNumber.get? (kindStr ++ "/" ++ numStr) then
-      throwError s!"atlas: duplicate ({kindStr}, {numStr}) — already on `{existing}`"
+    -- Empty number is the convention for "no book reference"; skip the
+    -- (kind, number) duplicate check in that case since lots of theory
+    -- lemmas legitimately share the empty key.
+    if !numStr.isEmpty then
+      if let some existing := st.byKindNumber.get? (kindStr ++ "/" ++ numStr) then
+        throwError s!"atlas: duplicate ({kindStr}, {numStr}) — already on `{existing}`"
     if let some existing := st.byTitle.get? titleStr then
       throwError s!"atlas: duplicate title \"{titleStr}\" — already on `{existing}`"
     setEnv <| atlasExt.addEntry env (decl, kindStr, numStr, titleStr)
@@ -192,13 +196,16 @@ abbrev DocComment? := Option (TSyntax ``Lean.Parser.Command.docComment)
 
 /-- Generate `@[atlas "kind" "num" "title"] theorem «title» <binders> : type := body`,
     prepending an optional doc comment so the macro can be preceded by
-    `/-- … -/` like any builtin theorem. -/
+    `/-- … -/` like any builtin theorem. Helpers take `numStr : String`
+    directly — callers either feed `← atlasNumToString n` (numbered
+    form) or `""` (un-numbered form). The attribute hook treats empty
+    string as "no book number" and skips the (kind, number) duplicate
+    check accordingly. -/
 private def expandAtlasTheorem
-    (kind : String) (num : TSyntax `atlasNum)
+    (kind : String) (numStr : String)
     (title : TSyntax `str) (binders : BracketedBinders)
     (doc? : DocComment?) (ty body : Term)
     : MacroM (TSyntax `command) := do
-  let numStr ← atlasNumToString num
   let kindLit := Syntax.mkStrLit kind
   let numLit  := Syntax.mkStrLit numStr
   let ident   := mkIdent (Name.mkSimple title.getString)
@@ -210,11 +217,10 @@ private def expandAtlasTheorem
     `(@[atlas $kindLit $numLit $title] theorem $ident $binders* : $ty := $body)
 
 private def expandAtlasAxiom
-    (kind : String) (num : TSyntax `atlasNum)
+    (kind : String) (numStr : String)
     (title : TSyntax `str) (binders : BracketedBinders)
     (doc? : DocComment?) (ty : Term)
     : MacroM (TSyntax `command) := do
-  let numStr ← atlasNumToString num
   let kindLit := Syntax.mkStrLit kind
   let numLit  := Syntax.mkStrLit numStr
   let ident   := mkIdent (Name.mkSimple title.getString)
@@ -226,11 +232,10 @@ private def expandAtlasAxiom
     `(@[atlas $kindLit $numLit $title] axiom $ident $binders* : $ty)
 
 private def expandAtlasDef
-    (kind : String) (num : TSyntax `atlasNum)
+    (kind : String) (numStr : String)
     (title : TSyntax `str) (binders : BracketedBinders)
     (doc? : DocComment?) (ty body : Term)
     : MacroM (TSyntax `command) := do
-  let numStr ← atlasNumToString num
   let kindLit := Syntax.mkStrLit kind
   let numLit  := Syntax.mkStrLit numStr
   let ident   := mkIdent (Name.mkSimple title.getString)
@@ -248,6 +253,7 @@ private def expandAtlasDef
 --     atlas proposition 3.4 "Pasch's Postulate" : T := by …
 --     atlas theorem     3.7 "Major Result"      : T := by …
 --     atlas axiom       I.1 "Two-point line"    : T
+-- Numbered forms: `atlas <kind> <number> "<title>" …`. The book-style.
 syntax (docComment)? "atlas" "proposition" atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "corollary"   atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "exercise"    atlasNum str (bracketedBinder)* ":" term ":=" term : command
@@ -258,25 +264,60 @@ syntax (docComment)? "atlas" "theorem"     atlasNum str (bracketedBinder)* ":" t
 syntax (docComment)? "atlas" "lemma"       atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "axiom"       atlasNum str (bracketedBinder)* ":" term            : command
 
+-- Un-numbered forms: `atlas <kind> "<title>" …`. Used for theory lemmas
+-- and other things that aren't book-cited. The atlas attribute records
+-- `number = ""` for these; the (kind, number) duplicate check is
+-- skipped when the number is empty. Title duplicates are still
+-- prohibited.
+syntax (docComment)? "atlas" "proposition" str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "corollary"   str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "exercise"    str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "remark"      str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "postulate"   str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "definition"  str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "theorem"     str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "lemma"       str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "axiom"       str (bracketedBinder)* ":" term            : command
+
 macro_rules
-  | `($[$doc?:docComment]? atlas proposition $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "proposition" n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas corollary   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "corollary"   n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas exercise    $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "exercise"    n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas remark      $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "remark"      n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas postulate   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "postulate"   n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas definition  $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasDef     "definition"  n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas theorem     $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "theorem"     n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas lemma       $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "lemma"       n t bs doc? ty b
-  | `($[$doc?:docComment]? atlas axiom       $n:atlasNum $t:str $bs:bracketedBinder* : $ty) =>
-      expandAtlasAxiom   "axiom"       n t bs doc? ty
+  -- Numbered forms.
+  | `($[$doc?:docComment]? atlas proposition $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "proposition" (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas corollary   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "corollary"   (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas exercise    $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "exercise"    (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas remark      $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "remark"      (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas postulate   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "postulate"   (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas definition  $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasDef     "definition"  (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas theorem     $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "theorem"     (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas lemma       $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "lemma"       (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas axiom       $n:atlasNum $t:str $bs:bracketedBinder* : $ty) => do
+      expandAtlasAxiom   "axiom"       (← atlasNumToString n) t bs doc? ty
+  -- Un-numbered forms (empty `numStr`).
+  | `($[$doc?:docComment]? atlas proposition $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "proposition" "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas corollary   $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "corollary"   "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas exercise    $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "exercise"    "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas remark      $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "remark"      "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas postulate   $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "postulate"   "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas definition  $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasDef     "definition"  "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas theorem     $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "theorem"     "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas lemma       $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "lemma"       "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas axiom       $t:str $bs:bracketedBinder* : $ty) =>
+      expandAtlasAxiom   "axiom"       "" t bs doc? ty
 
 /-! ## Reference (term-position) elaboration -/
 

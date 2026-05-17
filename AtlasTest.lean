@@ -31,4 +31,10 @@ atlas definition 0.3 "Square of a Nat" (n : Nat) : Nat := n * n
 
 #eval definition 0.3 7  -- expects 49
 
+-- Un-numbered form: theory-style lemma with no book reference.
+atlas lemma "Addition associativity (Nat)"
+    (a b c : Nat) : a + b + c = a + (b + c) := by ac_rfl
+
+#check «Addition associativity (Nat)»
+
 end AtlasTest
