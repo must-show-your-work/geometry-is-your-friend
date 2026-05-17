@@ -9,6 +9,7 @@ import Geometry.Theory.Ch1
 import Geometry.Theory.Ch2
 import Geometry.Theory.Line.Ch2
 import Geometry.Theory.Betweenness.Ch2
+import Atlas
 
 import Geometry.Ch2.Prop
 import Geometry.Ch3.Prop.P1
@@ -32,13 +33,15 @@ previous proposition
 
 FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument.
 -/
-theorem B4iii :
-  (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
+atlas corollary "Corollary to B-4: splits + guards transitivity"
+  : (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
   intro ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
   have h := B4i ⟨AoffL, CoffL, BoffL⟩ ⟨LguardsAC, Betweenness.guards_commutes LguardsBC⟩
   contradiction
+
+alias B4iii := «Corollary to B-4: splits + guards transitivity»
 
 /-
 

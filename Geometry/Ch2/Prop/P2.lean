@@ -3,6 +3,7 @@ import Geometry.Tactics
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Line.Ch1
+import Atlas
 
 import Geometry.Ch2.Prop.P1
 
@@ -12,7 +13,8 @@ open Geometry.Theory
 
 
 /-- p71, "There exist three distinct lines that are not concurrent." -/
-@[simp] theorem P2 : ∃ L M N : Line, (L ≠ M ∧ M ≠ N ∧ L ≠ N) ∧ ¬Concurrent L M N := by
+atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
+  : ∃ L M N : Line, (L ≠ M ∧ M ≠ N ∧ L ≠ N) ∧ ¬Concurrent L M N := by
     -- Idea: Use the 3 non-collinear points to build three lines, we can prove they're distinct with
     -- some RAA, and then use the lemma to do the rest.
     obtain ⟨A, B, C, hDistinct, hNC⟩ := I3
@@ -69,5 +71,8 @@ open Geometry.Theory
     -- Use Non-collinearity to show non-concurrence
     specialize hNC AC hAonAC hBonAC
     contradiction
+
+attribute [simp] «Three distinct lines exist that are not concurrent»
+alias P2 := «Three distinct lines exist that are not concurrent»
 
 end Geometry.Ch2.Prop

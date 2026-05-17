@@ -15,6 +15,7 @@ keywords:
 
 ```
 atlas proposition 3.4 "Pasch's Postulate" : <type> := <proof>
+atlas alternate   3.4 "Pasch's Postulate (geometric proof)" : <type> := <proof>
 atlas corollary   3.5 "Triangle Inequality" : <type> := <proof>
 atlas exercise    3.7 "First Isomorphism" : <type> := <proof>
 atlas definition  2.1 "Linear Order" : <type> := <def>
@@ -71,18 +72,28 @@ structure AtlasEntry where
 abbrev AtlasRow := Name × String × String × String
 
 /-- In-memory state: per-decl entries plus the two reverse indexes used
-    by elab-term lookups. -/
+    by elab-term lookups.
+
+    `byKindNumber` stores a *list* of names per (kind, number) key
+    because multi-part propositions and alternate proofs legitimately
+    share keys. The elab term `proposition 3.4` consults this list:
+      • 0 entries → error "no decl tagged"
+      • 1 entry  → resolves unambiguously
+      • 2+       → error with the list of titles, prompting the user
+                   to disambiguate via the «Title» form. -/
 structure AtlasState where
   byName       : NameMap AtlasEntry           := {}
-  byKindNumber : Std.HashMap String Name      := {}  -- key: `"{kind}/{number}"`
+  byKindNumber : Std.HashMap String (List Name) := {}  -- key: `"{kind}/{number}"`
   byTitle      : Std.HashMap String Name      := {}
   deriving Inhabited
 
 private def insertEntry (s : AtlasState) (row : AtlasRow) : AtlasState :=
   let (n, k, num, t) := row
   let entry : AtlasEntry := { kind := k, number := num, title := t }
+  let key := k ++ "/" ++ num
+  let existing := s.byKindNumber.get? key |>.getD []
   { byName       := s.byName.insert n entry
-    byKindNumber := s.byKindNumber.insert (k ++ "/" ++ num) n
+    byKindNumber := s.byKindNumber.insert key (n :: existing)
     byTitle      := s.byTitle.insert t n }
 
 initialize atlasExt : SimplePersistentEnvExtension AtlasRow AtlasState ←
@@ -118,8 +129,11 @@ def atlasEntry? (env : Environment) (n : Name) : Option AtlasEntry :=
   | some e => some e
   | none   => (atlasStateFromImports env).byName.find? n
 
-def atlasLookupByNumber (env : Environment) (kind number : String) : Option Name :=
-  (atlasExt.getState env).byKindNumber.get? (kind ++ "/" ++ number)
+/-- Return every name tagged with `(kind, number)`. May be empty (no
+    match) or contain more than one entry (multi-part propositions,
+    alternate proofs, etc.). Callers decide how to handle ambiguity. -/
+def atlasLookupByNumber (env : Environment) (kind number : String) : List Name :=
+  (atlasExt.getState env).byKindNumber.get? (kind ++ "/" ++ number) |>.getD []
 
 def atlasLookupByTitle (env : Environment) (title : String) : Option Name :=
   (atlasExt.getState env).byTitle.get? title
@@ -145,12 +159,14 @@ initialize registerBuiltinAttribute {
       throwError "atlas: `title` cannot be empty"
     let env := (← getEnv)
     let st  := atlasExt.getState env
-    -- Empty number is the convention for "no book reference"; skip the
-    -- (kind, number) duplicate check in that case since lots of theory
-    -- lemmas legitimately share the empty key.
-    if !numStr.isEmpty then
-      if let some existing := st.byKindNumber.get? (kindStr ++ "/" ++ numStr) then
-        throwError s!"atlas: duplicate ({kindStr}, {numStr}) — already on `{existing}`"
+    -- No (kind, number) duplicate check: multi-part propositions
+    -- (P1.i, P1.ii sharing 3.1), alternate proofs, and theory lemmas
+    -- with empty numbers all legitimately share keys. Title
+    -- uniqueness is what catches real conflicts.
+    --
+    -- The elab terms (`proposition 3.4`, `alternate 3.4`, …) error
+    -- on ambiguous lookup — they refuse to silently pick one. The
+    -- user disambiguates via the `«Title»` form.
     if let some existing := st.byTitle.get? titleStr then
       throwError s!"atlas: duplicate title \"{titleStr}\" — already on `{existing}`"
     setEnv <| atlasExt.addEntry env (decl, kindStr, numStr, titleStr)
@@ -255,6 +271,7 @@ private def expandAtlasDef
 --     atlas axiom       I.1 "Two-point line"    : T
 -- Numbered forms: `atlas <kind> <number> "<title>" …`. The book-style.
 syntax (docComment)? "atlas" "proposition" atlasNum str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "alternate"   atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "corollary"   atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "exercise"    atlasNum str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "remark"      atlasNum str (bracketedBinder)* ":" term ":=" term : command
@@ -270,6 +287,7 @@ syntax (docComment)? "atlas" "axiom"       atlasNum str (bracketedBinder)* ":" t
 -- skipped when the number is empty. Title duplicates are still
 -- prohibited.
 syntax (docComment)? "atlas" "proposition" str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" "alternate"   str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "corollary"   str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "exercise"    str (bracketedBinder)* ":" term ":=" term : command
 syntax (docComment)? "atlas" "remark"      str (bracketedBinder)* ":" term ":=" term : command
@@ -283,6 +301,8 @@ macro_rules
   -- Numbered forms.
   | `($[$doc?:docComment]? atlas proposition $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
       expandAtlasTheorem "proposition" (← atlasNumToString n) t bs doc? ty b
+  | `($[$doc?:docComment]? atlas alternate   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      expandAtlasTheorem "alternate"   (← atlasNumToString n) t bs doc? ty b
   | `($[$doc?:docComment]? atlas corollary   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
       expandAtlasTheorem "corollary"   (← atlasNumToString n) t bs doc? ty b
   | `($[$doc?:docComment]? atlas exercise    $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
@@ -302,6 +322,8 @@ macro_rules
   -- Un-numbered forms (empty `numStr`).
   | `($[$doc?:docComment]? atlas proposition $t:str $bs:bracketedBinder* : $ty := $b) =>
       expandAtlasTheorem "proposition" "" t bs doc? ty b
+  | `($[$doc?:docComment]? atlas alternate   $t:str $bs:bracketedBinder* : $ty := $b) =>
+      expandAtlasTheorem "alternate"   "" t bs doc? ty b
   | `($[$doc?:docComment]? atlas corollary   $t:str $bs:bracketedBinder* : $ty := $b) =>
       expandAtlasTheorem "corollary"   "" t bs doc? ty b
   | `($[$doc?:docComment]? atlas exercise    $t:str $bs:bracketedBinder* : $ty := $b) =>
@@ -336,13 +358,26 @@ private def elabAtlasRefAux (kind : String) (num : TSyntax `atlasNum)
     | _ => throwError "atlas: malformed number reference"
   let env ← getEnv
   match atlasLookupByNumber env kind numStr with
-  | some n => Lean.Meta.mkConstWithFreshMVarLevels n
-  | none   => throwError s!"atlas: no {kind} tagged `{numStr}` found"
+  | []  => throwError s!"atlas: no {kind} tagged `{numStr}` found"
+  | [n] => Lean.Meta.mkConstWithFreshMVarLevels n
+  | ns  =>
+    -- Multiple decls share this (kind, number). Refuse to pick one
+    -- silently; list the titles so the user can disambiguate via the
+    -- `«Title»` form.
+    let st := atlasExt.getState env
+    let titles := ns.filterMap fun n =>
+      st.byName.find? n |>.map (fun e => s!"«{e.title}»")
+    throwError s!"atlas: reference {kind} {numStr} is ambiguous; \
+      matches {ns.length} decls — use one of: {titles}"
 
 -- `:max` precedence so these can stand in function position of an
 -- application: `lemma 0.2 heq` parses as `(lemma 0.2) heq` instead of
 -- consuming `heq` as part of the elab-term syntax and bailing.
 syntax:max "proposition" atlasNum : term
+-- `alternate N.K` refers to an alternate proof of proposition N.K.
+-- If multiple alternates share a number, the reference errors with
+-- the list of titles; use «Title» to disambiguate.
+syntax:max "alternate"   atlasNum : term
 syntax:max "corollary"   atlasNum : term
 syntax:max "exercise"    atlasNum : term
 syntax:max "remark"      atlasNum : term
@@ -354,6 +389,7 @@ syntax:max "axiom"       atlasNum : term
 
 elab_rules : term
   | `(term| proposition $n:atlasNum) => elabAtlasRefAux "proposition" n
+  | `(term| alternate   $n:atlasNum) => elabAtlasRefAux "alternate"   n
   | `(term| corollary   $n:atlasNum) => elabAtlasRefAux "corollary"   n
   | `(term| exercise    $n:atlasNum) => elabAtlasRefAux "exercise"    n
   | `(term| remark      $n:atlasNum) => elabAtlasRefAux "remark"      n

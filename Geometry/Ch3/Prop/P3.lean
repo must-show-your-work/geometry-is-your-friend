@@ -17,6 +17,7 @@ import Geometry.Theory.Betweenness.Ch2
 import Geometry.Theory.Line.Ch1
 import Geometry.Theory.Line.Ch2
 import Geometry.Theory.Forgetting
+import Atlas
 
 namespace Geometry.Ch3.Prop
 
@@ -28,7 +29,8 @@ open Geometry.Ch3.Ex
 
 
 /-- p112. Given A - B - C and A - C - D, then B - C - D and A - B - D (see Figure 3.9) -/
-theorem P3.left : (A - B - C) ∧ (A - C - D) -> B - C - D := by
+atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D"
+  : (A - B - C) ∧ (A - C - D) -> B - C - D := by
   /- (1) A, B, C, and D are distinct, collinear points (see Exercise 1). -/
   intro ⟨ABC, ACD⟩
   have distinctABCD := Ex1.a ⟨ABC, ACD⟩
@@ -149,8 +151,11 @@ a version of it optimized for tersity in the context of Lean. I think it reads a
 intuitive argument that the author makes into a bunch of type theoretic dust, which isn't my favorite thing in the
 world. -/
 
+alias P3.left := «Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D»
+
 /-- p.113 A similar argument involving EB proves that A - B - D (Ex 2(b)) -/
-theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by
+atlas proposition 3.3 "Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D"
+  : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   intro ⟨ABC, ACD⟩
   have distinctABCD := Ex1.a ⟨ABC, ACD⟩
   separate at distinctABCD
@@ -168,8 +173,11 @@ theorem P3.right : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   have EBsplitsAD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
   exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
+alias P3.right := «Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D»
+
 /-- p.113, Corollary, Given A-B-C and B-C-D, then A-B-D... -/
-lemma P3.corollary.left : (A - B - C) ∧ (B - C - D) -> A - B - D := by
+atlas corollary 3.3 "Corollary: A-B-D from chained betweenness A-B-C and B-C-D"
+  : (A - B - C) ∧ (B - C - D) -> A - B - D := by
   intro ⟨ABC, BCD⟩
   have distinctABCD := Ex1.a' ⟨ABC, BCD⟩
   separate at distinctABCD
@@ -186,11 +194,16 @@ lemma P3.corollary.left : (A - B - C) ∧ (B - C - D) -> A - B - D := by
   have EBsplitsAD := B4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
   exact Intersection.between_splits AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
+alias P3.corollary.left := «Corollary: A-B-D from chained betweenness A-B-C and B-C-D»
+
 /-- p.113 and A-C-D -/
-lemma P3.corollary.right : (A - B - C) ∧ (B - C - D) -> A - C - D := by
+atlas corollary 3.3 "Corollary: A-C-D from chained betweenness A-B-C and B-C-D"
+  : (A - B - C) ∧ (B - C - D) -> A - C - D := by
   intro ⟨ABC, BCD⟩
   have ABD := P3.corollary.left ⟨ABC, BCD⟩
   exact B1b.mp (P3.right ⟨B1b.mp BCD, B1b.mp ABD⟩)
+
+alias P3.corollary.right := «Corollary: A-C-D from chained betweenness A-B-C and B-C-D»
 
 
 /-

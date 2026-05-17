@@ -14,6 +14,7 @@ import Geometry.Theory.Line.Ch1
 import Geometry.Theory.Line.Ch2
 import Geometry.Theory.Collinear.Ch1
 import Geometry.Theory.Collinear.Ch2
+import Atlas
 
 namespace Geometry.Ch3.Ex
 
@@ -26,7 +27,8 @@ open Geometry.Ch3.Ex
 /-- p146. Given A-B-C and A-C-D:
   (a) Prove that A,B,C, and D are four distinct points (the proof requires an axiom)
 -/
-theorem Ex1.a : A - B - C ∧ A - C - D -> distinct A B C D := by
+atlas exercise 3.1 "Exercise 1(a): four points from chained betweenness are distinct"
+  : A - B - C ∧ A - C - D -> distinct A B C D := by
   intro ⟨ABC, ACD⟩
   have distinctABC := Betweenness.abc_imp_distinct ABC
   have distinctACD := Betweenness.abc_imp_distinct ACD
@@ -41,8 +43,11 @@ theorem Ex1.a : A - B - C ∧ A - C - D -> distinct A B C D := by
         Finset.mem_insert, Finset.mem_singleton,
         AneB, AneC, AneD, BneC, BneD, CneD]
 
+alias Ex1.a := «Exercise 1(a): four points from chained betweenness are distinct»
+
 /-- (b) Prove that A,B,C, and D are collinear -/
-theorem Ex1.b : A - B - C ∧ A - C - D -> collinear A B C D := by
+atlas exercise 3.1 "Exercise 1(b): four points from chained betweenness are collinear"
+  : A - B - C ∧ A - C - D -> collinear A B C D := by
   intro ⟨ABC, ACD⟩
   -- we only end up needing A ≠ C, but easy to get the whole thing.
   have distinctABCD := Ex1.a ⟨ABC, ACD⟩
@@ -62,12 +67,15 @@ theorem Ex1.b : A - B - C ∧ A - C - D -> collinear A B C D := by
     rw [<- LeqM] at DonM
     exact DonM
 
+alias Ex1.b := «Exercise 1(b): four points from chained betweenness are collinear»
+
 /-- (c) Prove the corrolary to B4
 Ed. Note that (c) is covered by the B4iii lemma in it's own file. -/
-alias Ex1.c := B4iii
+alias Ex1.c := «Corollary to B-4: splits + guards transitivity»
 
 /-- Ed. These (Ex1 a' and b') are not in the exercise but are quite convenient elsewhere -/
-lemma Ex1.a' : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
+atlas lemma "Distinct four points from shifted chained betweenness (A-B-C and B-C-D)"
+  : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
   intro ⟨ABC, BCD⟩
   have distinctABC := Betweenness.abc_imp_distinct ABC
   have distinctBCD := Betweenness.abc_imp_distinct BCD
@@ -82,7 +90,10 @@ lemma Ex1.a' : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
         Finset.mem_insert, Finset.mem_singleton,
         AneB, AneC, AneD, BneC, BneD, CneD]
 
-lemma Ex1.b' : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
+alias Ex1.a' := «Distinct four points from shifted chained betweenness (A-B-C and B-C-D)»
+
+atlas lemma "Collinear four points from shifted chained betweenness (A-B-C and B-C-D)"
+  : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
   intro ⟨ABC, BCD⟩
   -- we only end up needing A ≠ C, but easy to get the whole thing.
   have distinctABCD := Ex1.a' ⟨ABC, BCD⟩
@@ -102,5 +113,6 @@ lemma Ex1.b' : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
     rw [<- LeqM] at DonM
     exact DonM
 
+alias Ex1.b' := «Collinear four points from shifted chained betweenness (A-B-C and B-C-D)»
 
 end Geometry.Ch3.Ex

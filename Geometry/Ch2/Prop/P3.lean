@@ -2,12 +2,15 @@
 import Geometry.Tactics
 
 import Geometry.Theory.Axioms
+import Atlas
 
 open Geometry.Theory
 
+namespace Geometry.Ch2.Prop
+
 /-- p71, "For every line, there is at least one point not lying on it." -/
-theorem Geometry.Ch2.Prop.P3 :
-    ∀ L : Line, ∃ P : Point, (P off L) := by
+atlas proposition 2.3 "Every line has at least one point not on it"
+  : ∀ L : Line, ∃ P : Point, (P off L) := by
       intro L
       by_contra! hNeg
       -- idea: There exist three non-colinear points, but if all points are on L (hNeg), then
@@ -18,3 +21,7 @@ theorem Geometry.Ch2.Prop.P3 :
       have ConL := hNeg C
       specialize hNC L AonL BonL
       contradiction
+
+alias P3 := «Every line has at least one point not on it»
+
+end Geometry.Ch2.Prop

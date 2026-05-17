@@ -5,6 +5,7 @@ import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Ch2
 import Geometry.Tactics
+import Atlas
 
 import Geometry.Ch2.Prop
 import Geometry.Ch3.Prop.P1
@@ -22,7 +23,8 @@ open Geometry.Ch3.Prop
 B4 is the plane-separation axiom, 3.2 here is on the path toward proving the more useful line-separation property later in 3.4.
 I've chosen to notate the halfplanes in the theorem as 'Hl' and 'Hr' for 'left' and 'right' half-plane, respectively.
 -/
-theorem P2 : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
+atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
+  : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
   (∀ P : Point, (P on L) -> (P ∉ Hl) ∧ (P ∉ Hr)) ∧ (Hl ∩ Hr = ∅)
 := by
   /- p.112 "(1) There is a point A not lying on l, (Proposition 2.3 [Ch2.Prop.P3])." -/
@@ -151,6 +153,8 @@ theorem P2 : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,
     have CoffL : C off L := by tauto
     contradiction
   tauto
+
+alias P2 := «Every line bounds exactly two disjoint half-planes»
 
 /- I was frequently left to my own devices with respect to school. We did a correspondence video thing.
 I'd sit in the same room, for a while it was the couch in the living room, later it was a hard dining chair in our

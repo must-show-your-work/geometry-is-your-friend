@@ -1,6 +1,7 @@
 import Geometry.Tactics
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
+import Atlas
 
 namespace Geometry.Ch2.Prop
 
@@ -9,7 +10,8 @@ open Geometry.Theory
 
 /-- pp. 71: If `l` and `m` are distinct lines that are not parallel, then `l` and
  `m` have a unique point in common -/
-theorem P1.direct {L M : Line} :
+atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct proof)"
+  {L M : Line} :
   L ≠ M → (L ∦ M) → ∃! P : Point,
      (P on L) ∧ (P on M)
 := by
@@ -31,8 +33,12 @@ theorem P1.direct {L M : Line} :
         rw [hMisPQ, hLisPQ]
     contradiction
 
+-- Compatibility aliases: original names were `P1.direct` and `P1`.
+alias P1.direct := «Distinct non-parallel lines share a unique point (direct proof)»
+
 /-- A corrolary of the main theorem that is more useful since it uses the syntax directly. -/
-theorem P1 (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M at X := by
+atlas proposition 2.1 "Distinct non-parallel lines share a unique point"
+  (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M at X := by
     obtain ⟨P, ⟨PonL, PonM⟩, Puniq⟩ := P1.direct LneM LnoparM
     use P
     constructor
@@ -52,5 +58,8 @@ theorem P1 (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M
       specialize Puniq Q
       have QinLintM : Q ∈ L ∩ M := by rw [LintMatQ]; tauto
       tauto
+
+-- Compatibility alias for the original simple-name reference.
+alias P1 := «Distinct non-parallel lines share a unique point»
 
 end Geometry.Ch2.Prop

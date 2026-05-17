@@ -19,6 +19,7 @@ import Geometry.Theory.Betweenness.Ch2
 import Geometry.Theory.Line.Ch1
 import Geometry.Theory.Line.Ch2
 import Geometry.Theory.Forgetting
+import Atlas
 
 namespace Geometry.Ch3.Prop
 
@@ -30,7 +31,8 @@ open Geometry.Ch3.Ex
 
 /-- p. 113 If C - A - B and l is the line through A, B, and C (Betweenness Axiom 1), then for every point P lying on l,
 P lies either on ray A B or on the opposite ray A C. -/
-theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
+atlas proposition 3.4 "Line separation by an interior point: points on the line lie on one of two opposite rays"
+  {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
   /- Ed. Some mise en place -/
   clearly A ≠ P; clearly B ≠ P; clearly C ≠ P
   have distinctABCP : distinct A B C P := by
@@ -94,6 +96,8 @@ theorem P4 {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on r
           apply Line.seg_sub_ray at PonSegAB
           right; trivial
 
+alias P4 := «Line separation by an interior point: points on the line lie on one of two opposite rays»
+
 end Geometry.Ch3.Prop
 
 
@@ -101,7 +105,7 @@ namespace Line
 
 /-- P3.4 has a specific name, the line separation property, and so we alias it into the Line namespace for
  clarity later -/
-alias separation := Geometry.Ch3.Prop.P4
+alias separation := Geometry.Ch3.Prop.«Line separation by an interior point: points on the line lie on one of two opposite rays»
 
 end Line
 

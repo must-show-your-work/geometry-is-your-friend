@@ -8,6 +8,7 @@ import Geometry.Theory.Ch2
 import Geometry.Theory.Line.Ch2
 
 import Geometry.Tactics
+import Atlas
 
 namespace Geometry.Ch3.Prop
 
@@ -18,7 +19,8 @@ open Geometry.Theory
 -- states, but definitely implies, that `the ray A A` is degenerate because `A
 -- - A - B` and the like are degenerate
 /-- p.109, "For any two points A and B: (i) Ray A B ∩ Ray B A = Segment A B ..." -/
-theorem P1.i : A ≠ B -> (segment A B) = (ray A B) ∩ (ray B A) := by
+atlas proposition 3.1 "Two rays from common endpoints intersect in their segment"
+  : A ≠ B -> (segment A B) = (ray A B) ∩ (ray B A) := by
   intro AneB
   apply Subset.antisymm
   · /- "Proof of (i):
@@ -67,8 +69,11 @@ theorem P1.i : A ≠ B -> (segment A B) = (ray A B) ∩ (ray B A) := by
           cases)." -/
         tauto
 
+alias P1.i := «Two rays from common endpoints intersect in their segment»
+
 /-- p.109 "... (ii) Ray A B ∪ Ray B A = LineThrough A B" -/
-theorem P1.ii : A ≠ B -> -- Ed. Same as above.
+atlas proposition 3.1 "Two rays from common endpoints union to their line"
+  : A ≠ B -> -- Ed. Same as above.
   (ray A B) ∪ (ray B A) = (line A B) := by
   intro AneB
   apply Subset.antisymm
@@ -98,5 +103,6 @@ theorem P1.ii : A ≠ B -> -- Ed. Same as above.
     · have PonExtBA : P on extension B A := obvious
       right; right; exact PonExtBA
 
+alias P1.ii := «Two rays from common endpoints union to their line»
 
 end Geometry.Ch3.Prop

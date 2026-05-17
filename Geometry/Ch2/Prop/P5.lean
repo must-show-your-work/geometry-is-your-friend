@@ -4,6 +4,7 @@ import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Point.Ch1
 import Geometry.Theory.Line.Ch1
+import Atlas
 
 import Geometry.Ch2.Prop.P2
 import Geometry.Ch2.Prop.P3
@@ -14,8 +15,8 @@ open Geometry.Theory
 
 
 /-- p71. "For every point P, there are at least two distinct lines through P" -/
-theorem P5 :
-    ∀ P : Point, ∃ L M : Line,
+atlas proposition 2.5 "Every point has at least two distinct lines through it"
+  : ∀ P : Point, ∃ L M : Line,
     L ≠ M ∧ (P on L) ∧ (P on M) := by
         intro P
         have ⟨Q, PneQ⟩ := Point.distinct_points_exist P
@@ -44,5 +45,7 @@ theorem P5 :
         -- trivial fromn here
         tauto
 
+
+alias P5 := «Every point has at least two distinct lines through it»
 
 end Geometry.Ch2.Prop
