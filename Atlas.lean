@@ -269,77 +269,56 @@ private def expandAtlasDef
 --     atlas proposition 3.4 "Pasch's Postulate" : T := by …
 --     atlas theorem     3.7 "Major Result"      : T := by …
 --     atlas axiom       I.1 "Two-point line"    : T
--- Numbered forms: `atlas <kind> <number> "<title>" …`. The book-style.
-syntax (docComment)? "atlas" "proposition" atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "alternate"   atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "corollary"   atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "exercise"    atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "remark"      atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "postulate"   atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "definition"  atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "theorem"     atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "lemma"       atlasNum str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "axiom"       atlasNum str (bracketedBinder)* ":" term            : command
+-- The kind word is parsed as `rawIdent` — accepts any identifier
+-- including those reserved as keywords elsewhere (Mathlib's `lemma`,
+-- Lean's `axiom`, etc.). This is what lets `atlas lemma "Title"` coexist
+-- with bare `lemma X : T := body` in the same module: no token shadowing.
+-- The kind ident's text is validated in `macro_rules` below.
+syntax (docComment)? "atlas" rawIdent atlasNum str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" rawIdent atlasNum str (bracketedBinder)* ":" term            : command
+syntax (docComment)? "atlas" rawIdent str (bracketedBinder)* ":" term ":=" term : command
+syntax (docComment)? "atlas" rawIdent str (bracketedBinder)* ":" term            : command
 
--- Un-numbered forms: `atlas <kind> "<title>" …`. Used for theory lemmas
--- and other things that aren't book-cited. The atlas attribute records
--- `number = ""` for these; the (kind, number) duplicate check is
--- skipped when the number is empty. Title duplicates are still
--- prohibited.
-syntax (docComment)? "atlas" "proposition" str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "alternate"   str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "corollary"   str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "exercise"    str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "remark"      str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "postulate"   str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "definition"  str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "theorem"     str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "lemma"       str (bracketedBinder)* ":" term ":=" term : command
-syntax (docComment)? "atlas" "axiom"       str (bracketedBinder)* ":" term            : command
+-- Known kinds that expand to `def`; everything else expands to
+-- `theorem` (or `axiom` for the body-less arm).
+private def isDefKind (kind : String) : Bool := kind == "definition"
 
 macro_rules
-  -- Numbered forms.
-  | `($[$doc?:docComment]? atlas proposition $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "proposition" (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas alternate   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "alternate"   (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas corollary   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "corollary"   (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas exercise    $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "exercise"    (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas remark      $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "remark"      (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas postulate   $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "postulate"   (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas definition  $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasDef     "definition"  (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas theorem     $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "theorem"     (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas lemma       $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
-      expandAtlasTheorem "lemma"       (← atlasNumToString n) t bs doc? ty b
-  | `($[$doc?:docComment]? atlas axiom       $n:atlasNum $t:str $bs:bracketedBinder* : $ty) => do
-      expandAtlasAxiom   "axiom"       (← atlasNumToString n) t bs doc? ty
-  -- Un-numbered forms (empty `numStr`).
-  | `($[$doc?:docComment]? atlas proposition $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "proposition" "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas alternate   $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "alternate"   "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas corollary   $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "corollary"   "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas exercise    $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "exercise"    "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas remark      $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "remark"      "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas postulate   $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "postulate"   "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas definition  $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasDef     "definition"  "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas theorem     $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "theorem"     "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas lemma       $t:str $bs:bracketedBinder* : $ty := $b) =>
-      expandAtlasTheorem "lemma"       "" t bs doc? ty b
-  | `($[$doc?:docComment]? atlas axiom       $t:str $bs:bracketedBinder* : $ty) =>
-      expandAtlasAxiom   "axiom"       "" t bs doc? ty
+  -- Numbered, body-having.
+  | `($[$doc?:docComment]? atlas $k:ident $n:atlasNum $t:str $bs:bracketedBinder* : $ty := $b) => do
+      let kind := k.raw.getId.toString
+      if kind == "axiom" then
+        Macro.throwErrorAt k
+          "atlas axiom takes no `:= body`; write `atlas axiom <num> \"<title>\" : <type>`"
+      let numStr ← atlasNumToString n
+      if isDefKind kind then
+        expandAtlasDef kind numStr t bs doc? ty b
+      else
+        expandAtlasTheorem kind numStr t bs doc? ty b
+  -- Numbered axiom (no body).
+  | `($[$doc?:docComment]? atlas $k:ident $n:atlasNum $t:str $bs:bracketedBinder* : $ty) => do
+      let kind := k.raw.getId.toString
+      if kind != "axiom" then
+        Macro.throwErrorAt k
+          s!"atlas {kind} requires `:= body` (only `atlas axiom` is body-less)"
+      expandAtlasAxiom kind (← atlasNumToString n) t bs doc? ty
+  -- Un-numbered, body-having.
+  | `($[$doc?:docComment]? atlas $k:ident $t:str $bs:bracketedBinder* : $ty := $b) => do
+      let kind := k.raw.getId.toString
+      if kind == "axiom" then
+        Macro.throwErrorAt k
+          "atlas axiom takes no `:= body`; write `atlas axiom \"<title>\" : <type>`"
+      if isDefKind kind then
+        expandAtlasDef kind "" t bs doc? ty b
+      else
+        expandAtlasTheorem kind "" t bs doc? ty b
+  -- Un-numbered axiom.
+  | `($[$doc?:docComment]? atlas $k:ident $t:str $bs:bracketedBinder* : $ty) => do
+      let kind := k.raw.getId.toString
+      if kind != "axiom" then
+        Macro.throwErrorAt k
+          s!"atlas {kind} requires `:= body` (only `atlas axiom` is body-less)"
+      expandAtlasAxiom kind "" t bs doc? ty
 
 /-! ## Reference (term-position) elaboration -/
 
@@ -371,8 +350,16 @@ private def elabAtlasRefAux (kind : String) (num : TSyntax `atlasNum)
       matches {ns.length} decls — use one of: {titles}"
 
 -- `:max` precedence so these can stand in function position of an
--- application: `lemma 0.2 heq` parses as `(lemma 0.2) heq` instead of
--- consuming `heq` as part of the elab-term syntax and bailing.
+-- application: `proposition 3.4 heq` parses as `(proposition 3.4) heq`
+-- instead of consuming `heq` as part of the elab-term syntax and bailing.
+--
+-- NOTE: we deliberately do *not* expose term-position keywords for
+-- `theorem`/`lemma`/`axiom`, even though they are valid `atlas` kinds.
+-- Registering those as term-position tokens would mark them as parser
+-- keywords, which then breaks the *command*-position parsing of bare
+-- `lemma X {b : T} : ...` / `axiom X : ...` (Lean's parser gets confused
+-- between the term-position and command-position uses). For references
+-- to those kinds, use the French-quoted title form: «My Title».
 syntax:max "proposition" atlasNum : term
 -- `alternate N.K` refers to an alternate proof of proposition N.K.
 -- If multiple alternates share a number, the reference errors with
@@ -383,9 +370,6 @@ syntax:max "exercise"    atlasNum : term
 syntax:max "remark"      atlasNum : term
 syntax:max "postulate"   atlasNum : term
 syntax:max "definition"  atlasNum : term
-syntax:max "theorem"     atlasNum : term
-syntax:max "lemma"       atlasNum : term
-syntax:max "axiom"       atlasNum : term
 
 elab_rules : term
   | `(term| proposition $n:atlasNum) => elabAtlasRefAux "proposition" n
@@ -395,8 +379,5 @@ elab_rules : term
   | `(term| remark      $n:atlasNum) => elabAtlasRefAux "remark"      n
   | `(term| postulate   $n:atlasNum) => elabAtlasRefAux "postulate"   n
   | `(term| definition  $n:atlasNum) => elabAtlasRefAux "definition"  n
-  | `(term| theorem     $n:atlasNum) => elabAtlasRefAux "theorem"     n
-  | `(term| lemma       $n:atlasNum) => elabAtlasRefAux "lemma"       n
-  | `(term| axiom       $n:atlasNum) => elabAtlasRefAux "axiom"       n
 
 end Atlas

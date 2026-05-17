@@ -7,9 +7,19 @@ the French-quoted title to exercise the full pipeline (macro → attribute
 Delete or extend as the real migration progresses.
 -/
 
+import Mathlib.Tactic.Lemma
 import Atlas
 
 namespace AtlasTest
+
+-- Coexistence: bare Mathlib `lemma` / Lean `axiom` parse correctly even
+-- with `Atlas` imported. This is the side-by-side guarantee that lets a
+-- mixed codebase migrate to `atlas lemma` / `atlas axiom` incrementally
+-- without breaking call sites that haven't been touched yet.
+lemma bare_simple : True := trivial
+lemma bare_with_binder {n : Nat} : n = n := rfl
+lemma bare_dotted.qualified {n : Nat} (h : n = n) : n = n := h
+axiom bare_axiom : ∀ n : Nat, n + 0 = n
 
 atlas proposition 0.1 "Reflexivity of Equality on Nat"
     : ∀ n : Nat, n = n := by intro _; rfl
@@ -24,7 +34,10 @@ example : ∀ n : Nat, n = n := «Reflexivity of Equality on Nat»
 atlas lemma 0.2 "Equality is symmetric for Nat"
     {a b : Nat} (h : a = b) : b = a := by rw [h]
 
-example {x y : Nat} (heq : x = y) : y = x := lemma 0.2 heq
+-- For `atlas lemma`/`atlas theorem`/`atlas axiom` refs, use the French-quoted
+-- title rather than `lemma 0.2 heq` (the keyword `lemma` cannot also be a
+-- term-position token — it would break bare `lemma X.Y {b} : T := …` parsing).
+example {x y : Nat} (heq : x = y) : y = x := «Equality is symmetric for Nat» heq
 
 -- Mixed positional + implicit binders, def kind.
 atlas definition 0.3 "Square of a Nat" (n : Nat) : Nat := n * n
