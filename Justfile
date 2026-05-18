@@ -1,7 +1,3 @@
-build-web:
-    ./scripts/bp.py
-    leanblueprint web
-
 # Rebuild the theorem graph database from a clean Lean build.
 # Requires `nix develop` so `kuzu` (CLI + Python) and venv are on PATH.
 #
