@@ -160,11 +160,7 @@ atlas lemma 2.0.22 "If two lines have a pointed intersection they are not parall
   intro LneM
   use P
   unfold Intersects at LintMatP
-  -- TODO[obvious]: this `simp_all only [Line.«line-equality», mem_inter, …]`
-  -- pattern is in `obvious`'s wheelhouse (post-unfold + push_neg close).
-  -- Either replace with `obvious` directly or extend `obvious`'s
-  -- simp-list with the Line-equality rewrite so it picks this up.
-  simp_all only [Line.«Line Extensionality», mem_inter_iff, mem_singleton_iff, ne_eq, not_forall]
+  obvious
 
 
 /-- If a line intersects a ray, then it intersects the line containing the ray -/

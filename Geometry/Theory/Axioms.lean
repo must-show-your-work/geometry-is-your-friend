@@ -205,6 +205,105 @@ def Between.symm {A B C : Point} (h : A - B - C) : C - B - A :=
   («Betweenness Commutativity»).mp h
 
 
+/-- `normalize_eq` walks the local context and flips `=` / `≠` hypotheses between
+    free variables so the LHS comes lex-before the RHS by user-name. Useful when
+    a downstream tactic (`simp`, `tauto`) doesn't know about `Ne.symm` / `Eq.symm`
+    and is stuck on an inequality whose orientation is "backwards". -/
+syntax "normalize_eq" : tactic
+
+open Lean Meta Elab.Tactic in
+elab_rules : tactic
+  | `(tactic| normalize_eq) => withMainContext do
+    -- Snapshot the list of hypotheses to flip; applying them mutates the local
+    -- context, so collect first and apply after.
+    let lctx ← getLCtx
+    let mut toFlip : Array (Name × Bool) := #[]  -- (hypothesis name, isEq?)
+    for ldecl in lctx do
+      if ldecl.isImplementationDetail then continue
+      let ty ← instantiateMVars ldecl.type
+      let (isEq, a?, b?) ←
+        if ty.isAppOfArity ``Eq 3 then
+          pure (true, some (ty.getArg! 1), some (ty.getArg! 2))
+        else if ty.isAppOfArity ``Ne 3 then
+          pure (false, some (ty.getArg! 1), some (ty.getArg! 2))
+        else
+          pure (false, none, none)
+      match a?, b? with
+      | some a, some b =>
+        if a.isFVar && b.isFVar then
+          let aName := (← a.fvarId!.getUserName).toString
+          let bName := (← b.fvarId!.getUserName).toString
+          if aName > bName then
+            toFlip := toFlip.push (ldecl.userName, isEq)
+      | _, _ => pure ()
+    for (hName, isEq) in toFlip do
+      let hIdent := mkIdent hName
+      let symIdent := mkIdent (if isEq then ``Eq.symm else ``Ne.symm)
+      evalTactic (← `(tactic| replace $hIdent:ident := $symIdent:ident $hIdent:ident))
+
+-- `register_simp_attr obvious_simp` lives in `Geometry/Tactics.lean`
+-- (Lean requires the registration to be in a different file from the
+-- first `attribute [obvious_simp]` use). This block tags the
+-- chapter-0 / axiom-level lemmas that count as Greenberg's
+-- minimum-standard intuition. Tag conservatively: a bad simp rule
+-- here propagates to every `obvious` invocation downstream.
+
+attribute [obvious_simp]
+  -- set
+  Set.mem_setOf_eq Set.mem_union Set.mem_inter_iff Set.mem_singleton_iff
+  -- finset
+  Finset.mem_insert Finset.mem_singleton Finset.mem_erase Finset.notMem_empty
+  -- propositional
+  ne_eq true_or or_true false_or or_false or_self
+  true_and and_true false_and and_false and_self
+  not_true_eq_false not_false_eq_true not_or not_and not_not
+
+attribute [obvious_simp]
+  -- line parts (unfolded forms)
+  Segment Ray Extension LineThrough
+  -- betweenness normalizing (title form — `ref axiom` doesn't
+  -- parse inside `simp only [...]` arg lists)
+  «Betweenness Commutativity»
+  «A-B-C implies A B C are distinct and collinear»
+
+/-- Attempts to unfold any geometric objects in the vicinity and eliminate booleans
+ and the like. Tries to capture the author's intuition for 'by definition' in the text.
+
+ The last alternative handles Finset literal equality (`{A,B,C} = {C,A,B}` etc.) by
+ reducing to membership and tautology — convenient since Finsets are unordered.
+
+ `normalize_eq` runs first to canonicalize `=` / `≠` orientations so `simp_all` can
+ close hypotheses regardless of which side they were originally written on.
+
+ The simp set is the `obvious_simp` attribute — each chapter tags its
+ own canonical normalizations and they accumulate progressively. -/
+macro "obvious" : tactic =>
+  `(tactic| (
+      normalize_eq
+      first
+      -- Pure rewrite closes the goal entirely (definitional only).
+      | (simp_all only [obvious_simp]; done)
+      -- Rewrite hyps and goal via `obvious_simp`, then let `tauto` do
+      -- the propositional closing. This handles patterns like:
+      --   hyp: `A - P - B`  ⊢  `P ∈ LineThrough B A`
+      -- where the rewrite turns the hyp into a form that matches one
+      -- disjunct of the unfolded goal, and `tauto` picks it.
+      | (simp_all only [obvious_simp]; tauto)
+      -- Goal-only unfold + propositional close (some sites have hyps
+      -- in normalized form already).
+      | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
+      -- Last-ditch: unfold geometric defs everywhere and tauto.
+      | (unfold Segment Ray Extension LineThrough at *; tauto)
+      -- The `ext` alternative is for Finset-literal equality goals
+      -- (`{A,B,C} = {C,A,B}`). Guard with `first` so a `fail`
+      -- alternative gives a clean error message when nothing closed.
+      | (first
+          | (ext; simp only [Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, ne_eq]; tauto)
+          | fail "obvious: no alternative closed the goal")))
+
+macro "obvious" : term => `(by obvious)
+
+
 /--
 p.108 "Given any two distinct points B and D, there exist points A, C, and E lying on →ₗBD such that
 A * B * D, B * C * D, and B * D * E".
@@ -225,7 +324,7 @@ atlas lemma 1.0.5 "Density axiom witness: a point left of two distinct points"
       intro B D BneD
       have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := ref axiom B.2 B D BneD
       use A
-      simp_all only [ne_eq, «Betweenness Commutativity», «A-B-C implies A B C are distinct and collinear», and_self]
+      obvious
 
 
 /-- Construct a point 'in between' points BD on the induced line B D -/
@@ -234,7 +333,7 @@ atlas lemma 1.0.6 "Density axiom witness: a point between two distinct points"
       intro B D BneD
       have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := ref axiom B.2 B D BneD
       use C
-      simp_all only [ne_eq, «Betweenness Commutativity», «A-B-C implies A B C are distinct and collinear», and_self]
+      obvious
 
 
 /-- Construct a point 'to the right' points BD on the induced line B D -/
@@ -243,7 +342,7 @@ atlas lemma 1.0.7 "Density axiom witness: a point right of two distinct points"
       intro B D BneD
       have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := ref axiom B.2 B D BneD
       use E
-      simp_all only [ne_eq, «Betweenness Commutativity», «A-B-C implies A B C are distinct and collinear», and_self]
+      obvious
 
 
 /-- p.108 "If A, B, and C are three distinct points lying on the same line, then
@@ -328,76 +427,6 @@ macro_rules (kind := intersectsBare)
 def IntersectsSome.unexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $L $M) => `($L intersects $M)
   | _ => throw ()
-
-/-- `normalize_eq` walks the local context and flips `=` / `≠` hypotheses between
-    free variables so the LHS comes lex-before the RHS by user-name. Useful when
-    a downstream tactic (`simp`, `tauto`) doesn't know about `Ne.symm` / `Eq.symm`
-    and is stuck on an inequality whose orientation is "backwards". -/
-syntax "normalize_eq" : tactic
-
-open Lean Meta Elab.Tactic in
-elab_rules : tactic
-  | `(tactic| normalize_eq) => withMainContext do
-    -- Snapshot the list of hypotheses to flip; applying them mutates the local
-    -- context, so collect first and apply after.
-    let lctx ← getLCtx
-    let mut toFlip : Array (Name × Bool) := #[]  -- (hypothesis name, isEq?)
-    for ldecl in lctx do
-      if ldecl.isImplementationDetail then continue
-      let ty ← instantiateMVars ldecl.type
-      let (isEq, a?, b?) ←
-        if ty.isAppOfArity ``Eq 3 then
-          pure (true, some (ty.getArg! 1), some (ty.getArg! 2))
-        else if ty.isAppOfArity ``Ne 3 then
-          pure (false, some (ty.getArg! 1), some (ty.getArg! 2))
-        else
-          pure (false, none, none)
-      match a?, b? with
-      | some a, some b =>
-        if a.isFVar && b.isFVar then
-          let aName := (← a.fvarId!.getUserName).toString
-          let bName := (← b.fvarId!.getUserName).toString
-          if aName > bName then
-            toFlip := toFlip.push (ldecl.userName, isEq)
-      | _, _ => pure ()
-    for (hName, isEq) in toFlip do
-      let hIdent := mkIdent hName
-      let symIdent := mkIdent (if isEq then ``Eq.symm else ``Ne.symm)
-      evalTactic (← `(tactic| replace $hIdent:ident := $symIdent:ident $hIdent:ident))
-
-/-- Attempts to unfold any geometric objects in the vicinity and eliminate booleans
- and the like. Tries to capture the author's intuition for 'by definition' in the text.
-
- The last alternative handles Finset literal equality (`{A,B,C} = {C,A,B}` etc.) by
- reducing to membership and tautology — convenient since Finsets are unordered.
-
- `normalize_eq` runs first to canonicalize `=` / `≠` orientations so `simp_all` can
- close hypotheses regardless of which side they were originally written on. -/
-macro "obvious" : tactic =>
-  `(tactic| (
-      normalize_eq
-      first
-      | (simp_all only [
-          -- set
-          Set.mem_setOf_eq, Set.mem_union, Set.mem_inter_iff,
-          Set.mem_singleton_iff,
-          -- finset
-          Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, Finset.notMem_empty,
-          -- line parts
-          Segment, Ray, Extension, LineThrough,
-          -- betweenness normalizing (title form — `ref axiom` doesn't
-          -- parse inside `simp only [...]` arg lists)
-          «Betweenness Commutativity»,
-          -- propositional stuff
-          ne_eq, true_or, or_true, false_or, or_false, or_self,
-          true_and, and_true, false_and, and_false, and_self,
-          not_true_eq_false, not_false_eq_true, not_or, not_and, not_not
-        ]; done)
-      | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
-      | (unfold Segment Ray Extension LineThrough at *; tauto)
-      | (ext; simp only [Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, ne_eq]; tauto)))
-
-macro "obvious" : term => `(by obvious)
 
 /-- `clearly P := by body` introduces `P` as a fact for the rest of the proof, having
     discharged the negation branch — i.e. the body proves the main goal under the

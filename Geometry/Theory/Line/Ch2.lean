@@ -78,15 +78,14 @@ atlas lemma 2.0.3 "Line Commutativity"
   rcases PinAB with PeqA | PeqB | APB | ABP | PBA
   · rw [PeqA]; exact ref lemma 1.0.24
   · rw [PeqB]; exact ref lemma 1.0.23
-  · rw [«Betweenness Commutativity»] at APB; tauto
-  · rw [«Betweenness Commutativity»] at ABP; tauto
-  · rw [«Betweenness Commutativity»] at PBA; tauto
+  all_goals obvious
 
 
 /-- pXX "By the definition of segment and ray, `the segment A B ⊆ the ray A B`" -/
 -- FIXME: this is a quote but I didn't write the page #
+-- FIXME: if it's obvious here, it's obvious at the callsite, so inline it
 atlas lemma 2.0.4 "Segment A B is a subset of ray A B"
-  : segment A B ⊆ ray A B := by simp_all only [subset_union_left]
+  : segment A B ⊆ ray A B := obvious
 
 
 /-- A segment is a subset of the line A B -/
@@ -94,10 +93,9 @@ atlas lemma 2.0.5 "Segment A B is a subset of line A B"
   : segment A B ⊆ line A B := by
   have h₁ : segment A B ⊆ ray A B := ref lemma 2.0.4
   have h₂ : ray A B ⊆ line A B := ref lemma 1.0.18
-  simp only [setOf_subset_setOf, «Betweenness Commutativity»]
   intro P PonSeg
-  tauto
-
+  rcases PonSeg with APB | AorBeqP
+  repeat tauto
 
 /-- All points on a line are collinear -/
 atlas lemma 2.0.6 "Line Points are Collinear"
@@ -202,21 +200,20 @@ atlas lemma 2.0.12 "A ray A B is never equal to any line L"
 /- It helps to be able to commute these around, when we get to congruence this will make part of it trivial -/
 atlas lemma 2.0.13 "Segment Commutativity"
   : segment A B = segment B A := by
-  unfold Segment
-  ext P
-  rw [@mem_setOf]; simp_all only [mem_setOf_eq]
-  constructor
-  intro h; rcases h with h0 | h1 | h2; rw [«Betweenness Commutativity»];
-  repeat tauto
-  intro h; rcases h with h0 | h1 | h2; rw [«Betweenness Commutativity»]
-  repeat tauto
+  suffices subset : ∀ A B : Point, segment A B ⊆ segment B A by
+    exact Subset.antisymm (subset A B) (subset B A)
+  intro A B P hPinSegAB
+  rcases hPinSegAB with APB | AeqP | BeqP
+  all_goals obvious
+
+attribute [obvious_simp] «Segment Commutativity»
 
 
 /-- The endpoint B is in common here. -/
 atlas lemma 2.0.14 "Segment A B is a subset of ray B A (the swapped-endpoint ray)"
   : segment A B ⊆ ray B A := by
   intro P hPinSegAB
-  simp_all only [mem_setOf_eq, mem_union, «Segment Commutativity», true_or]
+  obvious
 
 
 /- lemma ABP_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/

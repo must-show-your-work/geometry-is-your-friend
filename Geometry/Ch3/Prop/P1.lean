@@ -53,16 +53,12 @@ atlas proposition 3.1 "Two rays from common endpoints intersect in their segment
       have ⟨ConAB, ConBA⟩ : C on ray A B ∧ C on ray B A := by tauto
       rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, _, _⟩ | ⟨_, CAB, _⟩ | ⟨_, _ACB⟩
       · /- "... (4) If A - B - C holds, then C is not on the ray B A; ..." -/
-        exfalso;
-        have CoffBA : C off ray B A := by
-          simp only [mem_union, mem_setOf_eq, «Betweenness Commutativity», ne_eq, not_or, not_and, not_not]
-          tauto
+        exfalso
+        have CoffBA : C off ray B A := by obvious
         contradiction
       · /- "... if C - A - B holds, then C is not on the ray A B. ..." -/
-        exfalso;
-        have CoffAB : C off ray A B := by
-          simp only [mem_union, mem_setOf_eq, ne_eq, not_or, not_and, not_not]
-          tauto
+        exfalso
+        have CoffAB : C off ray A B := by obvious
         contradiction
       · /- "... In either case, C does not belong to both rays.
           (5) Hence, the relation A - C - B must hold, so C belongs to the segment A B (definition of the segment A B, proof by

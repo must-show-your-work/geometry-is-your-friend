@@ -16,7 +16,6 @@ open Geometry.Theory
 atlas lemma 1.0.18 "A ray A B is a subset of the line A B"
   : ray A B ⊆ line A B := by
   intro P PonRay
-  simp only [«Betweenness Commutativity», mem_setOf_eq]
   rcases PonRay with (APB | AeqP | BeqP) | h
   · right; right; left; assumption
   · left; exact AeqP.symm
@@ -114,29 +113,20 @@ atlas lemma 1.0.28 "Line Extensionality"
      have ABeqM := ABuniq M ABonM
      rw [ABeqL, ABeqM]
 
+attribute [obvious_simp] «Line Extensionality»
+
 
 /-- Two lines are distinct iff they have at least one point not in common -/
 atlas lemma 1.0.29 "Two lines are distinct iff some point lies on exactly one"
   : ∀ L M : Line,
     L ≠ M ↔ ∃ P, ((P on L) ∧ (P off M)) ∨ ((P off L) ∧ (P on M)) := by
-    -- TODO: This is ugly, and it's essentially just !P5.L2, but I couldn't cajole it into place.
     intros L M
     contrapose!
-    rw [«Line Extensionality»]
     constructor
-    intros LMCoincident P
-    have LeqM : L = M := by
-      rw [«Line Extensionality»]; trivial
-    rw [LeqM]
-    constructor
-    tauto
-    tauto
-    intros h P
-    specialize h P
-    constructor
-    exact h.left
-    have hR := h.right
-    tauto
-
+    · intro LeqM _; rw [LeqM]; tauto
+    · intro hP
+      rw [«Line Extensionality»]
+      intro P; obtain ⟨PonLM, _⟩ := hP P
+      tauto
 
 end Geometry.Theory.Line
