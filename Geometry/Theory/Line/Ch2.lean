@@ -68,7 +68,7 @@ atlas lemma 2.0.2 "Two distinct points on two lines force the lines to coincide"
 
 attribute [simp] «Two distinct points on two lines force the lines to coincide»
 
-atlas lemma 2.0.3 "Line A B equals line B A when A ≠ B"
+atlas lemma 2.0.3 "Line Commutativity"
   {AneB : A ≠ B} : line A B = line B A := by
   suffices subset : ∀ A B : Point, A ≠ B -> line A B ⊆ line B A by
     exact Subset.antisymm
@@ -78,9 +78,9 @@ atlas lemma 2.0.3 "Line A B equals line B A when A ≠ B"
   rcases PinAB with PeqA | PeqB | APB | ABP | PBA
   · rw [PeqA]; exact ref lemma 1.0.24
   · rw [PeqB]; exact ref lemma 1.0.23
-  · rw [«Betweenness is invariant under endpoint reversal»] at APB; tauto
-  · rw [«Betweenness is invariant under endpoint reversal»] at ABP; tauto
-  · rw [«Betweenness is invariant under endpoint reversal»] at PBA; tauto
+  · rw [«Betweenness Commutativity»] at APB; tauto
+  · rw [«Betweenness Commutativity»] at ABP; tauto
+  · rw [«Betweenness Commutativity»] at PBA; tauto
 
 
 /-- pXX "By the definition of segment and ray, `the segment A B ⊆ the ray A B`" -/
@@ -94,13 +94,13 @@ atlas lemma 2.0.5 "Segment A B is a subset of line A B"
   : segment A B ⊆ line A B := by
   have h₁ : segment A B ⊆ ray A B := ref lemma 2.0.4
   have h₂ : ray A B ⊆ line A B := ref lemma 1.0.18
-  simp only [setOf_subset_setOf, «Betweenness is invariant under endpoint reversal»]
+  simp only [setOf_subset_setOf, «Betweenness Commutativity»]
   intro P PonSeg
   tauto
 
 
 /-- All points on a line are collinear -/
-atlas lemma 2.0.6 "Every point on line A B is collinear with A and B"
+atlas lemma 2.0.6 "Line Points are Collinear"
   {AneB : A ≠ B} : P on line A B -> collinear A B P := by
   -- Direct Proof
   intro PonAB
@@ -139,15 +139,19 @@ atlas lemma 2.0.8 "Every point on segment A B is collinear with A and B"
   {AneB : A ≠ B} : P on segment A B -> collinear A B P := by
   intro PonSegAB
   apply ref lemma 2.0.5 at PonSegAB
-  exact @«Every point on line A B is collinear with A and B» A B P AneB PonSegAB
+  -- `@«Title»` form needed here: positional implicits, and `@ref ...`
+  -- doesn't compose cleanly with Lean's built-in `@` term modifier.
+  exact @«Line Points are Collinear» A B P AneB PonSegAB
 
 
 /-- All points on a ray are collinear -/
-atlas lemma 2.0.9 "Every point on ray A B is collinear with A and B"
+atlas lemma 2.0.9 "Ray Points are Collinear"
   {AneB : A ≠ B} : P on ray A B -> collinear A B P := by
   intro PonAB
   apply ref lemma 1.0.18 at PonAB
-  exact @«Every point on line A B is collinear with A and B» A B P AneB PonAB
+  -- `@«Title»` form needed here: positional implicits, and `@ref ...`
+  -- doesn't compose cleanly with Lean's built-in `@` term modifier.
+  exact @«Line Points are Collinear» A B P AneB PonAB
 
 
 
@@ -196,15 +200,15 @@ atlas lemma 2.0.12 "A ray A B is never equal to any line L"
 
 
 /- It helps to be able to commute these around, when we get to congruence this will make part of it trivial -/
-atlas lemma 2.0.13 "Segment A B equals segment B A"
+atlas lemma 2.0.13 "Segment Commutativity"
   : segment A B = segment B A := by
   unfold Segment
   ext P
   rw [@mem_setOf]; simp_all only [mem_setOf_eq]
   constructor
-  intro h; rcases h with h0 | h1 | h2; rw [«Betweenness is invariant under endpoint reversal»];
+  intro h; rcases h with h0 | h1 | h2; rw [«Betweenness Commutativity»];
   repeat tauto
-  intro h; rcases h with h0 | h1 | h2; rw [«Betweenness is invariant under endpoint reversal»]
+  intro h; rcases h with h0 | h1 | h2; rw [«Betweenness Commutativity»]
   repeat tauto
 
 
@@ -212,7 +216,7 @@ atlas lemma 2.0.13 "Segment A B equals segment B A"
 atlas lemma 2.0.14 "Segment A B is a subset of ray B A (the swapped-endpoint ray)"
   : segment A B ⊆ ray B A := by
   intro P hPinSegAB
-  simp_all only [mem_setOf_eq, mem_union, ref lemma 2.0.13, true_or]
+  simp_all only [mem_setOf_eq, mem_union, «Segment Commutativity», true_or]
 
 
 /- lemma ABP_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/

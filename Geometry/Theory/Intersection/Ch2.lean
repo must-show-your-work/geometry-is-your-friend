@@ -160,7 +160,11 @@ atlas lemma 2.0.22 "If two lines have a pointed intersection they are not parall
   intro LneM
   use P
   unfold Intersects at LintMatP
-  simp_all only [ref lemma 1.0.28, mem_inter_iff, mem_singleton_iff, ne_eq, not_forall]
+  -- TODO[obvious]: this `simp_all only [Line.«line-equality», mem_inter, …]`
+  -- pattern is in `obvious`'s wheelhouse (post-unfold + push_neg close).
+  -- Either replace with `obvious` directly or extend `obvious`'s
+  -- simp-list with the Line-equality rewrite so it picks this up.
+  simp_all only [Line.«Line Extensionality», mem_inter_iff, mem_singleton_iff, ne_eq, not_forall]
 
 
 /-- If a line intersects a ray, then it intersects the line containing the ray -/
@@ -169,7 +173,8 @@ atlas lemma 2.0.23 "A line intersecting a ray intersects its containing line at 
   intro LintRay
   have XonRayAB : X on ray A B := ref lemma 1.0.33 LintRay
   have XonL : X on L := ref lemma 1.0.32 LintRay
-  have XABCol := @Line.«Every point on ray A B is collinear with A and B» A B X AneB XonRayAB
+  -- `@«Title»` form needed: positional implicits.
+  have XABCol := @Line.«Ray Points are Collinear» A B X AneB XonRayAB
   have XonLineAB : X on line A B := ref lemma 1.0.18 XonRayAB
   have XonRayAB : X on ray A B := by tauto
   have XinInter : X ∈ L ∩ line A B := by tauto

@@ -16,7 +16,7 @@ open Geometry.Theory
 atlas lemma 1.0.18 "A ray A B is a subset of the line A B"
   : ray A B ⊆ line A B := by
   intro P PonRay
-  simp only [«Betweenness is invariant under endpoint reversal», mem_setOf_eq]
+  simp only [«Betweenness Commutativity», mem_setOf_eq]
   rcases PonRay with (APB | AeqP | BeqP) | h
   · right; right; left; assumption
   · left; exact AeqP.symm
@@ -91,7 +91,7 @@ atlas lemma 1.0.27 "Two lines sharing a common point are not parallel"
 
 
 /-- Two lines are coincident iff every point on one is on the other. -/
-atlas lemma 1.0.28 "Two lines are equal iff they have exactly the same points"
+atlas lemma 1.0.28 "Line Extensionality"
   : ∀ L M : Line,
      L = M ↔ ∀ P : Point, (P on L) ↔ (P on M) := by
      intros L M
@@ -122,11 +122,11 @@ atlas lemma 1.0.29 "Two lines are distinct iff some point lies on exactly one"
     -- TODO: This is ugly, and it's essentially just !P5.L2, but I couldn't cajole it into place.
     intros L M
     contrapose!
-    rw [ref lemma 1.0.28]
+    rw [«Line Extensionality»]
     constructor
     intros LMCoincident P
     have LeqM : L = M := by
-      rw [ref lemma 1.0.28]; trivial
+      rw [«Line Extensionality»]; trivial
     rw [LeqM]
     constructor
     tauto

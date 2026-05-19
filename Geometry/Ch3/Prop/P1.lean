@@ -55,7 +55,7 @@ atlas proposition 3.1 "Two rays from common endpoints intersect in their segment
       · /- "... (4) If A - B - C holds, then C is not on the ray B A; ..." -/
         exfalso;
         have CoffBA : C off ray B A := by
-          simp only [mem_union, mem_setOf_eq, «Betweenness is invariant under endpoint reversal», ne_eq, not_or, not_and, not_not]
+          simp only [mem_union, mem_setOf_eq, «Betweenness Commutativity», ne_eq, not_or, not_and, not_not]
           tauto
         contradiction
       · /- "... if C - A - B holds, then C is not on the ray A B. ..." -/
@@ -80,7 +80,7 @@ atlas proposition 3.1 "Two rays from common endpoints union to their line"
     rcases PinUnion with PinAB | PinBA
     · exact ref lemma 1.0.18 PinAB
     · apply ref lemma 1.0.18 at PinBA
-      rwa [(@Line.«Line A B equals line B A when A ≠ B» A B AneB)]
+      rwa [(@Line.«Line Commutativity» A B AneB)]
   · intro P PinLine
     -- Need to handle the equality cases first, we'll refer to these later in the proof
     by_cases AneP : A = P

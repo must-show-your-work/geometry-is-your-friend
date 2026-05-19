@@ -77,14 +77,14 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
         · /- (6) If P-B-C, then combining this with P-A-B (step 2) gives A-B-C (Proposition 3.3), contradiction the
               hypothesis. -/
           exfalso
-          exact ref lemma 1.0.38 ⟨«Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D» ⟨PAB, PBC⟩, CAB⟩
+          exact ref lemma 1.0.38 ⟨apply proposition 3.3 ⟨PAB, PBC⟩, CAB⟩
         · /- (7) If C-P-B, then combining this with C-A-P (step 4) gives A-P-B (Proposition 3.3), contradiction step 2. -/
           exfalso
-          exact ref lemma 1.0.36 ⟨«Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D» ⟨CAP, («Betweenness is invariant under endpoint reversal».mp BPC)⟩, PAB⟩
+          exact ref lemma 1.0.36 ⟨apply proposition 3.3 ⟨CAP, (BPC.symm)⟩, PAB⟩
         · /- (8) If B-C-P, then combining this with B-A-C (hypothesis and Betweenness Axiom 1) gives A-C-P (Proposition 3.3),
              contradicting step 4. -/
           exfalso
-          exact ref lemma 1.0.36 ⟨«Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D» ⟨«Betweenness is invariant under endpoint reversal».mp CAB, «Betweenness is invariant under endpoint reversal».mp PCB⟩, CAP⟩
+          exact ref lemma 1.0.36 ⟨apply proposition 3.3 ⟨CAB.symm, PCB.symm⟩, CAP⟩
       · /- (9) Since we obtain a contradiction in all three cases, C-A-P does not hold (RAA conclusion). -/
         -- Ed. this is covered by the above .em elimination
         /- (10) Therefore, C-P-A or P-C-A (step 3), which means that P lies on the opposite ray A C. ∎ -/

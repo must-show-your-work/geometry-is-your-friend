@@ -138,6 +138,57 @@ def atlasLookupByNumber (env : Environment) (kind number : String) : List Name :
 def atlasLookupByTitle (env : Environment) (title : String) : Option Name :=
   (atlasExt.getState env).byTitle.get? title
 
+/-- Kind-tier table — used by `atlasLookupCascading`. A reference to a
+    kind in some tier T cascades through T and every tier below it,
+    collecting decls tagged with the requested number. The choice-
+    resolver downstream picks by type unification.
+
+    Kinds *not* listed in any tier are looked up *exactly* — they
+    don't cascade and they don't get cascaded into. That's the right
+    default for kinds where a request is intentional and specific:
+    `alternate K` means "I want the alternate proof of K, not K
+    itself", `definition K` means "the definition, not a result".
+
+    Vocabulary covers most book-math kind names. If a project needs
+    a kind not listed here, add it to whichever tier matches its
+    role; the cascade is purely structural so adding entries is
+    cheap. Conjecture/hypothesis are deliberately omitted — they
+    name *unproven* things and don't fit the "result" or "commentary"
+    framing; add them later if a use case appears. -/
+def kindTiers : List (List String) :=
+  [ -- T1: main results — what a reader cites as "the theorem"
+    [ "theorem", "proposition", "postulate", "lemma", "axiom"
+    , "exercise", "law", "principle", "fact", "scholium" ]
+    -- T2: derivative — strict consequences of T1 (or each other)
+  , [ "corollary", "consequence", "claim" ]
+    -- T3: commentary — prose that doesn't carry the proof but
+    -- clarifies or illustrates it
+  , [ "remark", "note", "observation", "example", "discussion" ]
+  ]
+
+/-- Cascading lookup. Given a starting `kind` and `number`, find the
+    tier containing `kind`, then collect every decl tagged `number`
+    whose kind is in that tier or any tier below. Returns the names
+    flat-in-tier-order. Kinds outside the tier table are exact-lookup
+    only. -/
+def atlasLookupCascading (env : Environment) (kind number : String) : List Name :=
+  -- Find the starting tier (the one that contains `kind`). If `kind`
+  -- isn't in any tier, the lookup stays exact — no cascade.
+  let rec dropUntil : List (List String) → List (List String)
+    | []         => []
+    | t :: rest  => if t.contains kind then t :: rest else dropUntil rest
+  let tiers := dropUntil kindTiers
+  if tiers.isEmpty then
+    atlasLookupByNumber env kind number
+  else
+    -- Search current + all lower tiers, in order. Within the starting
+    -- tier, the user's requested kind goes first so it gets first
+    -- crack at unification.
+    let preferredFirst : List String := tiers.head!.filter (· != kind) |>.cons kind
+    let allKinds : List String := preferredFirst ++ (tiers.tail!.foldl (· ++ ·) [])
+    allKinds.foldl (init := []) fun acc k =>
+      acc ++ atlasLookupByNumber env k number
+
 /-! ## Attribute -/
 
 syntax (name := atlasAttr) "atlas" str str str : attr
@@ -194,6 +245,14 @@ declare_syntax_cat atlasNum
 syntax scientific  : atlasNum
 syntax ident "." num : atlasNum
 syntax scientific "." num : atlasNum
+-- `ident "-" num ident` handles compound book labels like `B-1a` /
+-- `B-4ii` (matching Greenberg's notation). The hyphen separator is
+-- critical: a `.` variant would make `B.2 B D` greedy-match as
+-- atlasNum `B.2B` (consuming the next axiom-call arg), but `-` here
+-- shares no tokens with the existing `ident "." num` form (`B.2`)
+-- so the two are unambiguously distinct. Avoids the bracketed-string
+-- fallback for this common case (B-axiom sub-parts a/b/i/ii/iii).
+syntax ident "-" num ident : atlasNum
 syntax "[" str "]"   : atlasNum
 
 /-- Pull the source text out of a parsed scientific-literal node.
@@ -214,6 +273,7 @@ def atlasNumToString : TSyntax `atlasNum → MacroM String
     match scientificAtomText s with
     | some str => return str
     | none     => Macro.throwUnsupported
+  | `(atlasNum| $i:ident - $n:num $j:ident) => return s!"{i.getId}-{n.getNat}{j.getId}"
   | `(atlasNum| $i:ident . $n:num) => return s!"{i.getId}.{n.getNat}"
   | `(atlasNum| [ $s:str ]) => return s.getString
   | _ => Macro.throwUnsupported
@@ -347,6 +407,7 @@ macro_rules
 -- fresh universe metavariables (the standard pattern for emitting a
 -- reference to a polymorphic decl from elab code).
 private def elabAtlasRefAux (kind : String) (num : TSyntax `atlasNum)
+    (expectedType? : Option Expr := none)
     : Elab.Term.TermElabM Expr := do
   let numStr : String ← match num with
     | `(atlasNum| $s:scientific) =>
@@ -357,30 +418,54 @@ private def elabAtlasRefAux (kind : String) (num : TSyntax `atlasNum)
       match scientificAtomText s with
       | some str => pure s!"{str}.{n.getNat}"
       | none     => throwError "atlas: malformed number reference (scientific.num)"
+    | `(atlasNum| $i:ident - $n:num $j:ident) => pure s!"{i.getId}-{n.getNat}{j.getId}"
     | `(atlasNum| $i:ident . $n:num) => pure s!"{i.getId}.{n.getNat}"
     | `(atlasNum| [ $s:str ]) => pure s.getString
     | _ => throwError "atlas: malformed number reference"
   let env ← getEnv
-  match atlasLookupByNumber env kind numStr with
-  | []  => throwError s!"atlas: no {kind} tagged `{numStr}` found"
+  -- Tier cascade: when the user writes `<kind> N`, we collect every
+  -- decl tagged `N` whose kind is in the same tier as `<kind>` OR a
+  -- lower (more derivative) tier. The collected list is then wrapped
+  -- in an overload-choice node; Lean's elaborator picks by unifying
+  -- each branch's type against the expected type.
+  --
+  -- Tiers (in order, top-first):
+  --   T1 results:       theorem, proposition, postulate, lemma,
+  --                     axiom, exercise, alternate
+  --   T2 derived:       corollary
+  --   T3 commentary:    remark
+  --
+  -- So `theorem 3.3` searches theorems first, then corollaries of
+  -- 3.3, then remarks of 3.3 — picking the first that unifies. The
+  -- starting tier is whichever tier contains the kind the user wrote,
+  -- so `corollary 3.3` does *not* fall back up to T1 (you asked
+  -- for the corollary specifically); only T2→T3 cascade.
+  --
+  -- Definitions and axioms (the foundational kinds) don't cascade —
+  -- their lookup stays exact. Querying `axiom B-1b` for a corollary
+  -- would surprise.
+  let ns := atlasLookupCascading env kind numStr
+  match ns with
+  | []  => throwError s!"atlas: no {kind} (or derivative tier) tagged `{numStr}` found"
   | [n] =>
-    -- Delegate to the standard term elaborator on a synthesised identifier
-    -- so implicit-arg metavars are inserted the same way they would be
-    -- when the user writes the constant name directly. Plain
-    -- `mkConstWithFreshMVarLevels` returns the Π-typed constant without
-    -- opening its implicit binders, which fails when the ref is used in
-    -- application position against an expected type that already has
-    -- those implicits resolved.
+    -- Singleton: don't thread the expected type — passing a metavariable
+    -- expected type interferes with `have ⟨pat⟩ := …` destructuring,
+    -- which needs the rhs to elaborate to a concrete type unaided.
     Lean.Elab.Term.elabTerm (mkIdent n) none
-  | ns  =>
-    -- Multiple decls share this (kind, number). Refuse to pick one
-    -- silently; list the titles so the user can disambiguate via the
-    -- `«Title»` form.
-    let st := atlasExt.getState env
-    let titles := ns.filterMap fun n =>
-      st.byName.find? n |>.map (fun e => s!"«{e.title}»")
-    throwError s!"atlas: reference {kind} {numStr} is ambiguous; \
-      matches {ns.length} decls — use one of: {titles}"
+  | _  =>
+    -- Multiple candidates — wrap in an overload-choice node so Lean's
+    -- built-in elab tries each branch against `expectedType?`. Caveat:
+    -- this only disambiguates when `expectedType?` is a concrete (or
+    -- partially-concrete) type at the choice's elab site. In
+    -- function-application position (`ref proposition 3.3 ⟨…⟩` is
+    -- the function part), the expected type is `?α → ?β`-shaped and
+    -- every candidate unifies trivially — so an outer `have x : T :=`
+    -- annotation alone is not sufficient to dispatch. Those sites
+    -- still need the «Title» form, or an out-of-line `have foo : T :=
+    -- ref kind N args` extraction.
+    let alts : Array Syntax := ns.toArray.map (fun n => (mkIdent n).raw)
+    let choice : Syntax := mkNode choiceKind alts
+    Lean.Elab.Term.elabTerm choice expectedType?
 
 -- `:max` precedence so these can stand in function position of an
 -- application: `proposition 3.4 heq` parses as `(proposition 3.4) heq`
@@ -393,16 +478,16 @@ private def elabAtlasRefAux (kind : String) (num : TSyntax `atlasNum)
 -- `lemma X {b : T} : ...` / `axiom X : ...` (Lean's parser gets confused
 -- between the term-position and command-position uses). For references
 -- to those kinds, use the French-quoted title form: «My Title».
-syntax:max "proposition" atlasNum : term
+syntax:max (name := atlasRefProposition) "proposition" atlasNum : term
 -- `alternate N.K` refers to an alternate proof of proposition N.K.
 -- If multiple alternates share a number, the reference errors with
 -- the list of titles; use «Title» to disambiguate.
-syntax:max "alternate"   atlasNum : term
-syntax:max "corollary"   atlasNum : term
-syntax:max "exercise"    atlasNum : term
-syntax:max "remark"      atlasNum : term
-syntax:max "postulate"   atlasNum : term
-syntax:max "definition"  atlasNum : term
+syntax:max (name := atlasRefAlternate)   "alternate"   atlasNum : term
+syntax:max (name := atlasRefCorollary)   "corollary"   atlasNum : term
+syntax:max (name := atlasRefExercise)    "exercise"    atlasNum : term
+syntax:max (name := atlasRefRemark)      "remark"      atlasNum : term
+syntax:max (name := atlasRefPostulate)   "postulate"   atlasNum : term
+syntax:max (name := atlasRefDefinition)  "definition"  atlasNum : term
 
 -- Uniform `atlas <kind> <num>` term-position form. Works for *every*
 -- atlas kind including `lemma`/`axiom`/`theorem` (which can't have bare
@@ -411,17 +496,185 @@ syntax:max "definition"  atlasNum : term
 -- keyword disambiguates from the command form: command needs a string
 -- title next, term form takes an `atlasNum` (none of whose variants
 -- start with `"`, since the string-form is bracketed as `["..."]`).
-syntax:max "ref" rawIdent atlasNum : term
+syntax:max (name := atlasRef) "ref" rawIdent atlasNum : term
 
-elab_rules : term
-  | `(term| proposition $n:atlasNum) => elabAtlasRefAux "proposition" n
-  | `(term| alternate   $n:atlasNum) => elabAtlasRefAux "alternate"   n
-  | `(term| corollary   $n:atlasNum) => elabAtlasRefAux "corollary"   n
-  | `(term| exercise    $n:atlasNum) => elabAtlasRefAux "exercise"    n
-  | `(term| remark      $n:atlasNum) => elabAtlasRefAux "remark"      n
-  | `(term| postulate   $n:atlasNum) => elabAtlasRefAux "postulate"   n
-  | `(term| definition  $n:atlasNum) => elabAtlasRefAux "definition"  n
+-- Vararg-capturing variant: `apply kind N args*` parses as one unit (the
+-- args are consumed into the parse tree, not left for `App`). Used when
+-- the kind+num resolves to *multiple* atlas decls and we need
+-- type-directed dispatch on the application — which Lean's `elabAppFn`
+-- can't do for our custom `ref` (it only dispatches choices that are
+-- syntactically `choiceKind` *before* macro expansion of `stx[0]`).
+-- With args captured, we try each candidate and pick the one that fits.
+--
+-- Backward-compat note: `ref kind N` (no varargs) stays the canonical
+-- form when the lookup is unambiguous; reserve `apply kind N args*` for
+-- paired-decl sites where dispatch is needed. The two keywords keep the
+-- greedy-vararg issue contained: `subset_inter ref lemma 2.0.4 ref
+-- lemma 2.0.14` still parses with sibling refs (the old way), and
+-- only sites that opt in to `apply` accept trailing args.
+syntax:max (name := atlasApply) "apply" rawIdent atlasNum (ppSpace colGt term:max)+ : term
+-- An `@`-explicit variant of `ref` was attempted (`eref`, also `@ref`).
+-- Neither composes cleanly with Lean's built-in `@`: that lives at
+-- the syntactic level and gates which `TermElab` runs, while our
+-- elab_rule resolves and elaborates the constant directly, bypassing
+-- the explicit-mode flag. For positional-implicits call sites, use
+-- `@«Title»` form (Lean handles French-quoted idents natively after `@`).
+
+-- Use `@[term_elab kind]` form (rather than `elab_rules : term <= expectedType`)
+-- so the rule fires in every position — including function-application slots
+-- like `ref lemma 0.0.5 S`, where `ref lemma 0.0.5` is elaborated with no
+-- expected type because it's the function part of an application. The `<=`
+-- form gates rules to only fire when an expected type is provided directly,
+-- which is too restrictive here. The `expectedType?` arg gives us the same
+-- info when available, without the gating.
+
+@[term_elab atlasRefProposition]
+def elabAtlasRefPropositionTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| proposition $n:atlasNum) => elabAtlasRefAux "proposition" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRefAlternate]
+def elabAtlasRefAlternateTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| alternate $n:atlasNum) => elabAtlasRefAux "alternate" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRefCorollary]
+def elabAtlasRefCorollaryTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| corollary $n:atlasNum) => elabAtlasRefAux "corollary" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRefExercise]
+def elabAtlasRefExerciseTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| exercise $n:atlasNum) => elabAtlasRefAux "exercise" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRefRemark]
+def elabAtlasRefRemarkTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| remark $n:atlasNum) => elabAtlasRefAux "remark" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRefPostulate]
+def elabAtlasRefPostulateTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| postulate $n:atlasNum) => elabAtlasRefAux "postulate" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRefDefinition]
+def elabAtlasRefDefinitionTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
+  | `(term| definition $n:atlasNum) => elabAtlasRefAux "definition" n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[term_elab atlasRef]
+def elabAtlasRefTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
+  match stx with
   | `(term| ref $k:ident $n:atlasNum) =>
-      elabAtlasRefAux k.getId.toString n
+      elabAtlasRefAux k.getId.toString n expectedType?
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+-- Vararg-capturing `apply kind N args*` elab. Used when the (kind, num)
+-- key resolves to multiple atlas decls and we need type-directed
+-- dispatch on the application. Lean's `elabAppFn` can't disambiguate a
+-- choice in function-position because it doesn't propagate return type
+-- to the function elab; capturing args ourselves lets us try each
+-- candidate against the full application + expected type.
+@[term_elab atlasApply]
+def elabAtlasApplyTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
+  match stx with
+  | `(term| apply $k:ident $n:atlasNum $args*) => do
+      let kind := k.getId.toString
+      let numStr ← match n with
+        | `(atlasNum| $s:scientific) =>
+          match scientificAtomText s with
+          | some str => pure str
+          | none     => throwError "atlas: malformed number reference (scientific)"
+        | `(atlasNum| $s:scientific . $m:num) =>
+          match scientificAtomText s with
+          | some str => pure s!"{str}.{m.getNat}"
+          | none     => throwError "atlas: malformed number reference (scientific.num)"
+        | `(atlasNum| $i:ident - $m:num $j:ident) => pure s!"{i.getId}-{m.getNat}{j.getId}"
+        | `(atlasNum| $i:ident . $m:num) => pure s!"{i.getId}.{m.getNat}"
+        | `(atlasNum| [ $s:str ]) => pure s.getString
+        | _ => throwError "atlas: malformed number reference"
+      let env ← getEnv
+      -- Use *exact* (non-cascading) lookup for `apply`. The cascade
+      -- (T1 → T2 → T3) is the right default for the loose-typing
+      -- `ref kind N` form — "I want the result-tier thing at N, don't
+      -- care if it's labeled `theorem` or `proposition`". But for
+      -- `apply kind N args*`, the user is explicit about which kind
+      -- they want, and pulling in adjacent kinds (corollaries when
+      -- `proposition` was requested) creates spurious type-equivalent
+      -- candidates that defeat dispatch.
+      let ns := atlasLookupByNumber env kind numStr
+      match ns with
+      | []  =>
+        throwError s!"atlas apply: no {kind} tagged `{numStr}` found (exact lookup; cascade is disabled for `apply`)"
+      | [n] =>
+        -- Single match — just elaborate as a normal application.
+        let head := mkIdent n
+        let appStx ← `($head $args*)
+        Lean.Elab.Term.elabTerm appStx expectedType?
+      | _  =>
+        -- Multi-match. Need a concrete `expectedType` to dispatch on.
+        -- Postpone if it's None or contains *any* metavariables (not
+        -- just at the head) — Lean re-runs after surrounding context
+        -- pins them. Without this, sites like `ref lemma X ⟨apply prop
+        -- 3.3 …, sibling⟩` get elaborated before `sibling` constrains
+        -- the implicits, so the apply slot sees a metavar-laden
+        -- expected type and every candidate trivially unifies.
+        --
+        -- `tryPostponeIfNoneOrMVar` only checks the *head* — we need
+        -- `tryPostponeIfHasMVars?` which scans the whole expression
+        -- and postpones if any unassigned mvars remain.
+        let some expected ← Lean.Elab.Term.tryPostponeIfHasMVars? expectedType?
+          | throwError s!"atlas apply: {kind} `{numStr}` expected type still has metavariables after postpone — can't dispatch ({ns.length} candidates). Add `: T` annotation or restructure (e.g., extract to `have x : T := ...`)."
+        let mut successes : List Name := []
+        let mut lastError : Option MessageData := none
+        for cand in ns do
+          let snap ← Lean.Elab.Term.saveState
+          try
+            let head := mkIdent cand
+            let appStx ← `($head $args*)
+            -- Elaborate without expected-type guidance, then *explicitly*
+            -- check inferred type against expected via `isDefEq`.
+            -- `elabTerm`/`elabTermEnsuringType` defer most unification
+            -- via postponed metavars and don't surface failures
+            -- synchronously; the only reliable way to know whether the
+            -- candidate's return type matches is to compare types directly.
+            let e ← Lean.Elab.Term.elabTerm appStx (some expected)
+            Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
+            let e ← Lean.instantiateMVars e
+            -- Reject candidates whose elaborated form still has
+            -- unresolved metavariables — that means the args didn't
+            -- fully pin the implicits and `isDefEq` would aggressively
+            -- unify them downstream to make types appear to match.
+            if e.hasExprMVar then
+              snap.restore
+            else
+              let inferredType ← Lean.Meta.inferType e
+              let inferredType ← Lean.instantiateMVars inferredType
+              if ← Lean.Meta.isDefEq inferredType expected then
+                successes := successes ++ [cand]
+              snap.restore
+          catch ex =>
+            lastError := some ex.toMessageData
+            snap.restore
+        match successes with
+        | [] =>
+          match lastError with
+          | some msg => throwError m!"atlas apply: no {kind} `{numStr}` candidate fits this application:\n{msg}"
+          | none     => throwError s!"atlas apply: no {kind} `{numStr}` candidate fits this application"
+        | [cand] =>
+          let head := mkIdent cand
+          let appStx ← `($head $args*)
+          Lean.Elab.Term.elabTerm appStx expectedType?
+        | _ =>
+          throwError s!"atlas apply: multiple {kind} candidates at `{numStr}` fit this application: {successes}"
+  | _ => Lean.Elab.throwUnsupportedSyntax
 
 end Atlas

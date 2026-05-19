@@ -449,11 +449,13 @@ body::after {
 .main {
   position: relative;
   display: grid;
-  /* Roughly 2:1 — graph dominant, inspector wide enough for long
-     proof source without ugly wrapping (min 500px). */
-  grid-template-columns: 2fr minmax(500px, 1fr);
+  /* Graph is full-width now: the per-card content (source, statement,
+     commentary, metadata) replaced the inspector pane. The inspector
+     `<aside>` is hidden via `.inspector { display: none }` below. */
+  grid-template-columns: 1fr;
   min-height: 0;
 }
+.inspector { display: none; }
 
 #cy {
   position: relative;
@@ -946,36 +948,263 @@ body::after {
   margin: 0;
 }
 
-/* ---------- HTML "index card" nodes ---------- */
+/* ---------- HTML "paper" nodes ----------
+   The cytoscape node is an invisible rectangle whose width/height are
+   bound to `pageRankNorm` (see the stylesheet block in the JS): bigger
+   pagerank → bigger card, scaling smoothly between index-card and
+   poster sizes. The CSS uses width/height: 100% so the visible card
+   always fills whatever the cytoscape layer allocates, and the
+   `.size-*` bucket classes scale font/padding rhythm in tiers so the
+   typography stays readable at every size. */
 .node-card {
-  /* matches the cytoscape node size (640 × 380) */
-  width: 640px;
-  height: 380px;
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
-  padding: 28px 32px;
+  padding: var(--card-pad-y, 28px) var(--card-pad-x, 32px);
   background: #f7efd8;
   border: 1.5px solid var(--ink);
   border-radius: 4px;
+  /* Layered shadow + ink-edge for a "page resting on the table" look.
+     The longer shadow at depth ~18px gives stronger separation; the
+     thin inner rule at 1px reads as the page edge itself. */
   box-shadow:
     0 0 0 1px rgba(28, 20, 16, 0.04),
-    6px 8px 0 -2px rgba(28, 20, 16, 0.12),
-    14px 18px 32px -16px rgba(28, 20, 16, 0.35);
+    8px 10px 0 -3px rgba(28, 20, 16, 0.14),
+    18px 22px 36px -18px rgba(28, 20, 16, 0.42);
   font-family: var(--display);
   color: var(--ink);
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: column; gap: var(--card-gap, 10px);
   overflow: hidden;
   pointer-events: none;
   user-select: none;
   transition: background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  /* Subtle paper texture overlay — same noise SVG used at body level,
+     but very faint so it sits underneath the type without competing. */
+  background-image:
+    url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.13 0 0 0 0 0.08 0 0 0 0.035 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+  background-size: 240px 240px;
+  background-blend-mode: multiply;
 }
-.node-card.kind-theorem { background: #f5ecd2; }
-.node-card.kind-def     { background: #dfe7e6; }
-.node-card.kind-axiom   { background: #ead7a4; border-color: #8a6a25; }
-.node-card.kind-opaque  { background: #e4dbc5; }
+.node-card.kind-theorem { background-color: #f5ecd2; }
+.node-card.kind-def     { background-color: #dfe7e6; }
+.node-card.kind-axiom   { background-color: #ead7a4; border-color: #8a6a25; }
+.node-card.kind-opaque  { background-color: #e4dbc5; }
 .node-card.has-sorry {
   border-color: var(--accent);
   border-width: 3px;
-  background: #f3dad3;
+  background-color: #f3dad3;
+}
+
+/* ---------- Size buckets ----------
+   Four tiers driven by `data.sizeBucket` (assigned from pageRank
+   percentile). Each tier scales the type rhythm, padding, and gap so
+   the layout feels intentional at every zoom, not just at one
+   reference size. */
+.node-card.size-small {
+  --card-pad-x: 18px; --card-pad-y: 16px; --card-gap: 6px;
+  --title-size: 22px; --doc-size: 13px; --section-label-size: 9px;
+  --meta-size: 9px; --header-size: 10px;
+  box-shadow:
+    0 0 0 1px rgba(28, 20, 16, 0.04),
+    4px 5px 0 -2px rgba(28, 20, 16, 0.12),
+    10px 12px 22px -12px rgba(28, 20, 16, 0.36);
+}
+.node-card.size-medium {
+  --card-pad-x: 32px; --card-pad-y: 26px; --card-gap: 10px;
+  --title-size: 38px; --doc-size: 17px; --section-label-size: 11px;
+  --meta-size: 11px; --header-size: 13px;
+}
+.node-card.size-large {
+  --card-pad-x: 44px; --card-pad-y: 36px; --card-gap: 14px;
+  --title-size: 56px; --doc-size: 21px; --section-label-size: 13px;
+  --meta-size: 13px; --header-size: 15px;
+  box-shadow:
+    0 0 0 1px rgba(28, 20, 16, 0.05),
+    10px 14px 0 -3px rgba(28, 20, 16, 0.16),
+    24px 30px 48px -20px rgba(28, 20, 16, 0.48);
+}
+.node-card.size-poster {
+  --card-pad-x: 64px; --card-pad-y: 52px; --card-gap: 18px;
+  --title-size: 80px; --doc-size: 26px; --section-label-size: 15px;
+  --meta-size: 15px; --header-size: 17px;
+  box-shadow:
+    0 0 0 1px rgba(28, 20, 16, 0.06),
+    14px 18px 0 -4px rgba(28, 20, 16, 0.18),
+    32px 42px 64px -22px rgba(28, 20, 16, 0.52);
+}
+
+/* ---------- Card sections (statement / commentary / proof / meta) ----------
+   Each section gets a quiet uppercase label rule so the eye can find
+   its way around. Sections share rhythm: tiny label + body with a
+   light top border. The labels look like rubber-stamp section heads
+   on a typewritten page. */
+.node-section {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(28, 20, 16, 0.16);
+}
+.node-section-label {
+  font-family: var(--display);
+  font-size: var(--section-label-size, 11px);
+  font-variation-settings: "opsz" 14, "wght" 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.node-section-body {
+  font-family: var(--display);
+  font-size: var(--doc-size, 16px);
+  line-height: 1.42;
+  color: var(--ink-soft);
+}
+.node-section-placeholder {
+  font-style: italic;
+  color: var(--ink-ghost);
+  opacity: 0.7;
+}
+.node-commentary.empty .node-section-body {
+  opacity: 0.7;
+}
+
+/* Proof preview — fixed-width font, slightly smaller than body type,
+   with a fade to suggest "more below". */
+.node-proof-body {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: calc(var(--doc-size, 16px) * 0.78);
+  line-height: 1.4;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 6em;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+}
+.node-proof-body :where(.lean-kw)    { color: #6e2a1f; font-weight: 600; }
+.node-proof-body :where(.lean-const) { color: #2a4d3a; }
+.node-proof-body :where(.lean-def)   { color: #2a4d3a; font-weight: 600; }
+.node-proof-body :where(.lean-var)   { color: #5a4a2a; }
+.node-proof-body :where(.lean-str)   { color: #8a4a2a; }
+.node-proof-body :where(.lean-ctor)  { color: #4a3a6a; }
+
+/* Metadata footer — module / line range. Tiny but always present so
+   the card stays self-locating. */
+.node-card-meta {
+  display: flex; gap: 8px; align-items: baseline;
+  margin-top: auto;            /* push to the bottom of the flex column */
+  padding-top: 6px;
+  font-family: var(--mono);
+  font-size: var(--meta-size, 11px);
+  color: var(--ink-muted);
+  opacity: 0.78;
+}
+.node-card-meta-sep { color: var(--ink-ghost); }
+
+/* ---------- Source section ----------
+   Per-decl Lean source — replaces the inspector pane and dominates
+   the card's lower half. Reads as a dark editor pane (Solarized
+   Dark palette), tucked into the cream paper for contrast and to
+   make the "this is code" signal unambiguous. */
+.node-source {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.node-source-body {
+  margin: 0;
+  flex: 1;
+  font-family: var(--mono);
+  font-size: calc(var(--doc-size, 18px) * 0.82);
+  line-height: 1.5;
+  white-space: pre;
+  overflow: auto;
+  padding: 14px 16px;
+  /* Solarized Dark base03 — the canonical "editor background" of the
+     scheme. Sets the source pane decisively apart from the paper. */
+  background: #002b36;
+  color: #93a1a1;                      /* base1: emphasised body text */
+  border: 1px solid #001f27;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.20);
+}
+/* Solarized Dark token palette.
+   See https://ethanschoonover.com/solarized/ — values are canonical. */
+.node-source-body .lean-kw    { color: #859900; font-weight: 600; }    /* green */
+.node-source-body .lean-cmt   { color: #586e75; font-style: italic; }  /* base01 */
+.node-source-body .lean-str   { color: #2aa198; }                      /* cyan */
+.node-source-body .lean-num   { color: #d33682; }                      /* magenta */
+.node-source-body .lean-const { color: #b58900; }                      /* yellow */
+.node-source-body .lean-def   { color: #268bd2; font-weight: 600; }    /* blue */
+.node-source-body .lean-var   { color: #93a1a1; }                      /* base1 */
+.node-source-body .lean-ctor  { color: #6c71c4; }                      /* violet */
+
+/* ---------- Card body: mosaic layout ----------
+   Top row is a two-column band of metadata-ish sections (statement,
+   commentary, eventually more). The bottom row is the proof source,
+   spanning the full width and taking the majority of the remaining
+   vertical space — that's where the eye actually reads.
+
+       +------+------+
+       | stmt | comm |   ← top band, auto-height (compact)
+       +------+------+
+       |    source   |   ← bottom: full width, 1fr (dominates)
+       +-------------+
+
+   On the smallest bucket the layout collapses to single-column +
+   no source (already filtered out in renderNodeCard). */
+.node-card-body {
+  display: grid;
+  grid-template-columns: 1fr;       /* default: stacked */
+  grid-template-rows: auto;
+  gap: var(--card-gap, 10px);
+  flex: 1; min-height: 0;
+  container-type: inline-size;
+}
+.node-card.size-medium .node-card-body,
+.node-card.size-large  .node-card-body,
+.node-card.size-poster .node-card-body {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  /* top band auto-sized to its content; source row eats the rest */
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+}
+.node-card.size-medium .node-card-body > .node-source,
+.node-card.size-large  .node-card-body > .node-source,
+.node-card.size-poster .node-card-body > .node-source {
+  grid-column: 1 / -1;              /* span both columns */
+}
+.node-card .node-card-body > .node-section { min-width: 0; }
+
+/* ---------- Resize handle ---------- */
+.node-resize {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 22px; height: 22px;
+  cursor: nwse-resize;
+  pointer-events: auto;            /* override card-level pointer-events:none */
+  background:
+    linear-gradient(135deg,
+      transparent 0%, transparent 35%,
+      rgba(28,20,16,0.32) 35%, rgba(28,20,16,0.32) 42%,
+      transparent 42%, transparent 55%,
+      rgba(28,20,16,0.32) 55%, rgba(28,20,16,0.32) 62%,
+      transparent 62%, transparent 75%,
+      rgba(28,20,16,0.32) 75%, rgba(28,20,16,0.32) 82%,
+      transparent 82%);
+  opacity: 0.45;
+  transition: opacity 150ms ease;
+}
+.node-resize:hover { opacity: 1; }
+/* Cards must allow absolutely-positioned children */
+.node-card { position: relative; }
+.node-card.resizing { box-shadow:
+  0 0 0 2px var(--accent),
+  0 0 0 4px rgba(152, 51, 39, 0.18),
+  18px 22px 36px -18px rgba(28, 20, 16, 0.42);
 }
 
 /* ---------- Atlas-aware card chrome ----------
@@ -986,11 +1215,12 @@ body::after {
 .node-card.atlas .node-card-atlas-head {
   display: flex; align-items: baseline; gap: 12px;
   font-family: var(--display);
-  font-size: 14px;
+  font-size: var(--header-size, 14px);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-muted);
-  padding-bottom: 2px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(28, 20, 16, 0.18);
 }
 .node-card.atlas .node-card-atlas-kind {
   display: inline-block;
@@ -999,20 +1229,20 @@ body::after {
   color: var(--paper);
   font-family: var(--display);
   font-variation-settings: "opsz" 14, "wght" 600;
-  font-size: 14px;
+  font-size: var(--header-size, 14px);
   letter-spacing: 0.18em;
 }
 .node-card.atlas .node-card-atlas-number {
   font-family: var(--display);
   font-variation-settings: "opsz" 144, "wght" 500;
   font-style: italic;
-  font-size: 28px;
+  font-size: calc(var(--title-size, 40px) * 0.7);
   letter-spacing: 0;
   color: var(--accent);
   text-transform: none;
 }
 .node-card.atlas .node-card-atlas-sep {
-  font-size: 18px;
+  font-size: calc(var(--header-size, 14px) * 1.3);
   color: var(--ink-ghost);
   text-transform: none;
   letter-spacing: 0;
@@ -1021,27 +1251,30 @@ body::after {
   font-family: var(--display);
   font-variation-settings: "opsz" 144, "wght" 500;
   font-style: italic;
-  font-size: 40px;
+  font-size: var(--title-size, 40px);
   line-height: 1.04;
   color: var(--ink);
   word-break: break-word;
-  border-bottom: 1px solid rgba(28, 20, 16, 0.18);
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 .node-card.atlas .node-card-atlas-fqn {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(var(--meta-size, 11px) * 0.95);
   color: var(--ink-muted);
   letter-spacing: 0;
   text-transform: none;
   word-break: break-all;
-  opacity: 0.7;
+  opacity: 0.62;
+  /* sit at the bottom edge as a kind of typewritten footer slug */
+  border-top: 1px solid rgba(28, 20, 16, 0.12);
+  padding-top: 4px;
+  margin-top: 4px;
 }
 
 .node-card-head {
   display: flex; align-items: center; justify-content: space-between;
   font-family: var(--display);
-  font-size: 12px; letter-spacing: 0.14em;
+  font-size: var(--header-size, 12px); letter-spacing: 0.14em;
   color: var(--ink-muted);
   text-transform: uppercase;
 }
@@ -1066,7 +1299,7 @@ body::after {
   font-family: var(--display);
   font-variation-settings: "opsz" 144, "wght" 500;
   font-style: italic;
-  font-size: 38px;
+  font-size: var(--title-size, 38px);
   line-height: 1.05;
   color: var(--ink);
   word-break: break-word;
@@ -1078,7 +1311,7 @@ body::after {
   font-family: var(--display);
   font-style: italic;
   font-variation-settings: "opsz" 14, "wght" 400;
-  font-size: 18px;
+  font-size: var(--doc-size, 18px);
   line-height: 1.42;
   color: var(--ink-soft);
   overflow: hidden;
@@ -1185,6 +1418,10 @@ body::after {
     </div>
     <button id="toggle-controls" class="icon-btn" type="button" aria-expanded="false">parameters</button>
     <button id="reset" class="icon-btn" type="button" title="re-fit view">re-fit</button>
+    <button id="capture-sizes" class="icon-btn" type="button"
+            title="copy current per-card sizes to clipboard">capture sizes</button>
+    <button id="reset-sizes" class="icon-btn" type="button"
+            title="clear all manual card sizes (revert to pagerank-driven defaults)">reset sizes</button>
   </nav>
 
   <section class="params hidden" id="layout-controls" aria-hidden="true">
@@ -1204,19 +1441,19 @@ body::after {
         <div class="param-row">
           <label for="elk-direction">direction</label>
           <select id="elk-direction">
-            <option value="UP" selected>UP (axioms↑)</option>
-            <option value="DOWN">DOWN</option>
+            <option value="DOWN" selected>DOWN (axioms↓)</option>
+            <option value="UP">UP</option>
             <option value="LEFT">LEFT</option>
             <option value="RIGHT">RIGHT</option>
           </select>
         </div>
         <div class="param-row">
           <label for="elk-nodenode">nodeNode</label>
-          <input id="elk-nodenode" type="number" min="10" max="2000" value="240">
+          <input id="elk-nodenode" type="number" min="10" max="10000" value="960">
         </div>
         <div class="param-row">
           <label for="elk-betweenlayers">layer Δ</label>
-          <input id="elk-betweenlayers" type="number" min="20" max="3000" value="520">
+          <input id="elk-betweenlayers" type="number" min="20" max="12000" value="2080">
         </div>
         <div class="param-row">
           <label for="elk-strategy">node placement</label>
@@ -1270,6 +1507,130 @@ function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ---------- Manual per-card size (resize-handle interaction) ----------
+// Sizes live in localStorage so resizing survives reloads. The persisted
+// key includes the cytoscape node id; reset by clearing localStorage or
+// using the "reset card sizes" controls button.
+const SIZE_LS_PREFIX = 'graphviewer:cardSize:';
+function loadNodeSize(id) {
+  try {
+    const raw = localStorage.getItem(SIZE_LS_PREFIX + id);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) { return null; }
+}
+function saveNodeSize(id, w, h) {
+  try { localStorage.setItem(SIZE_LS_PREFIX + id, JSON.stringify({ w, h })); }
+  catch (_) {}
+}
+function clearAllNodeSizes() {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(SIZE_LS_PREFIX)) localStorage.removeItem(k);
+  }
+}
+// Lightweight client-side Lean syntax highlighter. Returns escaped
+// HTML with `<span class="lean-*">` wrappers — the same class names
+// SubVerso uses, so the CSS palette under `.node-source-body :where(…)`
+// covers it. Doesn't attempt full lexing (we don't have full grammar
+// here); good enough for the editor-on-paper feel.
+const LEAN_KEYWORDS = new Set([
+  'theorem','lemma','axiom','def','example','instance','class','structure','inductive',
+  'namespace','end','section','open','import','attribute','alias','noncomputable',
+  'private','protected','public','meta','partial','mutual','where','with','do',
+  'if','then','else','match','let','fun','have','show','suffices','from',
+  'by','at','in','as','of','intro','intros','exact','apply','refine','rcases',
+  'obtain','rw','rewrite','simp','simp_all','tauto','trivial','contradiction',
+  'use','constructor','left','right','split','exfalso','by_contra','push_neg',
+  'unfold','tauto','separate','distinguish','obvious','clearly','calc',
+  'forall','exists','True','False',
+  'atlas','ref','proposition','corollary','exercise','remark','postulate',
+  'alternate','definition','axiom',  // (atlas kinds — second 'axiom' is fine, set semantics)
+]);
+function highlightLean(src) {
+  // Tokenise into spans of (kind, text). Comments and strings win
+  // first because they can contain anything; then keywords; then
+  // numbers; everything else falls through as plain text.
+  const out = [];
+  let i = 0, n = src.length;
+  const push = (kind, text) =>
+    out.push(kind ? `<span class="lean-${kind}">${escapeHtml(text)}</span>` : escapeHtml(text));
+  while (i < n) {
+    const c = src[i];
+    // line comment
+    if (c === '-' && src[i+1] === '-') {
+      let j = src.indexOf('\n', i);
+      if (j < 0) j = n;
+      push('cmt', src.slice(i, j));
+      i = j;
+      continue;
+    }
+    // block comment / doc comment
+    if (c === '/' && src[i+1] === '-') {
+      let j = src.indexOf('-/', i + 2);
+      j = j < 0 ? n : j + 2;
+      push('cmt', src.slice(i, j));
+      i = j;
+      continue;
+    }
+    // string
+    if (c === '"') {
+      let j = i + 1;
+      while (j < n && src[j] !== '"') {
+        if (src[j] === '\\' && j + 1 < n) j += 2;
+        else j++;
+      }
+      j = Math.min(j + 1, n);
+      push('str', src.slice(i, j));
+      i = j;
+      continue;
+    }
+    // identifier-like (including dotted names + french-quoted titles)
+    if (c === '«') {
+      let j = src.indexOf('»', i + 1);
+      j = j < 0 ? n : j + 1;
+      push('const', src.slice(i, j));
+      i = j;
+      continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i + 1;
+      while (j < n && /[A-Za-z0-9_'.]/.test(src[j])) j++;
+      const word = src.slice(i, j);
+      // bare keyword? (no dots, in keyword set)
+      if (!word.includes('.') && LEAN_KEYWORDS.has(word)) {
+        push('kw', word);
+      } else if (/^[A-Z]/.test(word)) {
+        push('const', word);    // capitalised → likely a type/constructor
+      } else {
+        push('var', word);
+      }
+      i = j;
+      continue;
+    }
+    // number (including 3-part atlas numbers like 1.0.3)
+    if (/[0-9]/.test(c)) {
+      let j = i + 1;
+      while (j < n && /[0-9.]/.test(src[j])) j++;
+      push('num', src.slice(i, j));
+      i = j;
+      continue;
+    }
+    // everything else (whitespace, operators) → plain
+    push(null, c);
+    i++;
+  }
+  return out.join('');
+}
+
+// `mapData` works on stylesheet selectors but not on per-node lambdas;
+// when the per-node `width: (n) => …` style function is needed (so we
+// can blend manual overrides with pagerank fallback), this helper
+// does the equivalent normalised linear interpolation.
+function mapDataNorm(norm, lo, hi) {
+  if (norm == null || isNaN(norm)) return (lo + hi) / 2;
+  return lo + (hi - lo) * norm;
 }
 
 // All nodes are rectangular cards; kind is communicated through:
@@ -1340,8 +1701,61 @@ function renderTypeHtml(rawType) {
 function renderNodeCard(d) {
   const kind = d.kind || 'other';
   const sorry = d.has_sorry ? ' has-sorry' : '';
-  const doc = d.doc ? truncate(d.doc, 220) : '';
+  // Size bucket controls how much doc/proof text we show; smaller
+  // cards just don't have room for everything.
+  const bucket = d.sizeBucket || 'size-medium';
+  // Explicit pixel sizes — `cytoscape-node-html-label` doesn't pass
+  // the node's box size down to the HTML, so `width: 100%` would
+  // resolve to natural content size and leave the cytoscape node
+  // bounds peeking through. `d.w` / `d.h` are kept in sync with
+  // `node.style('width'/'height')` by the main resize-handler.
+  const w = d.w ? `${Math.round(d.w)}px` : '1050px';
+  const h = d.h ? `${Math.round(d.h)}px` : '1485px';
+  const sizeStyle = `width:${w};height:${h}`;
+  const docLimit =
+    bucket === 'size-poster' ? 600 :
+    bucket === 'size-large'  ? 380 :
+    bucket === 'size-medium' ? 220 : 110;
+  const doc = d.doc ? truncate(d.doc, docLimit) : '';
   const typeHtml = renderTypeHtml(d.type_pp);
+
+  // Commentary stub — placeholder for the upcoming `atlas commentary
+  // <ref> "<text>"` tag (see TODO). Renders even when empty so the
+  // visual rhythm of the card is stable across decls.
+  const commentary = d.atlas_commentary || '';
+  const commentarySection = (bucket === 'size-small') ? '' : `
+    <div class="node-section node-commentary${commentary ? '' : ' empty'}">
+      <div class="node-section-label">commentary</div>
+      <div class="node-section-body">
+        ${commentary ? escapeHtml(commentary) : '<span class="node-section-placeholder">(no commentary tagged)</span>'}
+      </div>
+    </div>`;
+
+  // Source section — the decl's raw Lean source (signature + proof),
+  // sliced per-decl upstream (export_graph.py reads line_start/end
+  // out of decls.json). Client-side syntax-highlighted via
+  // `highlightLean` so it reads like an editor pane. Goes in the
+  // body grid spanning both columns at the bottom row.
+  const source = d.source || '';
+  const sourceSection = !source ? '' : `
+    <div class="node-section node-source">
+      <div class="node-section-label">source</div>
+      <pre class="node-source-body">${highlightLean(source)}</pre>
+    </div>`;
+
+  // Metadata footer: module + line range + decl FQN. Small print but
+  // present at every size so the card is always traceable back to source.
+  const metaFooter = `
+    <div class="node-card-meta">
+      <span class="node-card-meta-mod">${escapeHtml(d.module || '')}</span>
+      ${d.line_start ? `<span class="node-card-meta-sep">·</span><span class="node-card-meta-line">L${d.line_start}${d.line_end && d.line_end !== d.line_start ? `–${d.line_end}` : ''}</span>` : ''}
+    </div>`;
+
+  // Per-card resize handle (bottom-right corner). Pointer events are
+  // off on the card itself (so cytoscape gets clicks/drags); the
+  // handle re-enables them just for itself so a mousedown there is
+  // captured by the document-level resize listener.
+  const resizeHandle = `<div class="node-resize" data-node-id="${escapeHtml(d.id)}" title="drag to resize"></div>`;
 
   // Atlas-aware rendering: when the decl carries `@[atlas …]`, render
   // the structured marker (kind chip + book number + prose title) as
@@ -1350,7 +1764,7 @@ function renderNodeCard(d) {
   // without dominating the typography.
   if (d.atlas_kind) {
     return `
-      <div class="node-card atlas kind-${kind}${sorry}">
+      <div class="node-card paper atlas kind-${kind} ${bucket}${sorry}" data-node-id="${escapeHtml(d.id)}" style="${sizeStyle}">
         <div class="node-card-atlas-head">
           <span class="node-card-atlas-kind">§ ${escapeHtml(d.atlas_kind)}</span>
           <span class="node-card-atlas-sep">·</span>
@@ -1359,21 +1773,39 @@ function renderNodeCard(d) {
         </div>
         <div class="node-card-atlas-title">${escapeHtml(d.atlas_title || d.label)}</div>
         ${doc ? `<div class="node-card-doc">${escapeHtml(doc)}</div>` : ''}
-        <div class="node-type${typeHtml ? '' : ' empty'}">${typeHtml}</div>
+        <div class="node-card-body">
+          <div class="node-section node-statement">
+            <div class="node-section-label">statement</div>
+            <div class="node-type${typeHtml ? '' : ' empty'}">${typeHtml}</div>
+          </div>
+          ${commentarySection}
+          ${sourceSection}
+        </div>
+        ${metaFooter}
         <div class="node-card-atlas-fqn">${escapeHtml(d.label)}</div>
+        ${resizeHandle}
       </div>
     `;
   }
 
   return `
-    <div class="node-card kind-${kind}${sorry}">
+    <div class="node-card paper kind-${kind} ${bucket}${sorry}" data-node-id="${escapeHtml(d.id)}" style="${sizeStyle}">
       <div class="node-card-head">
         <span class="node-card-kind"><span class="glyph">${glyphForKind(kind)}</span> ${kind}</span>
         ${d.has_sorry ? '<span class="node-card-flag">sorry</span>' : ''}
       </div>
       <div class="node-card-name">${escapeHtml(d.label)}</div>
       ${doc ? `<div class="node-card-doc">${escapeHtml(doc)}</div>` : ''}
-      <div class="node-type${typeHtml ? '' : ' empty'}">${typeHtml}</div>
+      <div class="node-card-body">
+        <div class="node-section node-statement">
+          <div class="node-section-label">statement</div>
+          <div class="node-type${typeHtml ? '' : ' empty'}">${typeHtml}</div>
+        </div>
+        ${commentarySection}
+        ${sourceSection}
+      </div>
+      ${metaFooter}
+      ${resizeHandle}
     </div>
   `;
 }
@@ -1765,6 +2197,10 @@ async function main() {
 
   const nodes = data.nodes;
   const edges = data.edges;
+  // Note: proof teaser is deferred (renderNodeCard always emits ''
+  // for the proof section). When DumpTactics learns to slice HTML
+  // per-decl, fetch `blueprint/highlighted.json` here and merge it
+  // into each `node.data.proof_html`.
 
   // ---- Module dropdown ----
   const modules = [...new Set(nodes.map(n => n.data.module).filter(Boolean))].sort();
@@ -1782,11 +2218,37 @@ async function main() {
   document.getElementById('figure-stats').textContent =
     `${nodes.length} nodes · ${edges.length} edges (pruned)`;
 
+  // ---- Foundational tier (axioms + definitions → bottom layer) ----
+  // ELK reads per-node `elk.*` keys from the node `data` and forwards
+  // them as layout constraints. `layerConstraint: LAST` pins a node
+  // to the final layer of the layered algorithm — combined with
+  // `elk.direction: DOWN`, that puts axioms visually at the bottom.
+  // Definitions get the same constraint so the "foundation" reads as
+  // a single uniform band; everything else floats above per its deps,
+  // giving the visual cue "the higher you go, the more theory below."
+  //
+  // For uniformity inside that band, axioms are also forced to a
+  // shared fixed size (square index card) regardless of pagerank,
+  // so the foundation row reads as a row of plaques rather than a
+  // ragged shoreline of variously-sized cards.
+  const AXIOM_W = 900, AXIOM_H = 720;
+  for (const n of nodes) {
+    const ak = n.data.atlas_kind;
+    if (ak === 'axiom') {
+      n.data['elk.layered.layering.layerConstraint'] = 'LAST';
+      // shared visual footprint for the bottom band
+      n.data.uniformW = AXIOM_W;
+      n.data.uniformH = AXIOM_H;
+    } else if (ak === 'definition') {
+      n.data['elk.layered.layering.layerConstraint'] = 'LAST';
+    }
+  }
+
   // ---- Cytoscape ----
   const cy = cytoscape({
     container: document.getElementById('cy'),
     elements: { nodes, edges },
-    minZoom: 0.1, maxZoom: 4,
+    minZoom: 0.01, maxZoom: 4,
     wheelSensitivity: 0.2,
     style: [
       {
@@ -1851,6 +2313,78 @@ async function main() {
   // Precompute degree so mapData(degree, …) in the stylesheet has data to bind.
   cy.nodes().forEach(n => n.data('degree', n.degree()));
 
+  // ---------- PageRank → node size ----------
+  // Importance signal for sizing: each node's PageRank against the
+  // full dep graph. Theorems referenced by lots of downstream proofs
+  // (and especially those referenced by *important* proofs) get
+  // bigger cards — bigger like a poster, smaller like an index card,
+  // with the bulk somewhere in between.
+  //
+  // Cytoscape's built-in `pageRank()` returns `{ rank: nodeId => num }`.
+  // We normalise to [0,1] so the size mapping is robust to graph size.
+  const pr = cy.elements().pageRank({ dampingFactor: 0.85 });
+  let minPr = Infinity, maxPr = -Infinity;
+  cy.nodes().forEach(n => {
+    const r = pr.rank(n);
+    n.data('pageRank', r);
+    if (r < minPr) minPr = r;
+    if (r > maxPr) maxPr = r;
+  });
+  const prRange = (maxPr - minPr) || 1;
+  cy.nodes().forEach(n => {
+    const norm = (n.data('pageRank') - minPr) / prRange;
+    n.data('pageRankNorm', norm);
+    // Bucket into 4 size classes so the card CSS can scale fonts/
+    // padding by bucket (continuous CSS resize would require container
+    // queries, which work but make per-element rules messier).
+    const bucket =
+      norm > 0.95 ? 'size-poster' :
+      norm > 0.75 ? 'size-large'  :
+      norm > 0.35 ? 'size-medium' : 'size-small';
+    n.data('sizeBucket', bucket);
+  });
+  // Drive the actual cytoscape node geometry. Manual size (set by the
+  // resize handle, persisted to localStorage per-node) takes precedence;
+  // otherwise fall back to a pagerank-mapped default.
+  //
+  // Portrait, A-series proportions (1:1.41). At 1× the smallest cards
+  // are roughly A6, the largest roughly A3 — on a G9 (5120×1440) the
+  // largest is paper-on-the-desk scale; the smallest is index-card-ish.
+  //   small  ≈ A6 portrait  ( 525 × 740)
+  //   medium ≈ A5 portrait  ( 740 ×1050)
+  //   large  ≈ A4 portrait  (1050 ×1485)
+  //   poster ≈ A3 portrait  (1485 ×2100)
+  //
+  // We also write the *resolved* size back into `node.data('w'/'h')`
+  // so `renderNodeCard` can set explicit pixel sizes inline on the
+  // card div. `cytoscape-node-html-label`'s wrapper doesn't propagate
+  // the node's box size to its children, so `width: 100%` on the
+  // card resolves to its content's natural size (which leaves the
+  // cytoscape node bounds peeking through, showing as a red rectangle
+  // when the node is selected).
+  cy.nodes().forEach(n => {
+    const stored = loadNodeSize(n.id());
+    const norm = n.data('pageRankNorm') ?? 0.5;
+    // Priority: manual (resize handle) > uniform (foundation tier) >
+    // pagerank default.
+    const uw = n.data('uniformW'), uh = n.data('uniformH');
+    const w = stored?.w ?? uw ?? mapDataNorm(norm, 525, 1485);
+    const h = stored?.h ?? uh ?? mapDataNorm(norm, 740, 2100);
+    if (stored) {
+      n.data('manualW', stored.w);
+      n.data('manualH', stored.h);
+    }
+    n.data('w', w);
+    n.data('h', h);
+  });
+  cy.style()
+    .selector('node')
+    .style({
+      'width':  (n) => n.data('w') || 1050,
+      'height': (n) => n.data('h') || 1485,
+    })
+    .update();
+
   // ---------- HTML cards as node labels ----------
   // Renders a real DOM card on top of each cytoscape node, scaling with
   // the canvas pan/zoom. Inside each card: kind chip, name, docstring
@@ -1866,17 +2400,99 @@ async function main() {
     }]);
   }
 
+  // ---------- Per-card resize ----------
+  // Drag the bottom-right grip to resize a card. The grip element
+  // (`.node-resize`) is rendered inside the card; its `data-node-id`
+  // attribute carries the cytoscape node id so we can look up the
+  // corresponding cytoscape node and update its geometry directly.
+  //
+  // Mouse delta is converted to model-space delta by dividing by
+  // `cy.zoom()` (cytoscape scales the HTML overlay by the current
+  // zoom, so screen pixels and model pixels differ by that factor).
+  //
+  // The new size is persisted to localStorage on mouseup so the
+  // resize survives reloads and `re-fit`.
+  const cyContainer = document.getElementById('cy');
+  cyContainer.addEventListener('mousedown', ev => {
+    const handle = ev.target.closest('.node-resize');
+    if (!handle) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const id = handle.dataset.nodeId;
+    const node = cy.getElementById(id);
+    if (!node || node.empty()) return;
+    const card = handle.closest('.node-card');
+    if (card) card.classList.add('resizing');
+    const startX = ev.clientX, startY = ev.clientY;
+    const zoom = cy.zoom() || 1;
+    const startW = node.width(), startH = node.height();
+
+    function onMove(e) {
+      const dW = (e.clientX - startX) / zoom;
+      const dH = (e.clientY - startY) / zoom;
+      const newW = Math.max(360, startW + dW);
+      const newH = Math.max(240, startH + dH);
+      // Update both cytoscape geometry (so the node box grows) AND
+      // the `w`/`h` data fields (so the HTML card's inline pixel
+      // sizes follow on the next render).
+      node.style({ width: newW, height: newH });
+      node.data('w', newW);
+      node.data('h', newH);
+      node.data('manualW', newW);
+      node.data('manualH', newH);
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (card) card.classList.remove('resizing');
+      saveNodeSize(id, node.width(), node.height());
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // ---------- Capture / reset card sizes ----------
+  // `capture sizes` copies the current per-node {id, w, h} list to
+  // the clipboard, with each card's pageRankNorm — so we can use it
+  // to retune the default size mapping or seed a preset bundle.
+  document.getElementById('capture-sizes')?.addEventListener('click', () => {
+    const rows = cy.nodes().map(n => ({
+      id: n.id(),
+      label: n.data('label'),
+      atlas_kind: n.data('atlas_kind'),
+      atlas_number: n.data('atlas_number'),
+      pageRankNorm: +n.data('pageRankNorm').toFixed(4),
+      w: Math.round(n.width()),
+      h: Math.round(n.height()),
+      manual: !!n.data('manualW'),
+    }));
+    const text = JSON.stringify(rows, null, 2);
+    navigator.clipboard.writeText(text).then(
+      () => console.log(`[capture-sizes] copied ${rows.length} rows to clipboard\nfirst 3:`, rows.slice(0, 3)),
+      () => console.log('[capture-sizes] clipboard write failed; here are the rows:', rows)
+    );
+  });
+  document.getElementById('reset-sizes')?.addEventListener('click', () => {
+    if (!confirm('Clear all manual card sizes? (Cards revert to pagerank-driven defaults.)')) return;
+    clearAllNodeSizes();
+    cy.nodes().forEach(n => {
+      n.removeData('manualW');
+      n.removeData('manualH');
+    });
+    cy.style().update();
+  });
+
   // ---------- Layout options ----------
   function elkOpts() {
     return {
       name: 'elk',
       elk: {
         algorithm: document.getElementById('elk-algorithm')?.value || 'layered',
-        'elk.direction': document.getElementById('elk-direction')?.value || 'UP',
+        'elk.direction': document.getElementById('elk-direction')?.value || 'DOWN',
         'elk.spacing.nodeNode':
-            +(document.getElementById('elk-nodenode')?.value || 240),
+            +(document.getElementById('elk-nodenode')?.value || 960),
         'elk.layered.spacing.nodeNodeBetweenLayers':
-            +(document.getElementById('elk-betweenlayers')?.value || 520),
+            +(document.getElementById('elk-betweenlayers')?.value || 2080),
         'elk.layered.nodePlacement.strategy':
             document.getElementById('elk-strategy')?.value || 'NETWORK_SIMPLEX',
       },
@@ -2007,6 +2623,35 @@ async function main() {
     if (e.target === cy) {
       cy.elements().removeClass('related');
       restoreEmptyState();
+    }
+  });
+
+  // ---------- Click-to-follow on edges ----------
+  // Tap an edge → animate the camera to the edge's target node. The
+  // target is selected and its 1-hop neighbourhood highlighted, so
+  // you can keep "following the proof's deps" by clicking the next
+  // outbound edge from there. Holding Shift inverts to follow the
+  // source (i.e. "walk backwards toward what uses this").
+  cy.on('tap', 'edge', e => {
+    const edge  = e.target;
+    const follow = e.originalEvent && e.originalEvent.shiftKey
+      ? edge.source() : edge.target();
+    if (!follow) return;
+    cy.elements().removeClass('related');
+    cy.elements().unselect();
+    follow.select();
+    follow.closedNeighborhood().addClass('related');
+    cy.animate({
+      center: { eles: follow },
+      // Settle at the natural per-card zoom so the destination card
+      // is roughly screen-sized, not lost in white space. ~0.4 keeps
+      // the typical A4 card legible without losing the surroundings.
+      zoom: Math.max(cy.zoom(), 0.4),
+    }, { duration: 380, easing: 'ease-out' });
+    showNode(follow.data());
+    if (follow.data('type_pp')) {
+      const target = document.getElementById('type-rendered');
+      if (target) renderTypeKatex(target, follow.data('type_pp'));
     }
   });
 

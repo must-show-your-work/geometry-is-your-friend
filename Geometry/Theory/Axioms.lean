@@ -180,7 +180,7 @@ macro_rules
 /--
 p.108a "If A - B - C, then A,B,C are distinct points on the same line...
 -/
-atlas axiom ["B.1.a"] "A-B-C implies A B C are distinct and collinear"
+atlas axiom B-1a "A-B-C implies A B C are distinct and collinear"
   {A B C : Point} : A - B - C -> distinct A B C ∧ collinear A B C
 attribute [simp] «A-B-C implies A B C are distinct and collinear»
 
@@ -193,9 +193,16 @@ a bit easier. The author even notes, "The second part (C * B * A) makes the obvi
 that 'betwen A and C' means the same as 'between C and A'" Making it a separate axiom means
 I won't have to dig it out of the pile of parts that is 1a.
 -/
-atlas axiom ["B.1.b"] "Betweenness is invariant under endpoint reversal"
+atlas axiom B-1b "Betweenness Commutativity"
   {A B C : Point} : A - B - C ↔ C - B - A
-attribute [simp] «Betweenness is invariant under endpoint reversal»
+attribute [simp] «Betweenness Commutativity»
+
+/-- Endpoint-reversal projection of B-1b — exposes B-1b's commutativity
+    via dot notation: `BCD.symm` instead of `(«Betweenness Commutativity»).mp BCD`.
+    Not atlas-tagged (this is a structural projection on the underlying
+    `Between` relation, not book content). -/
+def Between.symm {A B C : Point} (h : A - B - C) : C - B - A :=
+  («Betweenness Commutativity»).mp h
 
 
 /--
@@ -218,7 +225,7 @@ atlas lemma 1.0.5 "Density axiom witness: a point left of two distinct points"
       intro B D BneD
       have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := ref axiom B.2 B D BneD
       use A
-      simp_all only [ne_eq, «Betweenness is invariant under endpoint reversal», «A-B-C implies A B C are distinct and collinear», and_self]
+      simp_all only [ne_eq, «Betweenness Commutativity», «A-B-C implies A B C are distinct and collinear», and_self]
 
 
 /-- Construct a point 'in between' points BD on the induced line B D -/
@@ -227,7 +234,7 @@ atlas lemma 1.0.6 "Density axiom witness: a point between two distinct points"
       intro B D BneD
       have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := ref axiom B.2 B D BneD
       use C
-      simp_all only [ne_eq, «Betweenness is invariant under endpoint reversal», «A-B-C implies A B C are distinct and collinear», and_self]
+      simp_all only [ne_eq, «Betweenness Commutativity», «A-B-C implies A B C are distinct and collinear», and_self]
 
 
 /-- Construct a point 'to the right' points BD on the induced line B D -/
@@ -236,7 +243,7 @@ atlas lemma 1.0.7 "Density axiom witness: a point right of two distinct points"
       intro B D BneD
       have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := ref axiom B.2 B D BneD
       use E
-      simp_all only [ne_eq, «Betweenness is invariant under endpoint reversal», «A-B-C implies A B C are distinct and collinear», and_self]
+      simp_all only [ne_eq, «Betweenness Commutativity», «A-B-C implies A B C are distinct and collinear», and_self]
 
 
 /-- p.108 "If A, B, and C are three distinct points lying on the same line, then
@@ -271,7 +278,7 @@ p.110 "Betweenness Axiom 4 (Plane Separation). For every line L and for any
 three points A, B, and C not on L: (i) If A and B are on the same side of L and
 if B and C are on the same side of L, the A and C are on the same side of L..."
 -/
-atlas axiom ["B.4.i"] "Same-side is transitive across a common middle point"
+atlas axiom B-4i "Same-side is transitive across a common middle point"
   {A B C : Point} {L : Line} :
   (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L guards A and B) ∧ (L guards B and C) -> (L guards A and C)
@@ -281,7 +288,7 @@ attribute [simp] «Same-side is transitive across a common middle point»
 "... (ii) If A and B are on opposite sides of L and if B and C are opposite
 sides of L, then A and C are on the same side of L."
 -/
-atlas axiom ["B.4.ii"] "Two opposite-side relations chain to a same-side relation"
+atlas axiom B-4ii "Two opposite-side relations chain to a same-side relation"
   {A B C : Point} {L : Line} :
   (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L splits A and B) ∧ (L splits B and C) -> (L guards A and C)
@@ -378,8 +385,9 @@ macro "obvious" : tactic =>
           Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, Finset.notMem_empty,
           -- line parts
           Segment, Ray, Extension, LineThrough,
-          -- betweenness normalizing
-          «Betweenness is invariant under endpoint reversal»,
+          -- betweenness normalizing (title form — `ref axiom` doesn't
+          -- parse inside `simp only [...]` arg lists)
+          «Betweenness Commutativity»,
           -- propositional stuff
           ne_eq, true_or, or_true, false_or, or_false, or_self,
           true_and, and_true, false_and, and_false, and_self,
@@ -478,7 +486,6 @@ elab_rules : tactic
     -- Step 1: unfold Finset membership into a disjunction of equalities.
     evalTactic (← `(tactic|
       simp only [Finset.mem_insert, Finset.mem_singleton] at $h:ident))
-
     -- Step 2: walk the resulting Or chain, collecting auto-names like `<lhs>eq<rhs>`.
     withMainContext do
       let hFVar ← getFVarId h
@@ -502,10 +509,8 @@ elab_rules : tactic
         current := current.getArg! 1
       if let some n ← extractEq current then
         names := names.push n
-
       if names.isEmpty then
         throwError "by_exhaustion: could not extract eq disjuncts from hypothesis type"
-
       -- Step 3: build and run `rcases h with name_1 | name_2 | ...` via string parse.
       let patStr := String.intercalate " | " names.toList
       let tacStr := s!"rcases {h.getId} with {patStr}"

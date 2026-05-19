@@ -52,7 +52,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
     contradiction
   have BoffL : B off L := by
     -- idea: since A is off L, and O is on, the AO intersects L at O, extend AO, since AOB, then B is on this extension.
-    have ⟨distinctBOA, colBOA⟩ := «A-B-C implies A B C are distinct and collinear» bBOA
+    have ⟨distinctBOA, colBOA⟩ := ref axiom B-1a bBOA
     separate at distinctBOA
     have LintAOatO : L intersects segment A O at O := by
       unfold Intersects
@@ -61,7 +61,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       exact (ref lemma 2.0.20 O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
     have h := ref lemma 2.0.21 AneO LintAOatO
     unfold Ray at h
-    have BonExtAO : B on extension A O := ⟨«Betweenness is invariant under endpoint reversal».mp bBOA, AneB, BneO.symm⟩
+    have BonExtAO : B on extension A O := ⟨bBOA.symm, AneB, BneO.symm⟩
     have BonRayAO : B on ray A O := by tauto
     unfold Intersects at h
     by_contra! BonL
@@ -104,7 +104,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
         intro LsplitsBC
         /- then C and A are on the same side of L (by the law of the excluded middle and Betweenness Axiom 4(ii))." -/
         by_contra LsplitsAC
-        have LguardsAB := «Two opposite-side relations chain to a same-side relation» ⟨AoffL, CoffL, BoffL⟩ ⟨LsplitsAC, ref lemma 2.0.31 LsplitsBC⟩
+        have LguardsAB := ref axiom B-4ii ⟨AoffL, CoffL, BoffL⟩ ⟨LsplitsAC, ref lemma 2.0.31 LsplitsBC⟩
         contradiction
       by_cases suppose: L splits B and C
       · specialize AseparatefromB suppose
@@ -124,7 +124,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       · obtain ⟨BoffL, CoffL, hOpts⟩ := CinHr
         tauto
   /- "(6) If C were on both sides (RAA Hypothesis), then A and B would be on the
-  same side (Axiom 4(i) [«Same-side is transitive across a common middle point»]), contradicting step 4; hence the two sides are
+  same side (Axiom 4(i) [ref axiom B-4i]), contradicting step 4; hence the two sides are
   disjoint." -/
   have HlintHrempty : Hl ∩ Hr = ∅ := by
     apply Subset.antisymm
@@ -134,7 +134,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       have LguardsBandP : L guards B and P := PinHr
       have LguardsPandB : L guards P and B := ref lemma 2.0.30 LguardsBandP
       have PoffL : P off L := by tauto
-      have LguardsAandB : L guards A and B := «Same-side is transitive across a common middle point» ⟨AoffL, PoffL, BoffL⟩ ⟨LguardsAandP, LguardsPandB⟩
+      have LguardsAandB : L guards A and B := ref axiom B-4i ⟨AoffL, PoffL, BoffL⟩ ⟨LguardsAandP, LguardsPandB⟩
       contradiction
     · intro P PinEmpty
       contradiction
