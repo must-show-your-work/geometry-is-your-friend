@@ -24,7 +24,7 @@ partial def discoverGeometryModules (root : String) : IO (Array Lean.Name) := do
     else if path.extension == some "lean" then
       let rel := path.toString
       let cleaned := if rel.startsWith "./" then rel.drop 2 else rel
-      let withoutExt := if cleaned.endsWith ".lean" then cleaned.dropRight 5 else cleaned
+      let withoutExt := if cleaned.endsWith ".lean" then cleaned.dropEnd 5 else cleaned
       let dotted := withoutExt.replace "/" "."
       out := out.push dotted.toName
   return out
@@ -41,7 +41,6 @@ def main : IO Unit := do
     (#[{ module := `Geometry }] : Array Import) ++
     buildable.map fun n => { module := n : Import }
   let env ← importModules imports {}
-
   -- For each `Geometry.*` module in the loaded environment, emit its direct
   -- (level-1) imports filtered to `Geometry.*`.
   let mut entries : Array String := #[]
@@ -61,7 +60,6 @@ def main : IO Unit := do
       s!"\"imports\":{importsJson}"
     ]
     entries := entries.push ("{" ++ entry ++ "}")
-
   let json := "[\n" ++ String.intercalate ",\n" entries.toList ++ "\n]"
   IO.FS.createDirAll "blueprint"
   IO.FS.writeFile "blueprint/modules.json" json

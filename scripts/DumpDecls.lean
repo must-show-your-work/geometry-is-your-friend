@@ -142,6 +142,63 @@ def buildEntry (env : Environment) (atlasNames : NameSet)
   ]
   return "{" ++ String.intercalate "," fields.toList ++ "}"
 
+/-- Walk imported entries for a `SimplePersistentEnvExtension` and
+    return them in source order. Mirrors `Atlas.atlasStateFromImports`
+    — `addImportedFn` doesn't always merge reliably across module
+    boundaries, so we read each module's entries explicitly. -/
+def markersFromImports {α} [Inhabited α] (ext : SimplePersistentEnvExtension α (Array α))
+    (env : Environment) : Array α := Id.run do
+  let mut out : Array α := #[]
+  let n := env.allImportedModuleNames.size
+  let mut i : Nat := 0
+  while i < n do
+    let entries := PersistentEnvExtension.getModuleEntries ext env i
+    for row in entries do
+      out := out.push row
+    i := i + 1
+  return out
+
+/-- JSON for one `QuotingMarker`. -/
+def quotingMarkerJson (m : Atlas.QuotingMarker) : String :=
+  let stepStr := match m.step? with
+    | some n => toString n
+    | none   => "null"
+  let trailingStr := if m.trailing then "true" else "false"
+  let fields : Array String := #[
+    s!"\"decl\":\"{jsonEscape m.decl.toString}\"",
+    s!"\"module\":\"{jsonEscape m.modName.toString}\"",
+    s!"\"file\":\"{jsonEscape (moduleToFile m.modName.toString)}\"",
+    s!"\"line\":{m.line}",
+    s!"\"column\":{m.column}",
+    s!"\"step\":{stepStr}",
+    s!"\"text\":\"{jsonEscape m.text}\"",
+    s!"\"trailing\":{trailingStr}"
+  ]
+  "{" ++ String.intercalate "," fields.toList ++ "}"
+
+/-- JSON for one `CommentMarker`. -/
+def commentMarkerJson (m : Atlas.CommentMarker) : String :=
+  let fields : Array String := #[
+    s!"\"decl\":\"{jsonEscape m.decl.toString}\"",
+    s!"\"module\":\"{jsonEscape m.modName.toString}\"",
+    s!"\"file\":\"{jsonEscape (moduleToFile m.modName.toString)}\"",
+    s!"\"line\":{m.line}",
+    s!"\"column\":{m.column}",
+    s!"\"text\":\"{jsonEscape m.text}\""
+  ]
+  "{" ++ String.intercalate "," fields.toList ++ "}"
+
+/-- JSON for one `PageBreakMarker`. -/
+def pageBreakMarkerJson (m : Atlas.PageBreakMarker) : String :=
+  let fields : Array String := #[
+    s!"\"decl\":\"{jsonEscape m.decl.toString}\"",
+    s!"\"module\":\"{jsonEscape m.modName.toString}\"",
+    s!"\"file\":\"{jsonEscape (moduleToFile m.modName.toString)}\"",
+    s!"\"line\":{m.line}",
+    s!"\"column\":{m.column}"
+  ]
+  "{" ++ String.intercalate "," fields.toList ++ "}"
+
 /-- Every `Geometry/**/*.lean` we can find with a built `.olean`. Used
     to import work-in-progress files that aren't transitively reached
     from `Geometry.lean` yet but have nonetheless been compiled. -/
@@ -211,3 +268,27 @@ def main : IO Unit := do
   IO.FS.createDirAll "blueprint"
   IO.FS.writeFile "blueprint/decls.json" json
   IO.eprintln s!"Wrote {entries.size} atlas-tagged declarations to blueprint/decls.json"
+
+  -- Inline commentary markers: `quoting`, `comment`, `page break`.
+  -- Walk imported entries explicitly (mirrors the atlas decls walk
+  -- above). Combine all three into `blueprint/markers.json` since the
+  -- viewer reads them together for side-by-side rendering.
+  let quotingMarkers := markersFromImports Atlas.atlasQuotingExt env
+                      ++ Atlas.atlasQuotingExt.getState env
+  let commentMarkers := markersFromImports Atlas.atlasCommentExt env
+                      ++ Atlas.atlasCommentExt.getState env
+  let pageBreakMarkers := markersFromImports Atlas.atlasPageBreakExt env
+                        ++ Atlas.atlasPageBreakExt.getState env
+  let quotingJson :=
+    "[\n" ++ String.intercalate ",\n" (quotingMarkers.map quotingMarkerJson).toList ++ "\n]"
+  let commentJson :=
+    "[\n" ++ String.intercalate ",\n" (commentMarkers.map commentMarkerJson).toList ++ "\n]"
+  let pageBreakJson :=
+    "[\n" ++ String.intercalate ",\n" (pageBreakMarkers.map pageBreakMarkerJson).toList ++ "\n]"
+  let markersJson :=
+    "{\n  \"quoting\": " ++ quotingJson ++
+    ",\n  \"comment\": " ++ commentJson ++
+    ",\n  \"page_break\": " ++ pageBreakJson ++
+    "\n}"
+  IO.FS.writeFile "blueprint/markers.json" markersJson
+  IO.eprintln s!"Wrote {quotingMarkers.size} quoting / {commentMarkers.size} comment / {pageBreakMarkers.size} page-break markers to blueprint/markers.json"

@@ -54,6 +54,11 @@ brevity.
 -/
 
 import Lean
+-- Pulled for `#allow_unused_tactic!` — our marker tactics
+-- (`quoting` / `comment` / `page break`) intentionally don't change
+-- goal state; without an explicit exemption, the unused-tactic linter
+-- flags every call site.
+import Mathlib.Tactic.Linter.UnusedTacticExtension
 
 open Lean Elab Command
 
@@ -681,4 +686,188 @@ def elabAtlasViaTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
           throwError s!"atlas via: multiple {kind} candidates at `{numStr}` fit this application: {successes}"
   | _ => Lean.Elab.throwUnsupportedSyntax
 
+
+/-! ## Inline commentary markers: `quoting`, `comment`, `page break`
+
+These four no-op tactics record book-text and authorial annotation at
+specific source positions inside proof bodies. The graph viewer reads
+them out (via `DumpDecls.lean` → `blueprint/markers.json`) and renders
+side-by-side with the code.
+
+- `quoting (N) "..."` — Greenberg verbatim, step N.
+- `quoting ... "..."` — continuation of previous quoting marker.
+- `comment "..."`     — author commentary, position-anchored.
+- `page break`        — page-boundary marker (the viewer counts these
+                        before each `quoting` to compute its page).
+
+Each marker is `pure ()` semantically — the proof state is untouched.
+The side effect is an entry pushed into the corresponding env extension.
+
+Trailing `...` after a `quoting` string is decorative (renders as `…`
+in the viewer to signal the book text continues beyond the excerpt).
+It doesn't affect semantics.
+
+Single-line strings only for v1. Multi-line book paragraphs split
+into multiple continuation calls — that's the natural side-by-side
+rendering granularity anyway. -/
+
+/-- Source-position-anchored quoting marker. `step? = none` means
+    "continuation of previous". -/
+structure QuotingMarker where
+  decl      : Name
+  modName   : Name
+  line      : Nat
+  column    : Nat
+  step?     : Option Nat
+  text      : String
+  trailing  : Bool   -- true if the trailing `...` was present
+  deriving Inhabited
+
+/-- Source-position-anchored author commentary marker. -/
+structure CommentMarker where
+  decl    : Name
+  modName : Name
+  line    : Nat
+  column  : Nat
+  text    : String
+  deriving Inhabited
+
+/-- Source-position-anchored page-boundary marker. -/
+structure PageBreakMarker where
+  decl    : Name
+  modName : Name
+  line    : Nat
+  column  : Nat
+  deriving Inhabited
+
+-- `asyncMode := .sync` is necessary because our `modifyEnv` calls
+-- happen *inside tactic elaboration*, which runs on parallel
+-- environment branches. The default `.mainOnly` mode silently drops
+-- modifications from non-main branches (where our tactics fire),
+-- producing empty extension state. `.sync` propagates writes to the
+-- checked environment so they survive past the tactic boundary.
+
+initialize atlasQuotingExt : SimplePersistentEnvExtension QuotingMarker (Array QuotingMarker) ←
+  registerSimplePersistentEnvExtension {
+    name          := `Atlas.atlasQuotingExt
+    addEntryFn    := fun s e => s.push e
+    addImportedFn := fun arr => arr.foldl (init := (#[] : Array QuotingMarker)) Array.append
+    asyncMode     := .sync
+  }
+
+initialize atlasCommentExt : SimplePersistentEnvExtension CommentMarker (Array CommentMarker) ←
+  registerSimplePersistentEnvExtension {
+    name          := `Atlas.atlasCommentExt
+    addEntryFn    := fun s e => s.push e
+    addImportedFn := fun arr => arr.foldl (init := (#[] : Array CommentMarker)) Array.append
+    asyncMode     := .sync
+  }
+
+initialize atlasPageBreakExt : SimplePersistentEnvExtension PageBreakMarker (Array PageBreakMarker) ←
+  registerSimplePersistentEnvExtension {
+    name          := `Atlas.atlasPageBreakExt
+    addEntryFn    := fun s e => s.push e
+    addImportedFn := fun arr => arr.foldl (init := (#[] : Array PageBreakMarker)) Array.append
+    asyncMode     := .sync
+  }
+
+/-- Resolve a syntax position to (line, column). Returns `(0, 0)` if
+    position info is missing — shouldn't happen for parsed user syntax
+    but we don't want a crash if it does. -/
+private def markerPos (stx : Syntax) : Lean.Elab.Term.TermElabM (Nat × Nat) := do
+  match stx.getPos? with
+  | none     => return (0, 0)
+  | some pos =>
+    let fileMap ← Lean.MonadFileMap.getFileMap
+    let p := fileMap.toPosition pos
+    return (p.line, p.column)
+
+/-- Resolve the enclosing declaration name (the atlas decl we're inside
+    of). Falls back to `.anonymous` if we're not inside a decl, which
+    would be a user error — the marker would be orphaned. -/
+private def markerDecl : Lean.Elab.Term.TermElabM Name := do
+  return (← Lean.Elab.Term.getDeclName?).getD .anonymous
+
+/-- Push a quoting marker to the env extension. -/
+private def recordQuoting (stx : Syntax) (step? : Option Nat) (text : String)
+    (trailing : Bool) : Lean.Elab.Term.TermElabM Unit := do
+  let (line, column) ← markerPos stx
+  let decl ← markerDecl
+  let modName := (← getEnv).mainModule
+  modifyEnv (atlasQuotingExt.addEntry · { decl, modName, line, column, step?, text, trailing })
+
+private def recordComment (stx : Syntax) (text : String) : Lean.Elab.Term.TermElabM Unit := do
+  let (line, column) ← markerPos stx
+  let decl ← markerDecl
+  let modName := (← getEnv).mainModule
+  modifyEnv (atlasCommentExt.addEntry · { decl, modName, line, column, text })
+
+private def recordPageBreak (stx : Syntax) : Lean.Elab.Term.TermElabM Unit := do
+  let (line, column) ← markerPos stx
+  let decl ← markerDecl
+  let modName := (← getEnv).mainModule
+  modifyEnv (atlasPageBreakExt.addEntry · { decl, modName, line, column })
+
+-- Tactic-mode syntaxes.
+--
+-- `quoting (N) "text"` — explicit step N, optional trailing `...`.
+-- `quoting ... "text"` — continuation, optional trailing `...`.
+-- `comment "text"`     — author marker.
+-- `page break`         — page-boundary marker.
+--
+-- `colGt` ensures continuation parsing stays on the same logical line
+-- so `quoting (1) "..." \n rcases ...` works (next tactic starts at
+-- left-edge column).
+
+syntax (name := quotingExplicit) "quoting" "(" num ")" str ("..." )? : tactic
+syntax (name := quotingContinuation) "quoting" "..." str ("..." )? : tactic
+syntax (name := commentMarker) "comment" str : tactic
+syntax (name := pageBreakMarker) "page" "break" : tactic
+
+open Lean Elab Tactic in
+@[tactic quotingExplicit]
+def elabQuotingExplicit : Tactic := fun stx => do
+  -- Raw structure: "quoting" "(" num ")" str ("...")? — 6 children.
+  -- The trailing `...` is an optional null-node group at index 5; if
+  -- it has any children, the literal `...` was present.
+  let trailing := stx[5].getNumArgs > 0
+  let nNat := stx[2].toNat
+  let textStr ← match stx[4].isStrLit? with
+    | some s => pure s
+    | none   => throwError "quoting: expected string literal"
+  recordQuoting stx (some nNat) textStr trailing
+
+open Lean Elab Tactic in
+@[tactic quotingContinuation]
+def elabQuotingContinuation : Tactic := fun stx => do
+  -- Raw structure: "quoting" "..." str ("...")? — 4 children.
+  let trailing := stx[3].getNumArgs > 0
+  let textStr ← match stx[2].isStrLit? with
+    | some s => pure s
+    | none   => throwError "quoting: expected string literal"
+  recordQuoting stx none textStr trailing
+
+open Lean Elab Tactic in
+@[tactic commentMarker]
+def elabComment : Tactic := fun stx =>
+  match stx with
+  | `(tactic| comment $t:str) => do
+      recordComment stx t.getString
+  | _ => throwUnsupportedSyntax
+
+open Lean Elab Tactic in
+@[tactic pageBreakMarker]
+def elabPageBreak : Tactic := fun stx =>
+  match stx with
+  | `(tactic| page break) => do
+      recordPageBreak stx
+  | _ => throwUnsupportedSyntax
+
 end Atlas
+
+-- Mark the four marker tactics as legitimately-unused per the linter.
+-- They look like no-ops to the linter (don't touch goals) but are
+-- meaningful side-effect recordings into env extensions. The `!`
+-- makes the allowance persist across importing modules.
+#allow_unused_tactic! Atlas.quotingExplicit Atlas.quotingContinuation
+                       Atlas.commentMarker Atlas.pageBreakMarker

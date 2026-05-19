@@ -736,6 +736,88 @@ body::after {
   overflow-x: auto;
 }
 
+/* ---------- Book ⟷ Proof side-by-side (`quoting`/`comment`/`page break`) ---------- */
+.bn-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: rgba(238, 232, 213, 0.3);
+  border-radius: 3px;
+  border: 1px solid rgba(101, 123, 131, 0.15);
+  overflow: hidden;
+}
+.bn-seg {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 0;
+  align-items: stretch;
+}
+.bn-seg + .bn-seg { border-top: 1px dotted rgba(101, 123, 131, 0.18); }
+.bn-seg-left {
+  padding: 0.5em 0.7em;
+  font-family: 'EB Garamond', 'Iowan Old Style', Georgia, serif;
+  font-size: 0.92em;
+  line-height: 1.45;
+  border-right: 1px solid rgba(101, 123, 131, 0.18);
+  background: rgba(238, 232, 213, 0.55);
+}
+.bn-seg-right { padding: 0.4em 0.7em; min-width: 0; }
+.bn-code {
+  margin: 0;
+  font-size: 0.85em;
+  line-height: 1.4;
+  white-space: pre;
+  overflow-x: auto;
+  background: transparent;
+  color: #073642;
+}
+.bn-marker { display: flex; align-items: baseline; gap: 0.45em; }
+.bn-marker-quoting .bn-text { font-style: italic; color: #073642; }
+.bn-marker-comment {
+  background: rgba(255, 230, 200, 0.5);
+  border-left: 2px solid #cb4b16;
+  padding: 0.2em 0.45em;
+  margin-left: -0.3em;
+}
+.bn-marker-comment .bn-text { color: #586e75; font-size: 0.86em; }
+.bn-marker-pagebreak {
+  justify-content: center;
+  gap: 0.6em;
+  font-size: 0.72em;
+  letter-spacing: 0.15em;
+  color: #93a1a1;
+  text-transform: uppercase;
+}
+.bn-step {
+  display: inline-block;
+  min-width: 1.6em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #b58900;
+  font-size: 0.82em;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.bn-step-cont { color: #93a1a1; font-weight: 400; font-size: 1em; }
+.bn-chip {
+  display: inline-block;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cb4b16;
+  flex-shrink: 0;
+}
+.bn-ellipsis { color: #93a1a1; margin-left: 0.15em; }
+.bn-rule {
+  flex: 1;
+  height: 1px;
+  background: rgba(101, 123, 131, 0.25);
+}
+.bn-pagebreak-label { font-style: italic; flex-shrink: 0; }
+.node-source-narrative .node-section-body { display: contents; }
+
 /* ---------- Source block in inspector ---------- */
 .source-block {
   margin: 22px 0 0;
@@ -1698,6 +1780,115 @@ function renderTypeHtml(rawType) {
   return texToKatexHtml(tex, { displayMode: false });
 }
 
+// Render one marker's left-column content.
+function renderMarkerLeft(m) {
+  if (m._kind === 'quoting') {
+    // Step chip uses the ORIGINAL `step` field: explicit `(N)` from
+    // the user gets a numeric chip, an empty `step` (continuation
+    // marker, user wrote leading `...`) gets a `…` chip. Inheriting
+    // the prior step here would just print redundant numbers.
+    const isExplicit = m.step != null;
+    const stepChip = isExplicit
+      ? `<span class="bn-step">(${m.step})</span>`
+      : `<span class="bn-step bn-step-cont">…</span>`;
+    const trail = m.trailing ? '<span class="bn-ellipsis">…</span>' : '';
+    return `<div class="bn-marker bn-marker-quoting">
+      ${stepChip}<span class="bn-text">${escapeHtml(m.text)}${trail}</span>
+    </div>`;
+  }
+  if (m._kind === 'comment') {
+    return `<div class="bn-marker bn-marker-comment">
+      <span class="bn-chip">Ed.</span><span class="bn-text">${escapeHtml(m.text)}</span>
+    </div>`;
+  }
+  if (m._kind === 'page_break') {
+    return `<div class="bn-marker bn-marker-pagebreak">
+      <span class="bn-rule"></span><span class="bn-pagebreak-label">page break</span><span class="bn-rule"></span>
+    </div>`;
+  }
+  return '';
+}
+
+// Render the per-decl source+marker view. Returns one of:
+//   - { hasMarkers: false, html: <plain source pane> }
+//   - { hasMarkers: true,  html: <two-column segmented view> }
+//
+// The segmented view splits the source by line, groups runs of code
+// between markers, and lays out each group as a row with marker text
+// on the left and (highlighted) code on the right. Source lines that
+// are themselves marker calls (`quoting`/`comment`/`page break`) are
+// dropped from the code column — they're already shown in the left
+// column of the appropriate row.
+function renderSourceWithMarkers(d) {
+  const source = d.source || '';
+  if (!source) return { hasMarkers: false, html: '' };
+  const ms = (typeof window !== 'undefined' && window.markersByDecl)
+    ? window.markersByDecl[d.id] : null;
+  if (!ms || ms.length === 0) {
+    return {
+      hasMarkers: false,
+      html: `<pre class="node-source-body">${highlightLean(source)}</pre>`
+    };
+  }
+
+  // Index markers by absolute file line. Multiple markers on one
+  // physical line are theoretically possible (semicolon-chained) but
+  // not how we write them in practice; if it happens, the second
+  // claims the row and the first's row gets the same code lines.
+  const markersByLine = {};
+  for (const m of ms) {
+    if (!markersByLine[m.line]) markersByLine[m.line] = [];
+    markersByLine[m.line].push(m);
+  }
+
+  const baseLine = d.line_start || 1;
+  const lines = source.split('\n');
+
+  // Walk lines, building segments. Each segment owns:
+  //   - `marker?`: the marker on the seg's starting line (or null
+  //     for the prologue before any marker)
+  //   - `codeLines`: array of non-marker source lines that follow,
+  //     up to but not including the next marker line
+  const segments = [{ marker: null, codeLines: [] }];
+  for (let i = 0; i < lines.length; i++) {
+    const absLine = baseLine + i;
+    const markersHere = markersByLine[absLine];
+    if (markersHere) {
+      // Start a new segment per marker; if multiple, each gets its own
+      // row with an empty code column except the last.
+      for (let k = 0; k < markersHere.length; k++) {
+        segments.push({ marker: markersHere[k], codeLines: [] });
+      }
+      // The marker line itself doesn't contribute to code column.
+      continue;
+    }
+    segments[segments.length - 1].codeLines.push(lines[i]);
+  }
+
+  // Drop the prologue if it has no marker AND no code.
+  const cleanSegs = segments.filter(seg =>
+    seg.marker !== null || seg.codeLines.some(l => l.trim() !== ''));
+
+  const rows = cleanSegs.map(seg => {
+    const left = seg.marker ? renderMarkerLeft(seg.marker) : '';
+    const codeText = seg.codeLines.join('\n');
+    const right = codeText.trim() === ''
+      ? ''
+      : `<pre class="bn-code">${highlightLean(codeText)}</pre>`;
+    return `<div class="bn-seg">
+      <div class="bn-seg-left">${left}</div>
+      <div class="bn-seg-right">${right}</div>
+    </div>`;
+  }).join('');
+
+  return {
+    hasMarkers: true,
+    html: `<div class="bn-grid">${rows}</div>`
+  };
+}
+
+window.renderSourceWithMarkers = renderSourceWithMarkers;
+
 function renderNodeCard(d) {
   const kind = d.kind || 'other';
   const sorry = d.has_sorry ? ' has-sorry' : '';
@@ -1736,11 +1927,14 @@ function renderNodeCard(d) {
   // out of decls.json). Client-side syntax-highlighted via
   // `highlightLean` so it reads like an editor pane. Goes in the
   // body grid spanning both columns at the bottom row.
-  const source = d.source || '';
-  const sourceSection = !source ? '' : `
-    <div class="node-section node-source">
-      <div class="node-section-label">source</div>
-      <pre class="node-source-body">${highlightLean(source)}</pre>
+  // Source pane. When the decl has `quoting`/`comment`/`page break`
+  // markers, render as a two-column side-by-side with markers on the
+  // left and code on the right. Otherwise the plain highlighted block.
+  const swm = renderSourceWithMarkers(d);
+  const sourceSection = !swm.html ? '' : `
+    <div class="node-section node-source${swm.hasMarkers ? ' node-source-narrative' : ''}">
+      <div class="node-section-label">${swm.hasMarkers ? 'book ⟷ proof' : 'source'}</div>
+      ${swm.html}
     </div>`;
 
   // Metadata footer: module + line range + decl FQN. Small print but
@@ -1803,6 +1997,7 @@ function renderNodeCard(d) {
         </div>
         ${commentarySection}
         ${sourceSection}
+        ${bookNarrativeSection}
       </div>
       ${metaFooter}
       ${resizeHandle}
@@ -2195,6 +2390,47 @@ async function main() {
   }
   document.getElementById('loading').remove();
 
+  // Inline commentary markers (`quoting`, `comment`, `page break`) —
+  // emitted by `lake exe dumpdecls` to `blueprint/markers.json`. Optional:
+  // if the file is missing, just skip the book-narrative section.
+  let markers = { quoting: [], comment: [], page_break: [] };
+  try {
+    const mresp = await fetch('../blueprint/markers.json');
+    if (mresp.ok) markers = await mresp.json();
+  } catch (e) { /* tolerable — markers are a v2 enrichment */ }
+
+  // Index markers by their enclosing decl (the atlas decl name as a
+  // string, identical to the graph node id). Each entry is the
+  // chronologically-ordered sequence of all three marker kinds, tagged
+  // by type so the renderer can interleave them by source line. Each
+  // `quoting` entry has a *resolved step number* — explicit `(N)` or
+  // inherited from the previous step when the user wrote leading `...`.
+  const markersByDecl = {};
+  function pushSortedMarkers(arr, kind) {
+    for (const m of arr) {
+      if (!markersByDecl[m.decl]) markersByDecl[m.decl] = [];
+      markersByDecl[m.decl].push({ ...m, _kind: kind });
+    }
+  }
+  pushSortedMarkers(markers.quoting || [], 'quoting');
+  pushSortedMarkers(markers.comment || [], 'comment');
+  pushSortedMarkers(markers.page_break || [], 'page_break');
+  for (const id in markersByDecl) {
+    markersByDecl[id].sort((a, b) =>
+      (a.line - b.line) || (a.column - b.column));
+    // Resolve quoting step inheritance: if step is null, inherit from
+    // previous quoting marker in source order.
+    let lastStep = null;
+    for (const m of markersByDecl[id]) {
+      if (m._kind === 'quoting') {
+        m.resolvedStep = (m.step != null) ? m.step : lastStep;
+        if (m.step != null) lastStep = m.step;
+      }
+    }
+  }
+  // Expose for `renderNodeCard` / `showNode` (defined at module scope).
+  window.markersByDecl = markersByDecl;
+
   const nodes = data.nodes;
   const edges = data.edges;
   // Note: proof teaser is deferred (renderNodeCard always emits ''
@@ -2557,14 +2793,28 @@ async function main() {
           <pre class="type-source" id="type-latex" hidden>${escapeHtml(leanToLatex(d.type_pp))}</pre>
         </div>` : ''}
 
-      ${(d.source_html || d.source) ? `
-        <div class="source-block">
-          <div class="type-label">
-            <span>Declaration source</span>
-            ${d.line_start ? `<span class="src-locus">${escapeHtml(d.file || '')}:${d.line_start}</span>` : ''}
-          </div>
-          <pre class="src-pre"><code>${d.source_html ? d.source_html : escapeHtml(d.source)}</code></pre>
-        </div>` : ''}
+      ${(() => {
+        const swm = renderSourceWithMarkers(d);
+        if (!swm.html) return '';
+        if (swm.hasMarkers) {
+          return `
+            <div class="source-block">
+              <div class="type-label">
+                <span>Book ⟷ Proof</span>
+                ${d.line_start ? `<span class="src-locus">${escapeHtml(d.file || '')}:${d.line_start}</span>` : ''}
+              </div>
+              ${swm.html}
+            </div>`;
+        }
+        return `
+          <div class="source-block">
+            <div class="type-label">
+              <span>Declaration source</span>
+              ${d.line_start ? `<span class="src-locus">${escapeHtml(d.file || '')}:${d.line_start}</span>` : ''}
+            </div>
+            <pre class="src-pre"><code>${d.source_html ? d.source_html : escapeHtml(d.source)}</code></pre>
+          </div>`;
+      })()}
 
       <div class="legend">
         <div class="legend-title">Atlas legend</div>
