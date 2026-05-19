@@ -49,7 +49,7 @@ atlas exercise 3.1 "Exercise 1(b): four points from chained betweenness are coll
   : A - B - C ∧ A - C - D -> collinear A B C D := by
   intro ⟨ABC, ACD⟩
   -- We only end up needing A ≠ C, but easy to get the whole thing.
-  have distinctABCD : distinct A B C D := apply exercise 3.1 ⟨ABC, ACD⟩
+  have distinctABCD : distinct A B C D := via exercise 3.1 ⟨ABC, ACD⟩
   have AneC : A ≠ C := by distinguish
   have colABC := ref lemma 1.0.40 ABC
   have colACD := ref lemma 1.0.40 ACD

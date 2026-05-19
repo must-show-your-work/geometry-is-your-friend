@@ -33,9 +33,9 @@ atlas proposition 3.3 "Betweenness from shared outer pair: B-C-D from A-B-C and 
   : (A - B - C) ∧ (A - C - D) -> B - C - D := by
   /- (1) A, B, C, and D are distinct, collinear points (see Exercise 1). -/
   intro ⟨ABC, ACD⟩
-  have distinctABCD : distinct A B C D := apply exercise 3.1 ⟨ABC, ACD⟩
+  have distinctABCD : distinct A B C D := via exercise 3.1 ⟨ABC, ACD⟩
   separate at distinctABCD
-  have cL : collinear A B C D := apply exercise 3.1 ⟨ABC, ACD⟩
+  have cL : collinear A B C D := via exercise 3.1 ⟨ABC, ACD⟩
   /- (2) There exists a point E not on the line through A,B,C,D (Proposition 2.3) -/
   have LeqAB : cL = line A B := ref lemma 2.0.2 AneB
     ⟨cL.mem A, ref lemma 1.0.23, cL.mem B, ref lemma 1.0.24⟩
@@ -159,9 +159,9 @@ world. -/
 atlas proposition 3.3 "Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D"
   : (A - B - C) ∧ (A - C - D) -> A - B - D := by
   intro ⟨ABC, ACD⟩
-  have distinctABCD : distinct A B C D := apply exercise 3.1 ⟨ABC, ACD⟩
+  have distinctABCD : distinct A B C D := via exercise 3.1 ⟨ABC, ACD⟩
   separate at distinctABCD
-  have cL : collinear A B C D := apply exercise 3.1 ⟨ABC, ACD⟩
+  have cL : collinear A B C D := via exercise 3.1 ⟨ABC, ACD⟩
   have ⟨E, EoffcL⟩ := proposition 2.3 cL
   let EB := line E B
   have ⟨LneEB, LnparEB, LintEBatB⟩ := ref lemma 2.0.28 (cL.mem B) EoffcL
@@ -170,7 +170,7 @@ atlas proposition 3.3 "Betweenness from shared outer pair: A-B-D from A-B-C and 
   have DoffEB := (ref lemma 2.0.26 BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
   -- TODO[refactor]: same ref-in-ref pattern as `ECsplitsAandD` above.
   have EBsplitsAC := ref lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
-  have BCD : B - C - D := apply proposition 3.3 ⟨ABC, ACD⟩
+  have BCD : B - C - D := via proposition 3.3 ⟨ABC, ACD⟩
   have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
   have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
   have EBsplitsAD := corollary B-4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
@@ -202,8 +202,8 @@ atlas corollary 3.3 "Corollary: A-B-D from chained betweenness A-B-C and B-C-D"
 atlas corollary 3.3 "Corollary: A-C-D from chained betweenness A-B-C and B-C-D"
   : (A - B - C) ∧ (B - C - D) -> A - C - D := by
   intro ⟨ABC, BCD⟩
-  have ABD : A - B - D := apply corollary 3.3 ⟨ABC, BCD⟩
-  exact ((apply proposition 3.3 ⟨BCD.symm, ABD.symm⟩ : D - C - A)).symm
+  have ABD : A - B - D := via corollary 3.3 ⟨ABC, BCD⟩
+  exact ((via proposition 3.3 ⟨BCD.symm, ABD.symm⟩ : D - C - A)).symm
 
 
 

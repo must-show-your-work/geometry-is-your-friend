@@ -498,7 +498,7 @@ syntax:max (name := atlasRefDefinition)  "definition"  atlasNum : term
 -- start with `"`, since the string-form is bracketed as `["..."]`).
 syntax:max (name := atlasRef) "ref" rawIdent atlasNum : term
 
--- Vararg-capturing variant: `apply kind N args*` parses as one unit (the
+-- Vararg-capturing variant: `via kind N args*` parses as one unit (the
 -- args are consumed into the parse tree, not left for `App`). Used when
 -- the kind+num resolves to *multiple* atlas decls and we need
 -- type-directed dispatch on the application — which Lean's `elabAppFn`
@@ -506,13 +506,17 @@ syntax:max (name := atlasRef) "ref" rawIdent atlasNum : term
 -- syntactically `choiceKind` *before* macro expansion of `stx[0]`).
 -- With args captured, we try each candidate and pick the one that fits.
 --
+-- Reads naturally at call sites:
+-- `have h : T := via proposition 3.3 ⟨ABC, ACD⟩` — "h, of type T, *via*
+-- proposition 3.3 applied to these args".
+--
 -- Backward-compat note: `ref kind N` (no varargs) stays the canonical
--- form when the lookup is unambiguous; reserve `apply kind N args*` for
--- paired-decl sites where dispatch is needed. The two keywords keep the
--- greedy-vararg issue contained: `subset_inter ref lemma 2.0.4 ref
--- lemma 2.0.14` still parses with sibling refs (the old way), and
--- only sites that opt in to `apply` accept trailing args.
-syntax:max (name := atlasApply) "apply" rawIdent atlasNum (ppSpace colGt term:max)+ : term
+-- form when the lookup is unambiguous; reserve `via kind N args*` for
+-- paired-decl sites where dispatch is needed. The two keywords keep
+-- the greedy-vararg issue contained: `subset_inter ref lemma 2.0.4 ref
+-- lemma 2.0.14` still parses with sibling refs (the old way), and only
+-- sites that opt in to `via` accept trailing args.
+syntax:max (name := atlasVia) "via" rawIdent atlasNum (ppSpace colGt term:max)+ : term
 -- An `@`-explicit variant of `ref` was attempted (`eref`, also `@ref`).
 -- Neither composes cleanly with Lean's built-in `@`: that lives at
 -- the syntactic level and gates which `TermElab` runs, while our
@@ -583,10 +587,10 @@ def elabAtlasRefTerm : Lean.Elab.Term.TermElab := fun stx expectedType? =>
 -- choice in function-position because it doesn't propagate return type
 -- to the function elab; capturing args ourselves lets us try each
 -- candidate against the full application + expected type.
-@[term_elab atlasApply]
-def elabAtlasApplyTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
+@[term_elab atlasVia]
+def elabAtlasViaTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
   match stx with
-  | `(term| apply $k:ident $n:atlasNum $args*) => do
+  | `(term| via $k:ident $n:atlasNum $args*) => do
       let kind := k.getId.toString
       let numStr ← match n with
         | `(atlasNum| $s:scientific) =>
@@ -613,7 +617,7 @@ def elabAtlasApplyTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
       let ns := atlasLookupByNumber env kind numStr
       match ns with
       | []  =>
-        throwError s!"atlas apply: no {kind} tagged `{numStr}` found (exact lookup; cascade is disabled for `apply`)"
+        throwError s!"atlas via: no {kind} tagged `{numStr}` found (exact lookup; cascade is disabled for `apply`)"
       | [n] =>
         -- Single match — just elaborate as a normal application.
         let head := mkIdent n
@@ -632,7 +636,7 @@ def elabAtlasApplyTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
         -- `tryPostponeIfHasMVars?` which scans the whole expression
         -- and postpones if any unassigned mvars remain.
         let some expected ← Lean.Elab.Term.tryPostponeIfHasMVars? expectedType?
-          | throwError s!"atlas apply: {kind} `{numStr}` expected type still has metavariables after postpone — can't dispatch ({ns.length} candidates). Add `: T` annotation or restructure (e.g., extract to `have x : T := ...`)."
+          | throwError s!"atlas via: {kind} `{numStr}` expected type still has metavariables after postpone — can't dispatch ({ns.length} candidates). Add `: T` annotation or restructure (e.g., extract to `have x : T := ...`)."
         let mut successes : List Name := []
         let mut lastError : Option MessageData := none
         for cand in ns do
@@ -667,14 +671,14 @@ def elabAtlasApplyTerm : Lean.Elab.Term.TermElab := fun stx expectedType? => do
         match successes with
         | [] =>
           match lastError with
-          | some msg => throwError m!"atlas apply: no {kind} `{numStr}` candidate fits this application:\n{msg}"
-          | none     => throwError s!"atlas apply: no {kind} `{numStr}` candidate fits this application"
+          | some msg => throwError m!"atlas via: no {kind} `{numStr}` candidate fits this application:\n{msg}"
+          | none     => throwError s!"atlas via: no {kind} `{numStr}` candidate fits this application"
         | [cand] =>
           let head := mkIdent cand
           let appStx ← `($head $args*)
           Lean.Elab.Term.elabTerm appStx expectedType?
         | _ =>
-          throwError s!"atlas apply: multiple {kind} candidates at `{numStr}` fit this application: {successes}"
+          throwError s!"atlas via: multiple {kind} candidates at `{numStr}` fit this application: {successes}"
   | _ => Lean.Elab.throwUnsupportedSyntax
 
 end Atlas

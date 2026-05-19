@@ -9,4 +9,5 @@ scripts/vendor
 blueprint/lean_decls
 blueprint/graph.kuzu/
 .venv/
+.claude/
 web/
