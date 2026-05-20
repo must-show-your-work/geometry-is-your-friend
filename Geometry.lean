@@ -1,3 +1,7 @@
+-- Atlas attribute / macros for book-style theorem metadata.
+-- (Top-level module; planned to be split out into its own library.)
+import Atlas
+
 -- Chapter 2
 -- Propositions
 import Geometry.Ch2.Prop.P1

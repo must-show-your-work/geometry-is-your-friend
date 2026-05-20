@@ -6,6 +6,7 @@ import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Empty
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Erase
+import Atlas
 
 namespace Geometry.Theory
 
@@ -26,6 +27,8 @@ structure Distinct {α : Type*} (s : Finset α) (n : ℕ) : Prop where
   card_eq : s.card = n
 
 namespace Distinct
+
+-- Natural projections on the Distinct structure — not book content, not atlas'd.
 
 /-- Any Finset is "distinct" with its own cardinality — purely structural. -/
 lemma self_card {α : Type*} (s : Finset α) : Distinct s s.card := ⟨rfl⟩

@@ -223,3 +223,283 @@ ready for proving other things.
 
 I left this project for a bit while I worked on other things, but I'm going to come back to it now. I'm pleasantly
 surprised at how well Lean has remained in my brain despite a couple months of hiatus.
+
+# 18-MAY-2026
+
+## 1454
+
+Time to talk about Agents and LLMs and this codebase.
+
+First things first, all the math is me. No agents involved in the primary proving of anything beyond the occasional
+'remind me how this syntax works'. I want to be clear that humans are doing the math here, not agents.
+
+Second, the `distinct` and `collinear` syntaxes, as well as most of the 'small' syntax tweaks (`obvious`,
+`by_exhaustion`, etc) are mostly me, similar to the above, with the occasional 'add the six other cases following the
+same pattern' level prompting. Edits, but small and proscribed.
+
+Third, `atlas`, Atlas is almost entirely LLM-coded. I guided it through what I wanted the parser to do and what kind of
+information I wanted to record. I also had it mechanically convert all the various callsites to use the system and
+generate some 'pithy' names for things.
+
+Now let's talk about why I think this is okay, as these tools are controversial in a way that feels hysterical.
+
+### Pneumatic Nailers and Table Saws, Lathes and Agents
+
+The Pneumatic Nailer, "Nailgun," was introduced in 1950. It was designed to speed up the construction of houses by
+making floor and wall sheathing much simpler. Instead of manually hammering things, you'd use instead a bulky,
+unreliable, expensive and power-hungry pneumatic nailer to do the work that a journeyman carpenter could do in about the
+same amount of time as a journeyman carpenter could do it with a hammer and practice. You can imagine how large house
+building companies would embrace this technology, even as their more seasoned workers hated using it. They were
+dangerous, the broke a lot, they cheapened the trade and reduced the skill floor. Some punk kid on the jobsite could
+pick up a nailgun on day one and be installing subfloor, where was the craftsmanship, where was the quality? Are we just
+gonna _not build good houses anymore?_
+
+No one thinks using a nailgun isn't homebuilding anymore. No one thinks that a nailgun-based home construction technique
+builds a materially _worse_ home. They might argue homes are worse today than in the past, but as someone who has been
+around old and new construction my whole life; it's always been about as bad as it's always been.
+
+Table Saws probably were similar. No more need for proper form and structure; no need to practice technique. Just
+measure twice, cut once, make sure you know how to avoid kickback.
+
+I heard a story once about Norm Abrams, the host of _New Yankee Workshop_ and a personal hero. He got his first
+on-screen job after having worked as a journeyman carpenter on a job for the producer of _This Old House_ before it came
+on the air. In the late '70s, the use of power tools would've been common, but it wouldn't've necessarily been the only
+kind of homebuilding, and while a radial-arm probably would've been the standard power saw on a jobsite, it is easy to
+imagine such a thing leading some to wastefulness and carelessness. It's so _simple_ to make a cut, it's so _easy_ to
+get it to the right size. Norm got the job because of his efficiency with the tools at hand, and the rest is TV history.
+
+In my shop, I have a woodlathe. A lovely Grizzly that spins large hunks of frequently unstable wood by means of various
+chucks and mounts and a big ass electric motor on the back. I can twirl a hunk of hickory at 2500RPM and stick a tool
+into it. It is by far the most dangerous tool I own; it actively wants to kill me, it wants to see me dead, it wants it
+to hurt the whole time. In the old days, a lathe would've been made of wood and rope, and powered by a 'spring pole' --
+a green stick that would reciprocate the work back and forth in time with your foot movements. It was safer than my
+lathe, slower too. I imagine the introduction of the electric, motor-driven lathe might've left spring-pole enthusiasts
+worried about the craftsmanship, the reduction of the skill floor, the worsening of their trade.
+
+But I can turn beautiful work on my lathe, even though it wants to kill me, even though it is more dangerous. To be
+honest, I'm not sure I could produce the same quality of work on a springpole, even if I started with it. There are
+limitations inherent in the tool. The reciprocation means different techniques are available and different constraints
+are in place.
+
+### Tools and Weapons
+
+My path through LLMs has been pretty bouncy. I started with the same curiousity as everyone. I tried GPT4 and early
+copilot-style autocomplete. I thought it was cool. I used it in `hazel` for a bit, but rapidly found, like most people,
+that the code was poor quality and not much better than cut-pasting. I spent a lot of energy cleaning up that mess, and
+Hazel is better for it, but almost none of that code remains[1]. As I learned more about the ethical... well let's just
+go ahead an call it what it is instead of euphemizing it as an ethics problem. The big "AI" companies committed the
+largest act of copyright infringement to have ever been done. It makes Napster look like shoplifting. It was simple
+larceny. They stole petabytes of art, literature, and music; packaged it, and sold it as if it were theirs. Depriving
+the original creator of the value of their labor. This is unconscionable and wrong in a way that I'm comfortable
+thinking of as Sinful, with all the weight applied to it as I would have when I was an Evangelical Nationalist Scumbag.
+
+It was simply evil behavior, performed by evil men (it is always men, it seems), and they should be shamed, pilloried,
+and launched into the sun for having done it. These facts, and the existential threat to my job and career, the threat
+to my family by dint of that, and all the myriad anxieties the "AI" tulip craze that was and is and will continue to
+spiral until crashing -- as it inevitably will -- led me towards a sort of deep hatred for the technology. It wasn't
+until I realized how I started talking about it that I understood the mistake I was making.
+
+I started calling LLMs "the False Prophet," I thought of them with irrational anger and disgust. I transferred the shock
+and horror and dissapointment with the actions of their creators with the tool itself. I was _mad_ about it. Then I got
+tagged by my therapist, "It sounds like you're pretty heated, Joe. But don't you always say, 'it's a poor craftsman that
+blames the tool?'"
+
+Here's the reality we live in, folks, the deed is _done_. We can mourn the past, but not return to it. We are _here_
+now, _alea iacta est_. The constant cry of 'WeLl NoOnE iS mAkInG yOu UsE iT!' falls on deaf ears the moment my families
+livelihood is in peril. You are right, no one is _making_ me do it, just like how no one will _make_ food appear on the
+table. There is no ability for me to respond against the crushing weight of the machine that has been so long built by
+capitalists and bastards (sorry to repeat myself), so we can have no responsiblity other than to ask now, "What do we
+fucking _do_ with the monster they made?" "Is it the monster's fault that Frankenstein made it?" "Should we kill it simply
+because its creation was abominable to us?" "Isn't that cruelty too?" "Isn't that wrong?"
+
+I don't mean to say we would be killing a literal, living thing, but I refuse the notion that a tool itself is ethical
+or not. I suppose, if pressed, I'd have to say that the argument that has always seemed strongest to me about gun
+control is the 'Guns don't kill people' argument. It's simply correct, guns _don't_ kill people, it's irrefutable in
+some sense. Whether through intent, negligence, or mistake, it requires action on the part of _someone_ to make the tool
+into a weapon and for that weapon to harm another[2].
+
+I don't want LLMs to be weapons, but the only way to make them _not_ weapons is to find out how to _use them like
+tools_. I can't assign ethical or moral value to the machine-what-is-made. I can only try to understand the effect of
+its existence and how I can use it to find ways to be kind.
+
+I have a lot of thoughts on how that might be done, but the first step is to learn how to use the tool in ways that feel
+like I'm producing something that might actually benefit people sufficiently to justify the cost of the tool. I have
+spent some months now unpacking and understanding this technology. I think it has broad, mostly unexplored uses, uses
+that could legitimately benefit more than the cost. I think that there are ways to get these tools to produce good
+output that can be genuinely useful and improve peoples lives. If you don't, cool, don't use the tools, but I will
+accept criticism of my use in precisely one form, `&> /dev/null`.
+
+[1] I caveat only because I truly don't remember which code was generated anymore, almost all of it has been touched at
+this point though so it's probably gone.
+
+[2] This not to say that it is a good enough argument to justify all the things people try to use this to justify, we
+still need gun control for lots of good reasons, but it's complicated by the fact that this is, ultimately, a pretty
+good fact the gun control advocate needs to reckon with.
+
+
+### What is good code?
+
+Once I started trying these tools I started to ask a new kind of question, not "Is this good code?", nor "Can I make
+this produce good code?", but "What is good code?"
+
+In mathematics, we focus on properties. We might say that a line has the property of being defined by two distinct
+points; and conversely that two distinct points have the joint-property of defining a unique line; and so on. I started
+to ask "What are the properties of 'good' code?"
+
+I was easy to enumerate many _features_ of good code. It's well-factored, it's well-tested, the tests are resilient and
+easy to understand and change. Really the whole codebase should be well documented and easy to understand and change. It
+should be well-specified and it's edge cases well tested. I should be able to trust the code and when my expectations
+about it's output fail I should be able to easily identify, isolate, reproduce and change the code to address the
+failing.
+
+There was a theme developing, it's not hard to see, good code is:
+
+1. Easy to understand
+2. Easy to change
+3. Well specified and well tested.
+
+None of those things constrain the _shape_ of the code, or its implementation, the only constrain what the code _does_
+and what you can _do to it_. Does it matter how I answer those questions? If I can read a good codebase, let's take
+`ripgrep` as an example, I can see structure present there, I can build up a mental model. I might have to spend a bunch
+of time learning the machine's innerworkings, but the code is _good_, it is _well factored_ and _precise_, it minimizes
+mental load as much as it can for being a complex tool with many precision engineered parts.
+
+It is easy to understand (relative to your understanding of Rust and the techniques involved), it is easy to change
+(because it is well-factored, and assuming you have a good existing understanding of the design of the system), and it
+is well specified and tested. It is Good Code (tm).
+
+If I think about the `Atlas` thing I just built, it is also easy to understand -- if I have a question about the
+structure I can ask the LLM, I can get a line-by-line walkthrough if I want. It is _much_ more adept and API-aware than
+me, and while it can often write code I don't immediately understand, there isn't any part of it I am _incapable_ of
+understanding, and with sufficient curiousity I can learn the deep parts fo the system just as before.
+
+Arguably, it's _easier_ to change than a handrolled implementation, I just have to precisely describe what I want. Often
+that means giving it instructions about how to rewire the machine's internals (not the oft-assumed "write me a tool"
+prompt, rather a "adjust how the syntax is parsed here to use this API in this way." It's certainly less typing than
+before, and as someone who spends most of their waking life typing things into this infernal box, less typing is a
+_massive_ win for my physical and mental health.
+
+It's lean, well-specified here means 'comes with mathematical proof', but even in other languages you can pretty easily
+build up a comprehensive test suite; optimize it; measure its coverage; mutant and fuzz test it -- the incremental cost
+of testing your code is now nearly zero, the incremental cost of changing it is zero. The places where we have trouble
+are in getting insight into the internal, abstract structure of the code. Before the bottleneck was _writing_ code, now
+the bottleneck is _understanding_ code and its structure.
+
+So, no matter the implementation, if I can answer those three questions in the affirmative, isn't whatever I have -- by
+definition -- good code? It is not _pretty_ code -- I don't like the look of LLM-generated code more than most people,
+but in the fully 'vibecoded' ecosystem, the reality is the codebases are perfectly cromulent, so long as I don't really
+read the code too deeply. The skeptics among you clutch their keyboards and say "But how do you know it works?" To which
+I reply, "My test suites are more thorough than anything I could write on my own, I have every possible path covered and
+specified, I built tests which test my tests to ensure the tests are testing what they are supposed to test. I have
+mutation testing, fuzz testing, property testing, unit and integration tests, I test in situ, I test end to end. Some of
+this stuff is _literal, mathematical proof_ What more could you want to prove it to you? How much do you have? Why
+should I trust _your_ software? Do you have formal proof it works?"
+
+The refrain of "It's not good code" relies on a notion of 'good code' that is optimized not for what good code _is_, but
+for what _good code is for a handwritten, human codebase_. The issue is that we have mistaken the _limitations of our
+tools_ for the _indications of quality_. We are overgrown monkeys doing mathematics on specialially arranged rocks; we
+have designed practices to accomodate for our weaknesses; but those practices are, themselves, no different than the
+hours you'd spend hucking a hammer at a nail installing sheathing and subfloor; they're no different than the time spent
+structuring your body to properly cast and return a handsaw. We have new tools now, we need new practices, and that
+means new understanding of what good looks like in a new context.
+
+I'm not saying every project is a vibe project. Indeed, this is an example of a project which is emphatically _not_ a
+vibe project. Why? Because the point of this project is for me to engage the math and build something mostly by hand.
+LLMs enter into it more like a orbital sander. Is hand sanding "better"? No, it's different, it leaves a different
+finish, people may be able to spot the tell-tale circular pattern, but it's not _better_ to sand by hand, it's not
+_worse_ to sand by machine. It's not _better_ for me to manually replace every `theorem <name> : <statement> := by
+<proof>`, an LLM can do that work for me in much less effort (though not much less time, if I'm honest); it doesn't
+detract from the product to automate away those sorts of changes, and indeed it allows them much better and richer
+tooling later.
+
+My point is simply: If you are reacting to these tools with anger at the loss of the old ways of doing things, I feel
+you, but you don't get to uninvent the nailgun. You can't un-table the saw. The only question is 'do these things have
+any use at all' and 'is the juice worth the squeeze'? At this pint, I think at this point, I can answer at least the
+former, and I'm beginning to see the answer to the latter too.
+
+## What's the use?
+
+The uses of LLMs in this repo have been stated, but at a higher level, I use LLMs in the following ways to good effect:
+
+### Mundanity
+
+#### Pure, Shameless Vibecoding:
+
+Ask for a thing, recieve a buggy, halfworking thing that mostly just looks the part. This is entirely for the purpose of
+candy. A cardboard version of a product is a useful thing for me. I am not skilled in visualizing the final product. I
+may be aphantasic[3], but in any case, being able to get a cardboard cutout of a thing to look at and talk about with
+people is extremely useful.
+
+[3] I don't know, I've never been not me, so I can't tell you whether I'm seeing more or less in my 'mind's eye', I can
+say that I have always assumed that to be much more metaphor than other people I know
+
+#### Data gathering and scutwork.
+
+There is a large class of things for which I need the product of a process but have no interest in its performance / I
+do not stand to gain a skill I want from practice there. This ranges from truly mundane questions like finding facts
+about pricing or API shape, to researching bugs in my editor configs. I cannot express to you how little I care about my
+dotfiles. I simply couldn't give a shit if they look nice or are wellmaintained. I want my editor to always do exactly
+what I want, I don't care who maintains it or how, I don't care about it at all, it just has to always do exactly what I
+expect and otherwise be a transparent thing. The most common cause of project abandonment for me is _not_ an overhard
+problem, it is always the same thing. Some externality -- editor config, testing/hosting infra, etc -- gets in the way
+of me continuing to work on the interesting part of the project. WLOG, let's call that class of work scutwork.
+
+Scutwork is a necessary evil, with greater emphasis on the 'evil'. It is weapons-grade boredom, and the answer to this
+has always been "Use this framework, set it up once, and try not to think about it." or "Just fucking do it."
+
+Fuck every square millimeter of that. I don't want to maintain that shit, and frankly I don't know anyone who actually
+does. If you are one such person. I think you're weird (complementary), and I do not aspire to be like you. I'm here to
+do math, not convince Neovim to stop being so fucking stupid.
+
+### Targeted Refactors / Draw the rest of the fucking Owl
+
+Prop 3.3 in this repo has a case where LLMs helped greatly with the math. There is a common, underlying argument in that
+setup for the Line Separation property (3.4), and I could see it, but extracting it from the haze of specific variables
+was really, really hard. I could smell it, but I couldn't hunt it down. Excitingly, this intuition came first from the
+code, and I aligned it with the intuition in the math. It was a delightful moment when I linked the two things together
+and felt the intuition in the math spill onto the code and the real _power_ that Lean might offer was spread out. Then I
+realized how _fucking awful_ it was going to be to extract that common argument, so I put down the project for 2 months
+and dealt with my anger around LLMs.
+
+Then I asked Claude to highlight the extractable argument after describing what I saw, it made a suggestion, I verified
+it, did the proof, and then ported it back into the proof. From there it was much, much simpler to complete the other
+branches of the proof complex, and thus 3.3 was closed.
+
+In another project, I inherited a pile of 50 or so jenkins pipelines. I do not know groovy, but I can hack together
+something that is almost valid groovy and expresses the intent accurately. I left the code littered with little todos
+and then told Claude to paint inside the lines I left it. Twenty minutes later I had the rest of the fucking owl, and
+all my pipelines ported. I genuinely would have taken days or weeks to do that alone.
+
+I don't need or want to be a groovy expert. I don't need or want to spend hours meticulously adjusting incantations to
+satisfy Lean. I want to spend my mental energy on the overall CI ecosystem. I want to spend my time in the Math. LLMs
+let me be efficient with _what skills I'm reinforcing_ and _what I delegate to someone (or something) else_. If I had,
+at my disposal, an army of grad-students and interns and junior engineers, it is the class of work I would send them off
+to do not because I thought it would improve their ability to do their main jobs, but because I would not like to do
+that work and I have an army at my behest. I did not have such an army before, now I do. Now if I acquire such an army,
+I can send _them too_ on missions of _actual_ import to their _actual_ goals.
+
+## How much juice?
+
+LLMs, Agents, "AI", whatever you prefer to call it, it is not _useless_, it's not perfect, it's a machine that guesses,
+and guesses are not useless things. You _can_ get these tools to produce good code (under both understandings), though
+human-good code is much more difficult to achieve, it is possible to do so with sufficient prompting and oversight. In
+this project already it has more or less covered a month or two of weekends worth of scutwork that, frankly, probably
+would've killed this project.
+
+Is this project valuable? It certainly is valuable to me. It feels good to work on this, I like that I found a way to do
+_real_ math again, not the idle pining for a life not lived, not the silly doodles of differential equations in
+meetings; but real, honest-to-goodness math.
+
+Is it valuable to others? I don't know, I like to think Atlas will be a generally useful thing, and maybe someone,
+someday will ready the body of GIYF or tour through the Atlas site and learn something useful. I don't know that what
+I'm doing is _"Good"_. I'm not sure that _Good_ is even a meaningful concept so much as a pleasant fiction -- a lie to
+children -- that we tell to make ourselves feel better about a reality that is fully indifferent to us at all levels,
+times, and spaces we inhabit. I can't tell you to like this work, I can't tell you to accept it, or even to not hate it.
+If my use of agents bothers you, I have empathy for you, but for me -- their use lets me do the things I want to do in
+life, and none of us asked to be here, or be thrust into all this. For me, I'm going to use the tools available to me in
+the most responsible and efficient way I can. I promise I won't act carelessly and wastefully in their use, and I won't
+treat them with the kind of flippancy that many do. If that is insufficient for you, I'll give you the same response I
+put in a recent commit removing the anti-LLM canary.
+
+"I do not care."
+

@@ -1,15 +1,22 @@
 import Geometry.Tactics
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
+import Atlas
 
 namespace Geometry.Ch2.Prop
 
 open Set
 open Geometry.Theory
+open Atlas
 
-/-- pp. 71: If `l` and `m` are distinct lines that are not parallel, then `l` and
- `m` have a unique point in common -/
-theorem P1.direct {L M : Line} :
+atlas commentary := by
+  ref alternate 2.1
+  page 71
+  name "Distinct non-parallel lines share a unique point (direct proof)"
+  preface "If `l` and `m` are distinct lines that are not parallel, then `l` and `m` have a unique point in common"
+
+atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct proof)"
+  {L M : Line} :
   L ≠ M → (L ∦ M) → ∃! P : Point,
      (P on L) ∧ (P on M)
 := by
@@ -23,17 +30,24 @@ theorem P1.direct {L M : Line} :
     -- uniqueness
     intro Q
     by_contra! ⟨hQonLM, hNeg⟩
-    -- idea, PQ = L, PQ = M, but L != M
-    obtain ⟨PQ, _, hPQUniq⟩ := I1 P Q hNeg.symm
+    idea "PQ = L, PQ = M, but L != M"
+    obtain ⟨PQ, _, hPQUniq⟩ := ref axiom I.1 P Q hNeg.symm
     have hLisPQ := hPQUniq L ⟨hPonLM.left, hQonLM.left⟩
     have hMisPQ := hPQUniq M ⟨hPonLM.right, hQonLM.right⟩
     have hLeqM : (L = M) := by
         rw [hMisPQ, hLisPQ]
     contradiction
 
-/-- A corrolary of the main theorem that is more useful since it uses the syntax directly. -/
-theorem P1 (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M at X := by
-    obtain ⟨P, ⟨PonL, PonM⟩, Puniq⟩ := P1.direct LneM LnoparM
+-- Compatibility aliases: original names were `alternate 2.1` and `P1`.
+
+atlas commentary := by
+  ref proposition 2.1
+  name "Distinct non-parallel lines share a unique point"
+  preface "A corrolary of the main theorem that is more useful since it uses the syntax directly."
+
+atlas proposition 2.1 "Distinct non-parallel lines share a unique point"
+  (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M at X := by
+    obtain ⟨P, ⟨PonL, PonM⟩, Puniq⟩ := alternate 2.1 LneM LnoparM
     use P
     constructor
     · unfold Intersects
@@ -52,5 +66,7 @@ theorem P1 (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M
       specialize Puniq Q
       have QinLintM : Q ∈ L ∩ M := by rw [LintMatQ]; tauto
       tauto
+
+-- Compatibility alias for the original simple-name reference.
 
 end Geometry.Ch2.Prop

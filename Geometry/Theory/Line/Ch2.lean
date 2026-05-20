@@ -9,24 +9,31 @@ import Geometry.Theory.Ch1
 import Geometry.Theory.Collinear.Ch1
 import Geometry.Tactics
 import Geometry.Ch2.Prop
+import Atlas
 
 namespace Geometry.Theory
 
 open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
+open Atlas
 
 set_option maxRecDepth 5000
 
 namespace Line
 
 
-/-- An intersection is either empty, a singleton, or the lines are equal. -/
-lemma line_trichotomy : ∀ L M : Set Point, (L ∩ M = ∅) ∨ (∃! X, L ∩ M = {X}) ∨ L = M := by
+atlas commentary := by
+  ref lemma 2.0.1
+  name "Two lines either share no points share one point or are equal"
+  preface "An intersection is either empty, a singleton, or the lines are equal."
+
+atlas lemma 2.0.1 "Two lines either share no points share one point or are equal"
+  : ∀ L M : Set Point, (L ∩ M = ∅) ∨ (∃! X, L ∩ M = {X}) ∨ L = M := by
   intro L M
   by_cases suppose : (L ≠ M) ∧ (L ∦ M)
   · right; left
-    exact Ch2.Prop.P1 suppose.left suppose.right
+    exact proposition 2.1 suppose.left suppose.right
   · simp only [not_and_or, not_not] at suppose
     rcases suppose with LeqM | other
     · right; right; exact LeqM
@@ -41,13 +48,19 @@ lemma line_trichotomy : ∀ L M : Set Point, (L ∩ M = ∅) ∨ (∃! X, L ∩ 
         tauto
       · tauto
 
-/-- If two distinct points are found on two lines, those lines are equal. -/
-@[simp] lemma equiv {L M : Line} {A B : Point} : A ≠ B -> ((A on L) ∧ (A on M) ∧ (B on L) ∧ (B on M) -> L = M) := by
+
+atlas commentary := by
+  ref lemma 2.0.2
+  name "Two distinct points on two lines force the lines to coincide"
+  preface "If two distinct points are found on two lines, those lines are equal."
+
+atlas lemma 2.0.2 "Two distinct points on two lines force the lines to coincide"
+  {L M : Line} {A B : Point} : A ≠ B -> ((A on L) ∧ (A on M) ∧ (B on L) ∧ (B on M) -> L = M) := by
   intro AneB ⟨AonL, AonM, BonL, BonM⟩
   have Aexists : A ∈ L ∩ M := by tauto
   have Bexists : B ∈ L ∩ M := by tauto
-  -- Ed. This is a _sweet_ use of trichotomy. This proof was much longer prior to this.
-  rcases line_trichotomy L M with LparM | LintMatX | LeqM
+  comment "This is a _sweet_ use of trichotomy. This proof was much longer prior to this."
+  rcases ref lemma 2.0.1 L M with LparM | LintMatX | LeqM
   · -- the intersection is nonempty by assumption
     exfalso
     rw [LparM] at Aexists
@@ -62,49 +75,69 @@ lemma line_trichotomy : ∀ L M : Set Point, (L ∩ M = ∅) ∨ (∃! X, L ∩ 
     contradiction
   · exact LeqM
 
-lemma commutes {AneB : A ≠ B} : line A B = line B A := by
+attribute [simp] «Two distinct points on two lines force the lines to coincide»
+
+atlas lemma 2.0.3 "Line Commutativity"
+  {AneB : A ≠ B} : line A B = line B A := by
   suffices subset : ∀ A B : Point, A ≠ B -> line A B ⊆ line B A by
     exact Subset.antisymm
       (subset A B AneB)
       (subset B A AneB.symm)
   intro A B AneB P PinAB
   rcases PinAB with PeqA | PeqB | APB | ABP | PBA
-  · rw [PeqA]; exact line_has_definition_points.right
-  · rw [PeqB]; exact line_has_definition_points.left
-  · rw [B1b] at APB; tauto
-  · rw [B1b] at ABP; tauto
-  · rw [B1b] at PBA; tauto
+  · rw [PeqA]; exact ref lemma 1.0.24
+  · rw [PeqB]; exact ref lemma 1.0.23
+  all_goals obvious
 
-/-- pXX "By the definition of segment and ray, `the segment A B ⊆ the ray A B`" -/
--- FIXME: this is a quote but I didn't write the page #
-lemma seg_sub_ray : segment A B ⊆ ray A B := by simp_all only [subset_union_left]
 
-/-- A segment is a subset of the line A B -/
-lemma seg_sub_line : segment A B ⊆ line A B := by
-  have h₁ : segment A B ⊆ ray A B := seg_sub_ray
-  have h₂ : ray A B ⊆ line A B := ray_sub_line
-  simp only [setOf_subset_setOf, B1b]
+atlas commentary := by
+  ref lemma 2.0.4
+  name "Segment A B is a subset of ray A B"
+  preface "pXX By the definition of segment and ray, `the segment A B ⊆ the ray A B`"
+  notes "FIXME: this is a quote but I didn't write the page #
+FIXME: if it's obvious here, it's obvious at the callsite, so inline it"
+
+atlas lemma 2.0.4 "Segment A B is a subset of ray A B"
+  : segment A B ⊆ ray A B := obvious
+
+
+atlas commentary := by
+  ref lemma 2.0.5
+  name "Segment A B is a subset of line A B"
+  preface "A segment is a subset of the line A B"
+
+atlas lemma 2.0.5 "Segment A B is a subset of line A B"
+  : segment A B ⊆ line A B := by
+  have h₁ : segment A B ⊆ ray A B := ref lemma 2.0.4
+  have h₂ : ray A B ⊆ line A B := ref lemma 1.0.18
   intro P PonSeg
-  tauto
+  rcases PonSeg with APB | AorBeqP
+  repeat tauto
 
-/-- All points on a line are collinear -/
-lemma all_points_on_a_line_are_collinear {AneB : A ≠ B} : P on line A B -> collinear A B P := by
+atlas commentary := by
+  ref lemma 2.0.6
+  name "Line Points are Collinear"
+  preface "All points on a line are collinear"
+
+atlas lemma 2.0.6 "Line Points are Collinear"
+  {AneB : A ≠ B} : P on line A B -> collinear A B P := by
   -- Direct Proof
   intro PonAB
   simp only [mem_setOf_eq] at PonAB
   rcases PonAB with PeqA | PeqB | tween | tween | tween
-  -- TODO: These should be reducible to a single invocation, maybe a suffices?
+  todo "These should be reducible to a single invocation, maybe a suffices?"
   · rw [<- PeqA];
-    apply (Collinear.redundancy_irrelevance_BAB B P).mpr
+    apply (ref lemma 1.0.17 B P).mpr
     by_cases suppose: B = P
     · rw [<- PeqA, suppose] at AneB; contradiction
-    · exact Collinear.any_two_points_are_collinear suppose
+    · exact ref lemma 1.0.14 suppose
   · rw [<- PeqB]
-    apply (Collinear.redundancy_irrelevance_ABB A P).mpr
+    apply (ref lemma 1.0.16 A P).mpr
     by_cases suppose: A = P
     · rw [<- PeqB, suppose] at AneB; contradiction
-    · exact Collinear.any_two_points_are_collinear suppose
-  repeat exact Collinear.order_irrelevance (Betweenness.abc_imp_collinear tween)
+    · exact ref lemma 1.0.14 suppose
+  repeat exact Collinear.order_irrelevance (ref lemma 1.0.40 tween)
+
 
 /-
 /- A extension excludes the points that define it -/
@@ -113,91 +146,131 @@ lemma extension_has_endpoints.left : A off extension A B := by sorry
 lemma extension_excludes_endpoints.right : B off extension A B := by sorry
 -/
 
-/-- All points on a extension are collinear -/
-lemma all_points_on_an_extension_are_collinear {A B : Point} : P on extension A B -> collinear A B P := by
+atlas commentary := by
+  ref lemma 2.0.7
+  name "Every point on extension A B is collinear with A and B"
+  preface "All points on a extension are collinear"
+
+atlas lemma 2.0.7 "Every point on extension A B is collinear with A and B"
+  {A B : Point} : P on extension A B -> collinear A B P := by
   intro PonExtAB
-  exact Betweenness.abc_imp_collinear PonExtAB.left
+  exact ref lemma 1.0.40 PonExtAB.left
 
-/-- All points on a segment are collinear -/
-lemma all_points_on_a_segment_are_collinear {AneB : A ≠ B} : P on segment A B -> collinear A B P := by
+
+atlas commentary := by
+  ref lemma 2.0.8
+  name "Every point on segment A B is collinear with A and B"
+  preface "All points on a segment are collinear"
+
+atlas lemma 2.0.8 "Every point on segment A B is collinear with A and B"
+  {AneB : A ≠ B} : P on segment A B -> collinear A B P := by
   intro PonSegAB
-  apply seg_sub_line at PonSegAB
-  exact @all_points_on_a_line_are_collinear A B P AneB PonSegAB
+  apply ref lemma 2.0.5 at PonSegAB
+  -- `@«Title»` form needed here: positional implicits, and `@ref ...`
+  -- doesn't compose cleanly with Lean's built-in `@` term modifier.
+  exact @«Line Points are Collinear» A B P AneB PonSegAB
 
-/-- All points on a ray are collinear -/
-lemma all_points_on_a_ray_are_collinear {AneB : A ≠ B} : P on ray A B -> collinear A B P := by
+
+atlas commentary := by
+  ref lemma 2.0.9
+  name "Ray Points are Collinear"
+  preface "All points on a ray are collinear"
+
+atlas lemma 2.0.9 "Ray Points are Collinear"
+  {AneB : A ≠ B} : P on ray A B -> collinear A B P := by
   intro PonAB
-  apply ray_sub_line at PonAB
-  exact @all_points_on_a_line_are_collinear A B P AneB PonAB
+  apply ref lemma 1.0.18 at PonAB
+  -- `@«Title»` form needed here: positional implicits, and `@ref ...`
+  -- doesn't compose cleanly with Lean's built-in `@` term modifier.
+  exact @«Line Points are Collinear» A B P AneB PonAB
 
 
-lemma segment_int_extension_is_empty : segment A B ∩ extension A B = ∅ := by
+
+atlas lemma 2.0.10 "Segment A B and extension A B are disjoint"
+  : segment A B ∩ extension A B = ∅ := by
   apply Subset.antisymm
   · intro P ⟨PonSeg, PonExt⟩
     have ⟨ABP, AneP, BneP⟩ := PonExt
     rcases PonSeg with APB | AeqP | BeqP
-    · exfalso; exact Betweenness.absurdity_abc_acb ⟨ABP, APB⟩
+    · exfalso; exact ref lemma 1.0.37 ⟨ABP, APB⟩
     · contradiction
     · contradiction
   · intro _ absurdity; exfalso; contradiction
 
-/-- A line is the set of all points on it -/
-lemma line_by_definition : ∀ L : Line, L = {P : Point | P on L} := by
+
+atlas commentary := by
+  ref lemma 2.0.11
+  name "A line equals the set of all points lying on it"
+  preface "A line is the set of all points on it"
+
+atlas lemma 2.0.11 "A line equals the set of all points lying on it"
+  : ∀ L : Line, L = {P : Point | P on L} := by
   intro L
   apply Subset.antisymm
   repeat tauto
 
-/-- A line is 'bigger' than a ray in the same way that a line is bigger than a segment -/
-lemma line_is_bigger_than_ray : ∀ L : Line, ∀ A B : Point, A ≠ B -> ray A B ≠ L := by
+
+atlas commentary := by
+  ref lemma 2.0.12
+  name "A ray A B is never equal to any line L"
+  preface "A line is 'bigger' than a ray in the same way that a line is bigger than a segment"
+
+atlas lemma 2.0.12 "A ray A B is never equal to any line L"
+  : ∀ L : Line, ∀ A B : Point, A ≠ B -> ray A B ≠ L := by
   intro L A B AneB
   by_contra ABeqL
-  -- idea: construct a point X - A - B, X is on L, by definition, but off AB, also by def. but under the hypothesis L = AB, -><-
-  have ⟨X, colXAB, distinctXAB, XAB⟩ := B2.left A B AneB
+  idea "construct a point X - A - B, X is on L, by definition, but off AB, also by def. but under the hypothesis L = AB, -><-"
+  have ⟨X, colXAB, distinctXAB, XAB⟩ := ref lemma 1.0.5 A B AneB
   separate at distinctXAB;
   have XonL : X on L := by
-    -- idea, L = AB, and L = colXAB.line by the Line.equiv
+    idea "L = AB, and L = colXAB.line by the ref lemma 2.0.2"
     have LeqXAB : L = colXAB.line := by
-      have ABeqXAB := Line.equiv AneB ⟨Line.ray_has_endpoints.left, colXAB.mem A, Line.ray_has_endpoints.right, colXAB.mem B⟩
+      have ABeqXAB := ref lemma 2.0.2 AneB ⟨ref lemma 1.0.21, colXAB.mem A, ref lemma 1.0.22, colXAB.mem B⟩
       rw [<- ABeqXAB]; exact ABeqL.symm
     rw [LeqXAB]; exact colXAB.mem X
   rw [<- ABeqL] at XonL
   rcases XonL with XonSeg | XonExt
   · rcases XonSeg with AXB | AeqX | BeqX
-    · exact Betweenness.absurdity_abc_bac ⟨XAB, AXB⟩
+    · exact ref lemma 1.0.36 ⟨XAB, AXB⟩
     · exact absurd AeqX XneA.symm
     · exact absurd BeqX XneB.symm
   · have ⟨ABX, _, _⟩ := XonExt
-    exact Betweenness.absurdity_abc_cab ⟨ABX, XAB⟩
+    exact ref lemma 1.0.38 ⟨ABX, XAB⟩
 
-/- It helps to be able to commute these around, when we get to congruence this will make part of it trivial -/
-lemma segment_AB_eq_segment_BA : segment A B = segment B A := by
-  unfold Segment
-  ext P
-  rw [@mem_setOf]; simp_all only [mem_setOf_eq]
-  constructor
-  intro h; rcases h with h0 | h1 | h2; rw [B1b];
-  repeat tauto
-  intro h; rcases h with h0 | h1 | h2; rw [B1b]
-  repeat tauto
 
-/-- The endpoint B is in common here. -/
-lemma segment_AB_sub_ray_BA : segment A B ⊆ ray B A := by
+atlas commentary := by
+  ref lemma 2.0.13
+  name "Segment Commutativity"
+  preface "It helps to be able to commute these around, when we get to congruence this will make part of it trivial"
+
+atlas lemma 2.0.13 "Segment Commutativity"
+  : segment A B = segment B A := by
+  suffices subset : ∀ A B : Point, segment A B ⊆ segment B A by
+    exact Subset.antisymm (subset A B) (subset B A)
+  intro A B P hPinSegAB
+  rcases hPinSegAB with APB | AeqP | BeqP
+  all_goals obvious
+
+attribute [obvious] «Segment Commutativity»
+
+
+atlas commentary := by
+  ref lemma 2.0.14
+  name "Segment A B is a subset of ray B A (the swapped-endpoint ray)"
+  preface "The endpoint B is in common here."
+
+atlas lemma 2.0.14 "Segment A B is a subset of ray B A (the swapped-endpoint ray)"
+  : segment A B ⊆ ray B A := by
   intro P hPinSegAB
-  simp_all only [mem_setOf_eq, mem_union, segment_AB_eq_segment_BA, true_or]
+  obvious
 
-lemma APB_imp_P_on_segment_AB : A - P - B -> P on the segment A B := obvious
-
-lemma APB_imp_P_on_ray_AB : A - P - B -> P on the ray A B := obvious
-
-lemma ABP_imp_P_on_ext_AB (PneAB : P ≠ A ∧ P ≠ B) :
-  A - B - P -> P on the extension A B := by intro _; obvious
 
 /- lemma ABP_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/
 /-   A - B - P -> P on the line A B := by -/
 /-     intro ABP; -/
-/-     have distinctABP := Betweenness.abc_imp_distinct ABP -/
+/-     have distinctABP := ref lemma 1.0.39 ABP -/
 /-     have AneB := by distinguish distinctABP A B -/
-/-     have colABP := Betweenness.abc_imp_collinear ABP -/
+/-     have colABP := ref lemma 1.0.40 ABP -/
 /-     unfold LineThrough -/
 
 /- lemma APB_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/
@@ -205,7 +278,7 @@ lemma ABP_imp_P_on_ext_AB (PneAB : P ≠ A ∧ P ≠ B) :
 /-     intro hABP; -/
 /-     have hPonSegAB : P on segment A B := APB_imp_P_on_segment_AB PneAB hABP -/
 /-     unfold LineThrough; simp only [mem_setOf_eq] -/
-/-     exact Line.all_points_on_a_segment_are_collinear hPonSegAB -/
+/-     exact ref lemma 2.0.8 hPonSegAB -/
 
 end Line
 

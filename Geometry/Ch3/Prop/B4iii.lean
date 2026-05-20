@@ -9,6 +9,7 @@ import Geometry.Theory.Ch1
 import Geometry.Theory.Ch2
 import Geometry.Theory.Line.Ch2
 import Geometry.Theory.Betweenness.Ch2
+import Atlas
 
 import Geometry.Ch2.Prop
 import Geometry.Ch3.Prop.P1
@@ -18,27 +19,27 @@ namespace Geometry.Ch3.Prop
 -- open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
-open Geometry.Ch3.Prop.P1
+open Atlas
+-- (open removed: P1.i/P1.ii aliases inlined to titles)
 
--- p111
-
-/-
-"Corollary. (iii) If A and B are on opposite sides of L and if B and C are on the
-same side of L, then A and C are on opposite sides of L"
-
-Ed. This gets shown here since it's a corollary and I need a lemma from the
+atlas commentary := by
+  ref corollary B-4iii
+  page 111
+  name "Corollary to B-4: splits + guards transitivity"
+  preface "Corollary. (iii) If A and B are on opposite sides of L and if B and C are on the same side of L, then A and C are on opposite sides of L"
+  notes "This gets shown here since it's a corollary and I need a lemma from the
 previous proposition
 
+FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument."
 
-FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument.
--/
-theorem B4iii :
-  (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
+atlas corollary B-4iii "Corollary to B-4: splits + guards transitivity"
+  : (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
   intro ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
-  have h := B4i ⟨AoffL, CoffL, BoffL⟩ ⟨LguardsAC, Betweenness.guards_commutes LguardsBC⟩
+  have h := ref axiom B-4i ⟨AoffL, CoffL, BoffL⟩ ⟨LguardsAC, ref lemma 2.0.30 LguardsBC⟩
   contradiction
+
 
 /-
 

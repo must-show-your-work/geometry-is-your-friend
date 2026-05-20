@@ -3,23 +3,31 @@ import Geometry.Tactics
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Line.Ch1
+import Atlas
 
 import Geometry.Ch2.Prop.P1
 
 namespace Geometry.Ch2.Prop
 
 open Geometry.Theory
+open Atlas
 
 
-/-- p71, "There exist three distinct lines that are not concurrent." -/
-@[simp] theorem P2 : ∃ L M N : Line, (L ≠ M ∧ M ≠ N ∧ L ≠ N) ∧ ¬Concurrent L M N := by
-    -- Idea: Use the 3 non-collinear points to build three lines, we can prove they're distinct with
-    -- some RAA, and then use the lemma to do the rest.
-    obtain ⟨A, B, C, hDistinct, hNC⟩ := I3
+atlas commentary := by
+  ref proposition 2.2
+  page 71
+  name "Three distinct lines exist that are not concurrent"
+  preface "There exist three distinct lines that are not concurrent."
+
+atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
+  : ∃ L M N : Line, (L ≠ M ∧ M ≠ N ∧ L ≠ N) ∧ ¬Concurrent L M N := by
+    idea "Use the 3 non-collinear points to build three lines, we can prove they're distinct with
+    some RAA, and then use the lemma to do the rest."
+    obtain ⟨A, B, C, hDistinct, hNC⟩ := ref axiom I.3
     rcases hDistinct with ⟨hAneB, hAneC, hBneC⟩
-    obtain ⟨AB, ⟨hAonAB, hBonAB⟩, hABUniq⟩ := I1 A B hAneB
-    obtain ⟨BC, ⟨hBonBC, hConBC⟩, hBCUniq⟩ := I1 B C hBneC
-    obtain ⟨AC, ⟨hAonAC, hConAC⟩, hACUniq⟩ := I1 A C hAneC
+    obtain ⟨AB, ⟨hAonAB, hBonAB⟩, hABUniq⟩ := ref axiom I.1 A B hAneB
+    obtain ⟨BC, ⟨hBonBC, hConBC⟩, hBCUniq⟩ := ref axiom I.1 B C hBneC
+    obtain ⟨AC, ⟨hAonAC, hConAC⟩, hACUniq⟩ := ref axiom I.1 A C hAneC
     -- establish distinctness of lines
     have hABneBC : AB ≠ BC := by
       by_contra! hABeqBC
@@ -43,20 +51,20 @@ open Geometry.Theory
     -- Now that everything is built, we proceed by contradiction
     by_contra! hNeg
     -- Let's find the Point the Author talks about in the proposed lemma
-    obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := Line.concurrence_of_three_lines_is_unique ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
+    obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := ref lemma 1.0.26 ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
     -- This lemma was not suggested by the author, but is handy. The proof is not long and simply establishes the
     -- 'Parallel' fact for each pair of lines. We need the unique point and the negative condition to build
     -- these
-    have hABnotparBC : (AB ∦ BC) := Line.intersecting_lines_are_not_parallel hPonAB hPonBC
-    have hABnotparAC : (AB ∦ AC) := Line.intersecting_lines_are_not_parallel hPonAB hPonAC
-    have hBCnotparAC : (BC ∦ AC) := Line.intersecting_lines_are_not_parallel hPonBC hPonAC
-    -- Idea: If P is on AB and BC, then P must be the intersection of those two lines, we already know B is on
-    -- both AB and BC, and by P1, we know the intersection is unique, so P = B, but that means B is on AC, which
-    -- which is false.
+    have hABnotparBC : (AB ∦ BC) := ref lemma 1.0.27 hPonAB hPonBC
+    have hABnotparAC : (AB ∦ AC) := ref lemma 1.0.27 hPonAB hPonAC
+    have hBCnotparAC : (BC ∦ AC) := ref lemma 1.0.27 hPonBC hPonAC
+    idea "If P is on AB and BC, then P must be the intersection of those two lines, we already know B is on
+    both AB and BC, and by P1, we know the intersection is unique, so P = B, but that means B is on AC, which
+    which is false."
     -- We can use 2.1 to find the unique intersection, we mostly care about the uniqueness condition, not the
     -- incidence on.
-    -- Note: FIXME: Using the direct proof version of prop 2.1 since this predates the `.. intersects .. at ..` notation
-    obtain ⟨X, _, hXUniq⟩ := Geometry.Ch2.Prop.P1.direct hABneBC hABnotparBC
+    fixme "Note: Using the direct proof version of prop 2.1 since this predates the `.. intersects .. at ..` notation"
+    obtain ⟨X, _, hXUniq⟩ := alternate 2.1 hABneBC hABnotparBC
     -- This condition makes proving this a matter of plug and chug
     have hPeqB : P = B := by
       have BeqX := hXUniq B ⟨hBonAB, hBonBC⟩
@@ -69,5 +77,7 @@ open Geometry.Theory
     -- Use Non-collinearity to show non-concurrence
     specialize hNC AC hAonAC hBonAC
     contradiction
+
+attribute [simp] «Three distinct lines exist that are not concurrent»
 
 end Geometry.Ch2.Prop
