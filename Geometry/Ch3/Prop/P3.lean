@@ -71,7 +71,7 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
   todo "[refactor] nested ref-in-ref (\"Demeter violation for proofs\") — `ref lemma
   2.0.25 _ ((ref lemma 1.0.31).mpr _)` chains two atlas refs through a `.mpr`. Lift
   the inner symm-application out into a `have`, or introduce a small adapter lemma."
-  have ECsplitsAandD : EC splits A and D := ref lemma 2.0.25 ACD ((ref lemma 1.0.31).mpr LintECatC)
+  have ECsplitsAandD : EC splits A and D := via lemma 2.0.25 ACD ((ref lemma 1.0.31).mpr LintECatC)
   quoting (4) "We claim A and B are on the same side of EC. Assume on the contrary that A and B are on opposite sides of EC
      (RAA Hypothesis)"
   comment "This section is proved without the use of ref lemma 2.0.27, which matches the book closely, but the core
@@ -175,7 +175,7 @@ atlas proposition 3.3.ii "Betweenness from shared outer pair: A-B-D from A-B-C a
   have CoffEB := (ref lemma 2.0.26 BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
   have DoffEB := (ref lemma 2.0.26 BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
   todo "[refactor] same ref-in-ref pattern as `ECsplitsAandD` above."
-  have EBsplitsAC := ref lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
+  have EBsplitsAC := via lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
   have BCD : B - C - D := via proposition 3.3.i ⟨ABC, ACD⟩
   have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
   have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
@@ -202,7 +202,7 @@ atlas corollary 3.3.i "Corollary: A-B-D from chained betweenness A-B-C and B-C-D
   have CoffEB := (ref lemma 2.0.26 BneC.symm LintEBatB).resolve_left (not_not.mpr (cL.mem C))
   have DoffEB := (ref lemma 2.0.26 BneD.symm LintEBatB).resolve_left (not_not.mpr (cL.mem D))
   todo "[refactor] same ref-in-ref pattern as `ECsplitsAandD` above."
-  have EBsplitsAC := ref lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
+  have EBsplitsAC := via lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
   have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
   have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
   have EBsplitsAD := corollary B-4iii ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩

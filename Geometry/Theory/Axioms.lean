@@ -18,6 +18,8 @@ The actual content lives in:
 - `Geometry.Theory.Primitives` — Point, Line, on, off/has/avoids, Between
 - `Geometry.Theory.Collinear` — Collinear def + syntax
 - `Geometry.Theory.Constructors` — segment/ray/extension/line + intersects
+
+(`Geometry.Theory.Linus` is a higher-level abstraction built on top of the early lemmas; import it explicitly where needed — it isn't in this barrel because it depends on `Line.Ch1` / `Line.Ch2` which already pull in the barrel.)
 - `Geometry.Theory.Axioms.Incidence` — I.1, I.2, I.3 + Concurrent + Parallel
 - `Geometry.Theory.Axioms.Betweenness` — B-1a/b, B-2, density, B-3, B-4i/ii
 - `Geometry.Tactics.NormalizeEq` — `normalize_eq`

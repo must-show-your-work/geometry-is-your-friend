@@ -88,7 +88,7 @@ atlas proposition 3.1.ii "Two rays from common endpoints union to their line"
     · exfalso; exact absurd eq.symm BneP
     -- the case where P is on the segment
     · have PonSegAB : P on segment A B := obvious
-      exact mem_union_left (ray B A) ((obvious : segment A B ⊆ ray A B) PonSegAB)
+      exact mem_union_left (ray B A) obvious
     -- this is where we need the PneA and PneB conditions
     · have PonExtAB : P on extension A B := obvious
       left; right; exact PonExtAB

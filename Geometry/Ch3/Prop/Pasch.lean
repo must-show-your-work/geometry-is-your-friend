@@ -122,12 +122,13 @@ atlas proposition 3.7 "Pasch's Postulate"
     the author's justification that A and B are off L.
     "
     quoting (3) "Hence, A and B lie on opposite sides of L (by definition)"
-    have LsplitsAB : L splits A and B := by
-      have ⟨X, LintABatX⟩ : ∃ X : Point, L intersects segment A B at X := by sorry
-      exact ref corollary 2.0.25 LintABatX
+    have LsplitsAB : L splits A and B := via corollary 2.0.25 (via lemma 3.7.2 LintSegAB).choose_spec
     quoting (4) "From step 1 we may assume that C does not lie on L, in which case C is either on the same side of L as A or
            on the same side of L as B (separation axiom)"
-    have LguardsACorBC : (L guards A and C) ∨ (L guards B and C) := by sorry
+    have LguardsACorBC : (L guards A and C) ∨ (L guards B and C) := by
+      by_contra! ⟨LsplitsAC, LsplitsBC⟩
+      have LguardsAC : L guards A and C := ref axiom B-4ii ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LsplitsBC⟩
+      contradiction
     rcases LguardsACorBC with LguardsAC | LguardsBC
     · quoting (5) "If C is on the same side of L as A, then C is on the opposite side from B, which means that L intersects BC
            and does not intersect AC" ...

@@ -67,7 +67,7 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
       rcases h with ⟨PAB,_,_⟩ | ⟨_,APB,_⟩ | ⟨_, _, ABP⟩
       · exact PAB
       · have PonSegAB : P on segment A B := obvious
-        apply (obvious : segment A B ⊆ ray A B) at PonSegAB
+        have PonRayAB : P on ray A B := obvious
         contradiction
       · have PonRayAB : P on ray A B := obvious
         contradiction
@@ -101,126 +101,9 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
           contradiction
         · have PonRayAC : P on ray A C := by obvious
           right; trivial
-        · have PonSegAB : P on segment A C := by obvious
-          apply (obvious : segment A C ⊆ ray A C) at PonSegAB
+        · have PonSegAC : P on segment A C := by obvious
+          have PonRayAC : P on ray A C := obvious
           right; trivial
-
-
-/-
--- IDK if we can structure this like a bunch of tactic invocations that just build a bunch of data on a structe that
--- gets associated with the next theorem, but if we have to like, duplicate some names around that's fine with me. I
--- just include the kind/number here, but ostentibly we could have any number of names here pretty comfortably, and then
--- the main atlas macro drops the frenchquoted name (which lives here instead?)
-atlas commentary := by
-  ref proposition 3.4
-  page 131
-  name "Line separation property"
-  -- These would expand into aliases of the main result, solving our third-name problem. Maybe nice if this supported
-  -- `ref` aliasing too, so we could have `ref property 3.4` here as well. Not critical
-  aliases [
-    Line.separation
-    -- ...
-  ]
-  -- alternative, `pages 109..113`
-  preface """
-  If C - A - B and l is the line through A, B, and C (Betweenness Axiom 1), then for every point P lying on l,
-  P lies either on ray A B or on the opposite ray A C.
-
-  arbitrary multiline text, eventually we might even highlight this w/ treesitter or something.
-  """
-  notes """
-
-  prefacing editorial notes
-
-  arbitrary multiline text, eventually we might even highlight this w/ treesitter or something.
-  """
-  tags ["some", "arbitrary", "tags"]
-
-
--- I'd still want the statement separated like this, but moving the french quot
-atlas proposition 3.4
-  {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
-  comment "Some mise en place"
-  clearly A ≠ P; clearly B ≠ P; clearly C ≠ P
-  have distinctABCP : distinct A B C P := by
-    have dABC : distinct A B C := (ref lemma 1.0.39 CAB).of_eq obvious
-    separate
-    distinguish
-    repeat assumption
-  have AneB : A ≠ B := by distinguish
-  have colABCP : collinear A B C P := by
-    have cABC : collinear A B C := (ref lemma 1.0.40 CAB).of_eq obvious
-    have ABisSameLine : line A B = cABC.line := ref lemma 2.0.2 AneB
-      ⟨ref lemma 1.0.23, cABC.mem A, ref lemma 1.0.24, cABC.mem B⟩
-    rw [ABisSameLine] at PonL
-    exact (Collinear.insert cABC PonL).of_eq obvious
-  comment "Expose the pairwise inequalities for the `forgetting` casts below."
-  separate at distinctABCP
-  quoting (1) "Either P lies on ray A B or it does not (Law of the Excluded Middle)"
-  rcases Classical.em (P on ray A B) with PonRayAB | PoffRayAB
-  · quoting (2) "If P does lie on ray A B, we are done" ...
-    left; trivial
-  · quoting ... "so assume it doesn't; then P - A - B (Betweenness Axiom 3)"
-    have PAB : P - A - B := by
-      have h := ref axiom B.3 P A B ⟨distinctABCP forgetting C, colABCP forgetting C⟩
-      rcases h with ⟨PAB,_,_⟩ | ⟨_,APB,_⟩ | ⟨_, _, ABP⟩
-      · exact PAB
-      · have PonSegAB : P on segment A B := obvious
-        apply (obvious : segment A B ⊆ ray A B) at PonSegAB
-        contradiction
-      · have PonRayAB : P on ray A B := obvious
-        contradiction
-    quoting (3) "If P = C" ...
-    rcases Classical.em (P = C) with PeqC | PneC
-    · quoting ... "then P lies on ray A C (by definition)" ...
-      obvious
-    · quoting ... """
-      so assume P ≠ C; then exactly one of the relations C-A-P, C-P-A, or P-C-A holds (Betweeness Axiom 3 again).
-      """
-      have hCAP := ref axiom B.3 C A P ⟨distinctABCP forgetting B, colABCP forgetting B⟩
-      quoting (4) "Suppose the relation C-A-P holds (RAA Hypothesis)"
-      rcases Classical.em (C - A - P) with CAP | nCAP
-      · quoting (5) "We know (by Betweenness Axiom 3) that exactly one of the relations P-C-B, C-P-B, or C-B-P holds."
-        have hPBC := ref axiom B.3 P B C ⟨distinctABCP forgetting A, colABCP forgetting A⟩
-        rcases hPBC with ⟨PBC,_,_⟩ | ⟨_,BPC,_⟩ | ⟨_, _, PCB⟩
-        · quoting (6) """
-          If P-B-C, then combining this with P-A-B (step 2) gives A-B-C (Proposition 3.3), contradiction the hypothesis.
-          """
-          exfalso
-          exact ref lemma 1.0.38 ⟨via proposition 3.3.i ⟨PAB, PBC⟩, CAB⟩
-        · quoting (7) """
-          If C-P-B, then combining this with C-A-P (step 4) gives A-P-B (Proposition 3.3), contradiction step 2.
-          """
-          exfalso
-          exact ref lemma 1.0.36 ⟨via proposition 3.3.i ⟨CAP, (BPC.symm)⟩, PAB⟩
-        · quoting (8) """
-          If B-C-P, then combining this with B-A-C (hypothesis and Betweenness Axiom 1) gives A-C-P (Proposition 3.3),
-          contradicting step 4.
-          """
-          exfalso
-          exact ref lemma 1.0.36 ⟨via proposition 3.3.i ⟨CAB.symm, PCB.symm⟩, CAP⟩
-      · quoting (9) "Since we obtain a contradiction in all three cases, C-A-P does not hold (RAA conclusion)."
-        comment Ed. this is covered by the above .em elimination
-        quoting (10) "Therefore, C-P-A or P-C-A (step 3), which means that P lies on the opposite ray A C." ...
-        rcases hCAP with ⟨CAP,_,_⟩ | ⟨_,ACP,_⟩ | ⟨_,_,CPA⟩
-        · contradiction; comment "covered above"
-        · have PonRayAC : P on ray A C := by obvious
-          right; trivial
-        · have PonSegAB : P on segment A C := by obvious
-          apply obvious at PonSegAB
-          right; trivial
-        quoting ... "∎"
--/
-
-end Geometry.Ch3.Prop
-
-
-namespace Line
-
--- P3.4 ("line separation property") was previously aliased into the Line
--- namespace; reference it as `proposition 3.4` (or via the title) instead.
-
-end Line
 
 /-
 
@@ -242,3 +125,5 @@ more than textbooks, lips more than subtitles, and spent most of middle school s
 rerun of Star Trek was on at 11AM on any given tuesday.
 
 -/
+
+end Geometry.Ch3.Prop

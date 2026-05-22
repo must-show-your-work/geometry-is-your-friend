@@ -289,7 +289,12 @@ atlas lemma 2.0.25 "If A-X-B and L meets the segment at X then L splits A and B"
   · unfold Segment; simp only [mem_setOf_eq]; left; exact AXB
   · exact ref lemma 1.0.32 LintAXBatX
 
-atlas corrolary 2.0.25 "If L intersects segment A B at X, then L splits A and B"
+atlas commentary := by
+  ref corollary 2.0.25
+  name "Drop the strict-betweenness premise from 2.0.25 by case analysis"
+  preface "If L intersects segment A B at X (no a priori betweenness assumption on X), then L splits A and B. Generalizes lemma 2.0.25 by handling the endpoint cases (X = A or X = B) via case analysis on the segment trichotomy. Shares number 2.0.25 with the parent lemma — call sites must use `via lemma 2.0.25 …` (type-dispatched across paired decls) rather than `ref lemma 2.0.25 …` (single-match)."
+
+atlas corollary 2.0.25 "If L intersects segment A B at X, then L splits A and B"
   {L : Line} {A B X : Point} :
   (L intersects (segment A B) at X) -> (L splits A and B) := by
     intro LintABatX
