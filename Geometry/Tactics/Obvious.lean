@@ -1,0 +1,98 @@
+import Geometry.Tactics
+import Geometry.Theory.Primitives
+import Geometry.Theory.Constructors
+import Geometry.Tactics.NormalizeEq
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Insert
+
+/-!
+# `obvious` tactic
+
+Captures the author's intuition for 'by definition' in the text: unfolds
+common geometric objects, runs `simp_all` over the `obvious` simp set, and
+falls back to `tauto` / Finset-extensionality.
+
+The `obvious` simp set itself is registered in `Geometry/Tactics.lean`
+(Lean requires `register_simp_attr` and the first `attribute [obvious]`
+use to live in different files). This file populates the set with the
+chapter-0 / axiom-level lemmas Greenberg treats as background.
+-/
+
+namespace Geometry.Theory
+
+-- `register_simp_attr obvious` lives in `Geometry/Tactics.lean`
+-- (Lean requires the registration to be in a different file from the
+-- first `attribute [obvious]` use). This block tags the
+-- chapter-0 / axiom-level lemmas that count as Greenberg's
+-- minimum-standard intuition. Tag conservatively: a bad simp rule
+-- here propagates to every `obvious` invocation downstream.
+
+attribute [obvious]
+  -- set
+  Set.mem_setOf_eq Set.mem_union Set.mem_inter_iff Set.mem_singleton_iff
+  -- finset
+  Finset.mem_insert Finset.mem_singleton Finset.mem_erase Finset.notMem_empty
+  -- propositional
+  ne_eq true_or or_true false_or or_false or_self
+  true_and and_true false_and and_false and_self
+  not_true_eq_false not_false_eq_true not_or not_and not_not
+
+attribute [obvious]
+  -- line parts (unfolded forms)
+  Segment Ray Extension LineThrough
+
+-- Title-form `@[obvious]` tags for the betweenness axioms (e.g.
+-- `«Betweenness Commutativity»`, `«A-B-C implies …»`) live in
+-- `Geometry.Theory.Axioms.Betweenness` itself, applied after each
+-- decl — that file imports this one, and tagging there avoids a
+-- circular import.
+
+/-- Attempts to unfold any geometric objects in the vicinity and eliminate booleans
+ and the like. Tries to capture the author's intuition for 'by definition' in the text.
+
+ The last alternative handles Finset literal equality (`{A,B,C} = {C,A,B}` etc.) by
+ reducing to membership and tautology — convenient since Finsets are unordered.
+
+ `normalize_eq` runs first to canonicalize `=` / `≠` orientations so `simp_all` can
+ close hypotheses regardless of which side they were originally written on.
+
+ The simp set is the `obvious` attribute — each chapter tags its
+ own canonical normalizations and they accumulate progressively. -/
+macro "obvious" : tactic =>
+  `(tactic| (
+      normalize_eq
+      first
+      -- Pure rewrite closes the goal entirely (definitional only).
+      | (simp_all only [obvious]; done)
+      -- Rewrite hyps and goal via `obvious`, then let `tauto` do
+      -- the propositional closing. This handles patterns like:
+      --   hyp: `A - P - B`  ⊢  `P ∈ LineThrough B A`
+      -- where the rewrite turns the hyp into a form that matches one
+      -- disjunct of the unfolded goal, and `tauto` picks it.
+      | (simp_all only [obvious]; tauto)
+      -- Goal-only unfold + propositional close (some sites have hyps
+      -- in normalized form already).
+      | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
+      -- Last-ditch: unfold geometric defs everywhere and tauto.
+      | (unfold Segment Ray Extension LineThrough at *; tauto)
+      -- The `ext` alternative is for Finset-literal equality goals
+      -- (`{A,B,C} = {C,A,B}`). Guard with `first` so a `fail`
+      -- alternative gives a clean error message when nothing closed.
+      | (first
+          | (ext; simp only [Finset.mem_insert, Finset.mem_singleton, Finset.mem_erase, ne_eq]; tauto)
+          | fail "obvious: no alternative closed the goal")))
+
+macro "obvious" : term => `(by obvious)
+
+/-! ## Examples -/
+
+section Examples
+-- Endpoint membership unfolds via the `Segment` simp tag.
+example (A B : Point) : A on segment A B := by obvious
+example (A B : Point) : B on segment A B := by obvious
+
+-- Term-position form.
+example (A B : Point) : A on segment A B := obvious
+end Examples
+
+end Geometry.Theory
