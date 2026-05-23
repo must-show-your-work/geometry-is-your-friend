@@ -16,11 +16,9 @@ import Geometry.Ch3.Prop.P1
 
 namespace Geometry.Ch3.Prop
 
--- open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
 open Atlas
--- (open removed: P1.i/P1.ii aliases inlined to titles)
 
 atlas commentary := by
   ref corollary ["B.4.iii"]

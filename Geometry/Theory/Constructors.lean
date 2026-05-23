@@ -78,6 +78,13 @@ theorem Intersects.bare {L M : Set Point} {X : Point}
   (h : Intersects L M X) : IntersectsSome L M :=
   ⟨X, by rw [h]; rfl⟩
 
+/-- Bare intersection is symmetric. Tagged `@[symm]` so the `symm` tactic picks
+    it up; `h.symm` works via dot notation. -/
+@[symm] theorem IntersectsSome.symm {L M : Set Point}
+  (h : IntersectsSome L M) : IntersectsSome M L := by
+  obtain ⟨X, hL, hM⟩ := h
+  exact ⟨X, hM, hL⟩
+
 
 -- Syntax for "L intersects M at X" (specific intersection point) and the bare
 -- form "L intersects M" asserting a unique shared point exists.
@@ -109,6 +116,10 @@ example : (segment A B) = Segment A B := rfl
 example : (the segment A B) = Segment A B := rfl
 example : (L intersects M at X) ↔ (Intersects L M X) := Iff.rfl
 example : (L intersects M) ↔ (IntersectsSome L M) := Iff.rfl
+
+-- `symm` tactic + dot notation for the bare intersection.
+example {L M : Set Point} (h : L intersects M) : M intersects L := by symm; exact h
+example {L M : Set Point} (h : L intersects M) : M intersects L := h.symm
 end Examples
 
 end Geometry.Theory

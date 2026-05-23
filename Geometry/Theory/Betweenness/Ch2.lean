@@ -19,8 +19,6 @@ atlas commentary := by
   ref lemma 2.0.30
   name "Guarding is symmetric in its two point arguments"
   preface "a line doesn't care about the order of the points it guards"
-  notes "TODO: For this and other commutative properties, I think there is a class to instantiate to get that .symm thing to
-work."
 
 atlas lemma 2.0.30 "Guarding is symmetric in its two point arguments"
   : (L guards A and B) -> (L guards B and A) := by
@@ -43,12 +41,23 @@ end Betweenness
 /-- Dot-notation wrapper: `h.symm` swaps the point args of an `L guards _ and _` hypothesis.
     Lives in `Geometry.Theory` (not the `Betweenness` sub-namespace) so dot-notation lookup
     finds it via the `Guards` type's namespace. -/
-def Guards.symm {A B : Point} {L : Line} (h : Guards A B L) : Guards B A L :=
+@[symm] def Guards.symm {A B : Point} {L : Line} (h : Guards A B L) : Guards B A L :=
   Betweenness.«Guarding is symmetric in its two point arguments» h
 
 /-- Dot-notation wrapper: `h.symm` swaps the point args of an `L splits _ and _` hypothesis.
     Same namespace placement as `Guards.symm`. -/
-def Splits.symm {A B : Point} {L : Line} (h : Splits L A B) : Splits L B A :=
+@[symm] def Splits.symm {A B : Point} {L : Line} (h : Splits L A B) : Splits L B A :=
   Betweenness.«Splitting is symmetric in its two point arguments» h
+
+section Examples
+-- Confirms the `symm` tactic finds the `@[symm]` tags on `Guards.symm` / `Splits.symm` / `Between.symm`.
+example {A B : Point} {L : Line} (h : Guards A B L) : Guards B A L := by symm; exact h
+example {A B : Point} {L : Line} (h : Splits L A B) : Splits L B A := by symm; exact h
+example {A B C : Point} (h : A - B - C) : C - B - A := by symm; exact h
+-- And via dot notation.
+example {A B : Point} {L : Line} (h : Guards A B L) : Guards B A L := h.symm
+example {A B : Point} {L : Line} (h : Splits L A B) : Splits L B A := h.symm
+example {A B C : Point} (h : A - B - C) : C - B - A := h.symm
+end Examples
 
 end Geometry.Theory

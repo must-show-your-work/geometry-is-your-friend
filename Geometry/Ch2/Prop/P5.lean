@@ -27,29 +27,20 @@ atlas proposition 2.5 "Every point has at least two distinct lines through it"
         intro P
         have ⟨Q, PneQ⟩ := ref lemma 1.0.11 P
         have ⟨PQ, _⟩ := ref axiom I.1 P Q PneQ
-        -- So we have an arbitrary ray PQ, by P2.3 there is a point R not on it.
+        idea "We have an arbitrary ray PQ, by P2.3 there is a point R not on it."
         obtain ⟨R, RoffPQ⟩ := proposition 2.3 PQ
-        -- Since PQ avoids R, P ≠ R
+        comment "Since PQ avoids R, P ≠ R"
         have PneR : P ≠ R := by
             by_contra! hNeg
             rw [<- hNeg] at RoffPQ
-            tauto
-        -- So we have PR ≠ PQ
+            obvious
+        comment "So we have PR ≠ PQ"
         obtain ⟨PR, ⟨PonPR, RonPR⟩, PRuniq⟩ := ref axiom I.1 P R PneR
-        -- Let's stake our claim
         use PQ, PR
         have PQnePR : PQ ≠ PR := by
             rw [ref lemma 1.0.29]
-            use R; tauto
-        /- without the corollary, this is a few lines longer.
-        -- 5.2.1 should have a much better proof, I just don't know enough lean to do it.
-        have PQnePR : PQ ≠ PR := by
-            by_contra! hNeg
-            rw [P5.L2] at hNeg
-            specialize hNeg R
-            tauto -/
-        -- trivial fromn here
-        tauto
+            use R; obvious
+        obvious
 
 
 

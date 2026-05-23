@@ -49,7 +49,7 @@ attribute [simp, obvious] «Betweenness Commutativity»
     via dot notation: `BCD.symm` instead of `(«Betweenness Commutativity»).mp BCD`.
     Not atlas-tagged (this is a structural projection on the underlying
     `Between` relation, not book content). -/
-def Between.symm {A B C : Point} (h : A - B - C) : C - B - A :=
+@[symm] def Between.symm {A B C : Point} (h : A - B - C) : C - B - A :=
   («Betweenness Commutativity»).mp h
 
 

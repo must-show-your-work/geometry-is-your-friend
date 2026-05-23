@@ -41,6 +41,14 @@ atlas lemma 1.0.31 "Pointed intersection is symmetric in its line arguments"
   refine Eq.congr ?_ rfl
   exact inter_comm L M
 
+attribute [symm] «Pointed intersection is symmetric in its line arguments»
+
+/-- Dot-notation wrapper: `h.symm` swaps the line args of an `L intersects M at X`
+    hypothesis. Picks up the `@[symm]` Iff form above via projection. -/
+@[symm] def Intersects.symm {L M : Set Point} {X : Point}
+  (h : L intersects M at X) : M intersects L at X :=
+  («Pointed intersection is symmetric in its line arguments»).mp h
+
 
 atlas commentary := by
   ref lemma 1.0.32

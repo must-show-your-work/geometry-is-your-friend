@@ -38,8 +38,6 @@ atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct pr
         rw [hMisPQ, hLisPQ]
     contradiction
 
--- Compatibility aliases: original names were `alternate 2.1` and `P1`.
-
 atlas commentary := by
   ref proposition 2.1
   name "Distinct non-parallel lines share a unique point"
@@ -66,7 +64,5 @@ atlas proposition 2.1 "Distinct non-parallel lines share a unique point"
       specialize Puniq Q
       have QinLintM : Q ∈ L ∩ M := by rw [LintMatQ]; tauto
       tauto
-
--- Compatibility alias for the original simple-name reference.
 
 end Geometry.Ch2.Prop
