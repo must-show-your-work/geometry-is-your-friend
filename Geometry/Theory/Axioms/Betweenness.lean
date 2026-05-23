@@ -130,23 +130,41 @@ contains no points that lie on L, we say that A and B are _on the same side_ of 
 does intersect L, we say that A and B are _on opposite sides_ of L (see Figure 3.6). The law of the excluded middle
 (Logic Rule 10) tells us that A and B are either on the same side or on opposite sides of L"
 -/
-@[reducible] def SameSide (A B : Point) (L : Line)
+@[reducible] def Guards (A B : Point) (L : Line)
   := (A off L) ∧ (B off L) ∧ ((A = B) ∨ (∀ P : Point, (P on segment A B) -> (L avoids P)))
 
-/-- `Splits` wraps `¬(SameSide A B L)` in a named def so the goal-view printer
-    renders it as `L splits A and B` rather than unfolding to `¬(L guards A and B)`.
-    Reducible — definitionally equal to the negation, so propositional reasoning
-    is unaffected. The `unfold` tactic *is* strict about the named head though;
-    sites that previously did `unfold SameSide at h` where h : Splits …
-    must now do `unfold Splits SameSide at h` (or `simp only [Splits, SameSide]`).
+/-- `Splits` and `Guards` are paired: `Splits L A B := ¬(Guards A B L)`. Both
+    have notation forms — `L splits A and B` and `L guards A and B` — that the
+    goal-view printer renders directly (rather than unfolding to one or the
+    other's def body). `Guards` is `@[reducible]` so destructuring its And-
+    conjunction is transparent; `Splits` is NOT reducible, because reducibility
+    would unfold it to `Guards A B L → False` and break dot-notation lookup
+    for `Splits.symm` (Lean would look for `Function.symm` on the function-
+    type form). Use `unfold Splits Guards` (or `simp only [Splits, Guards]`)
+    when you need either layer transparent in a proof.
 
     L "splits" A and B if A and B are on opposite sides of the 'wall' L; L
     "guards" them if they are both on the same side (we presume all points
     are allied with other points on their side of the line). -/
-@[reducible] def Splits (L : Line) (A B : Point) : Prop := ¬(SameSide A B L)
+def Splits (L : Line) (A B : Point) : Prop := ¬(Guards A B L)
 
 notation:20 L " splits " A " and " B => Splits L A B
-notation:20 L " guards " A " and " B => SameSide A B L
+notation:20 L " guards " A " and " B => Guards A B L
+
+/-- `¬(L splits A and B) ↔ L guards A and B`. Tagged `@[push, simp]` so the
+    `push Not` tactic (and therefore `by_contra!`) automatically converts the
+    introduced negation back into a `guards` hypothesis. -/
+@[push, simp] theorem not_splits_iff_guards {A B : Point} {L : Line} :
+  ¬(L splits A and B) ↔ (L guards A and B) := by
+  unfold Splits
+  exact Classical.not_not
+
+/-- `¬(L guards A and B) ↔ L splits A and B`. Holds by definition of `Splits` —
+    `@[simp]` for explicit invocation. Not tagged `@[push]` because that would
+    create a normalization loop with `not_splits_iff_guards` (one rule undoes
+    the other); `push`'s auto-pull machinery handles the reverse direction. -/
+@[simp] theorem not_guards_iff_splits {A B : Point} {L : Line} :
+  ¬(L guards A and B) ↔ (L splits A and B) := Iff.rfl
 
 atlas commentary := by
   ref axiom ["B.4.i"]
@@ -184,8 +202,8 @@ attribute [simp] «Two opposite-side relations chain to a same-side relation»
 section Examples
 variable (A B : Point) (L : Line)
 
-example : (L splits A and B) ↔ ¬(SameSide A B L) := Iff.rfl
-example : (L guards A and B) ↔ SameSide A B L := Iff.rfl
+example : (L splits A and B) ↔ ¬(Guards A B L) := Iff.rfl
+example : (L guards A and B) ↔ Guards A B L := Iff.rfl
 end Examples
 
 end Geometry.Theory

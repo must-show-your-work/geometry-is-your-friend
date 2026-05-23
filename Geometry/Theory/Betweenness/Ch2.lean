@@ -25,7 +25,7 @@ work."
 atlas lemma 2.0.30 "Guarding is symmetric in its two point arguments"
   : (L guards A and B) -> (L guards B and A) := by
     intro LguardsAB
-    unfold SameSide at *; rw [<- ref lemma 2.0.13] ; tauto
+    unfold Guards at *; rw [<- ref lemma 2.0.13] ; tauto
 
 
 atlas commentary := by
@@ -36,10 +36,19 @@ atlas commentary := by
 atlas lemma 2.0.31 "Splitting is symmetric in its two point arguments"
   : (L splits A and B) -> (L splits B and A) := by
     intro LsplitsAB
-    unfold Splits SameSide at *; rw [<- ref lemma 2.0.13] ; tauto
-
-
+    unfold Splits Guards at *; rw [<- ref lemma 2.0.13] ; tauto
 
 end Betweenness
+
+/-- Dot-notation wrapper: `h.symm` swaps the point args of an `L guards _ and _` hypothesis.
+    Lives in `Geometry.Theory` (not the `Betweenness` sub-namespace) so dot-notation lookup
+    finds it via the `Guards` type's namespace. -/
+def Guards.symm {A B : Point} {L : Line} (h : Guards A B L) : Guards B A L :=
+  Betweenness.«Guarding is symmetric in its two point arguments» h
+
+/-- Dot-notation wrapper: `h.symm` swaps the point args of an `L splits _ and _` hypothesis.
+    Same namespace placement as `Guards.symm`. -/
+def Splits.symm {A B : Point} {L : Line} (h : Splits L A B) : Splits L B A :=
+  Betweenness.«Splitting is symmetric in its two point arguments» h
 
 end Geometry.Theory

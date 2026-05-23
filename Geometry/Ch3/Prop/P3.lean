@@ -135,7 +135,7 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
       contradiction
     quoting (10) "Hence, the point C of intersection of lines EC and BD lies between B and D (definition of \"opposite sides\";
        Proposition 2.1, i.e., that the point of intersection is unique)."
-    unfold Splits SameSide at ECsplitsBandD
+    unfold Splits Guards at ECsplitsBandD
     push Not at ECsplitsBandD
     specialize ECsplitsBandD BoffEC DoffEC
     have ⟨BneD, P, ⟨PonSegBD, PonEC⟩⟩ := ECsplitsBandD

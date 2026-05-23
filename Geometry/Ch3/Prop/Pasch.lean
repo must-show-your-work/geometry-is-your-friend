@@ -33,16 +33,6 @@ open Geometry.Ch3.Ex
 open Atlas
 
 
-atlas lemma 3.7.1 "If A and B are collinear, and B and C are collinear, and A and C are collinear, then A B and C are collinear." 
-  {A B C : Point} : collinear A B ∧ collinear B C ∧ collinear A C -> collinear A B C := by
-  sorry
-
-atlas corollary 3.7.1 "If L intersects segments AB, BC, and AC, then A B and C are collinear"
-  {A B C : Point} {L : Line} :
-  L intersects segment A B ∧ L intersects segment B C ∧ L intersects segment A C -> collinear A B C := by
-  sorry
-
-
 atlas commentary := by
   ref proposition 3.7
   page 114
@@ -55,14 +45,9 @@ also intersects AC or BC (see figure 3.10). If C does not lie on L, then L does 
   
   Intuititively, this theorem says that if a line \"goes into\" a triangle through one side, it must \"come out\" through
 another side."
-  notes "
-    I added a distinct condition on A B and C to avoid the degenerate case. I think if we had introduced the concept of
-    a triangle instead of the half-ass version I have here with the `¬collinear` condition would probably include the
-    distinct condition.
-  "
 
 atlas proposition 3.7 "Pasch's Postulate"
-  {A B C : Point} {L : Line} {distinctABC : distinct A B C}
+  {A B C : Point} {L : Line}
   (triABC : ¬(collinear A B C)) (LintSegAB : L intersects segment A B) :
   ((L intersects segment A C) ∨ (L intersects segment B C)) ∧
   (C off L -> ¬((L intersects segment A C) ∧ (L intersects segment B C))) := by
@@ -131,7 +116,7 @@ atlas proposition 3.7 "Pasch's Postulate"
     rcases LguardsACorBC with LguardsAC | LguardsBC
     · quoting (5) "If C is on the same side of L as A, then C is on the opposite side from B, which means that L intersects BC
            and does not intersect AC" ...
-      have LsplitsBC : L splits B and C := by sorry -- ref corollary ["B.4.iii"] ⟨LsplitsAB, LguardsAC⟩
+      have LsplitsBC : L splits B and C := ref corollary ["B.4.iii"] ⟨LsplitsAB.symm, LguardsAC⟩
       have LintBC : L intersects segment B C := via lemma 3.7.3 LsplitsBC
       have LguardsAC := ref axiom ["B.4.ii"] ⟨LsplitsAB, LsplitsBC⟩
       constructor
