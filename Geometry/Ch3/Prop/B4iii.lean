@@ -33,11 +33,13 @@ previous proposition
 FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument."
 
 atlas corollary ["B.4.iii"] "Corollary to B-4: splits + guards transitivity"
-  : (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
+  (AoffL : A off L := by assumption)
+  (BoffL : B off L := by assumption)
+  (CoffL : C off L := by assumption) :
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
-  intro ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LguardsBC⟩
+  intro ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
-  have h := ref axiom ["B.4.i"] ⟨AoffL, CoffL, BoffL⟩ ⟨LguardsAC, ref lemma 2.0.30 LguardsBC⟩
+  have h := ref axiom ["B.4.i"] ⟨LguardsAC, ref lemma 2.0.30 LguardsBC⟩
   contradiction
 
 

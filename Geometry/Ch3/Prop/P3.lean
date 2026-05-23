@@ -131,7 +131,7 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
     quoting (9) "B and D are on opposite sides of EC (steps 3 and 8 and the corrolary to Betweenness Axiom 4)."
     have ECsplitsBandD : EC splits B and D := by
       by_contra! ECguardsBandD
-      have h := ref axiom ["B.4.i"] ⟨AoffEC, BoffEC, DoffEC⟩ ⟨raa, ECguardsBandD⟩
+      have h := ref axiom ["B.4.i"] ⟨raa, ECguardsBandD⟩
       contradiction
     quoting (10) "Hence, the point C of intersection of lines EC and BD lies between B and D (definition of \"opposite sides\";
        Proposition 2.1, i.e., that the point of intersection is unique)."
@@ -179,7 +179,7 @@ atlas proposition 3.3.ii "Betweenness from shared outer pair: A-B-D from A-B-C a
   have BCD : B - C - D := via proposition 3.3.i ⟨ABC, ACD⟩
   have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
   have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
-  have EBsplitsAD := corollary ["B.4.iii"] ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
+  have EBsplitsAD := corollary ["B.4.iii"] ⟨EBsplitsAC, EBguardsCD⟩
   exact ref lemma 2.0.27 AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
 
@@ -205,7 +205,7 @@ atlas corollary 3.3.i "Corollary: A-B-D from chained betweenness A-B-C and B-C-D
   have EBsplitsAC := via lemma 2.0.25 ABC ((ref lemma 1.0.31).mpr LintEBatB)
   have notCBD : ¬(C - B - D) := fun CBD => ref lemma 1.0.36 ⟨BCD, CBD⟩
   have EBguardsCD := ref lemma 2.0.29 BneC.symm BneD.symm LintEBatB ⟨cL.mem C, cL.mem D⟩ notCBD
-  have EBsplitsAD := corollary ["B.4.iii"] ⟨AoffEB, CoffEB, DoffEB⟩ ⟨EBsplitsAC, EBguardsCD⟩
+  have EBsplitsAD := corollary ["B.4.iii"] ⟨EBsplitsAC, EBguardsCD⟩
   exact ref lemma 2.0.27 AneB BneD.symm LintEBatB ⟨cL.mem A, cL.mem D⟩ EBsplitsAD
 
 

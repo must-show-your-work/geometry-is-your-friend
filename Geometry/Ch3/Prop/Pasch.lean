@@ -127,19 +127,19 @@ atlas proposition 3.7 "Pasch's Postulate"
            on the same side of L as B (separation axiom)"
     have LguardsACorBC : (L guards A and C) ∨ (L guards B and C) := by
       by_contra! ⟨LsplitsAC, LsplitsBC⟩
-      exact absurd (ref axiom ["B.4.ii"] ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
+      exact absurd (ref axiom ["B.4.ii"] ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
     rcases LguardsACorBC with LguardsAC | LguardsBC
     · quoting (5) "If C is on the same side of L as A, then C is on the opposite side from B, which means that L intersects BC
            and does not intersect AC" ...
-      have LsplitsBC : L splits B and C := by sorry -- ref corollary ["B.4.iii"] ⟨BoffL, CoffL, CoffL⟩ ⟨LsplitsBC, LguardsAC.symm⟩
+      have LsplitsBC : L splits B and C := by sorry -- ref corollary ["B.4.iii"] ⟨LsplitsAB, LguardsAC⟩
       have LintBC : L intersects segment B C := via lemma 3.7.3 LsplitsBC
-      have LguardsAC := ref axiom ["B.4.ii"] ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LsplitsBC⟩
+      have LguardsAC := ref axiom ["B.4.ii"] ⟨LsplitsAB, LsplitsBC⟩
       constructor
       · right; exact LintBC
       · intro; push Not; contrapose!; intro;
         exact ref corollary 3.7.3 LguardsAC
     · quoting ... "similarly, if C is on the same side of L as B, then L intersects AC and does not intersect BC (separation axiom)."
-      have LsplitsAC := ref corollary ["B.4.iii"] ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LguardsBC⟩
+      have LsplitsAC := ref corollary ["B.4.iii"] ⟨LsplitsAB, LguardsBC⟩
       have LintAC := via lemma 3.7.3 LsplitsAC
       constructor
       · left; exact LintAC

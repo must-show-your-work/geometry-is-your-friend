@@ -150,8 +150,10 @@ three points A, B, and C not on L: (i) If A and B are on the same side of L and
 if B and C are on the same side of L, the A and C are on the same side of L..."
 
 atlas axiom ["B.4.i"] "Same-side is transitive across a common middle point"
-  {A B C : Point} {L : Line} :
-  (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
+  {A B C : Point} {L : Line}
+  (AoffL : A off L := by assumption)
+  (BoffL : B off L := by assumption)
+  (CoffL : C off L := by assumption) :
   (L guards A and B) ∧ (L guards B and C) -> (L guards A and C)
 attribute [simp] «Same-side is transitive across a common middle point»
 
@@ -163,8 +165,10 @@ atlas commentary := by
 sides of L, then A and C are on the same side of L."
 
 atlas axiom ["B.4.ii"] "Two opposite-side relations chain to a same-side relation"
-  {A B C : Point} {L : Line} :
-  (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
+  {A B C : Point} {L : Line}
+  (AoffL : A off L := by assumption)
+  (BoffL : B off L := by assumption)
+  (CoffL : C off L := by assumption) :
   (L splits A and B) ∧ (L splits B and C) -> (L guards A and C)
 attribute [simp] «Two opposite-side relations chain to a same-side relation»
 
