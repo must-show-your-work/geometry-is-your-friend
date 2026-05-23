@@ -127,14 +127,17 @@ atlas proposition 3.7 "Pasch's Postulate"
            on the same side of L as B (separation axiom)"
     have LguardsACorBC : (L guards A and C) ∨ (L guards B and C) := by
       by_contra! ⟨LsplitsAC, LsplitsBC⟩
-      have LguardsAC : L guards A and C := ref axiom B-4ii ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LsplitsBC⟩
-      contradiction
+      exact absurd (ref axiom ["B.4.ii"] ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
     rcases LguardsACorBC with LguardsAC | LguardsBC
     · quoting (5) "If C is on the same side of L as A, then C is on the opposite side from B, which means that L intersects BC
            and does not intersect AC" ...
       sorry
     · quoting ... "similarly, if C is on the same side of L as B, then L intersects AC and does not intersect BC (separation axiom)."
-      sorry
+      have LsplitsAC := ref axiom ["B.4.iii"] ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LguardsBC⟩
+      have LintAC := ref lemma 3.7.3 LsplitsAC
+      constructor
+      · left; exact LintAC
+      · intro; push Not; intro; sorry
     quoting (6) "The conclusion of Pasch's theorem holds (Logic Rule 11 -- proof by cases). ∎"
 
 

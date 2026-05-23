@@ -23,7 +23,7 @@ open Atlas
 -- (open removed: P1.i/P1.ii aliases inlined to titles)
 
 atlas commentary := by
-  ref corollary B-4iii
+  ref corollary ["B.4.iii"]
   page 111
   name "Corollary to B-4: splits + guards transitivity"
   preface "Corollary. (iii) If A and B are on opposite sides of L and if B and C are on the same side of L, then A and C are on opposite sides of L"
@@ -32,12 +32,12 @@ previous proposition
 
 FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument."
 
-atlas corollary B-4iii "Corollary to B-4: splits + guards transitivity"
+atlas corollary ["B.4.iii"] "Corollary to B-4: splits + guards transitivity"
   : (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
   intro ⟨AoffL, BoffL, CoffL⟩ ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
-  have h := ref axiom B-4i ⟨AoffL, CoffL, BoffL⟩ ⟨LguardsAC, ref lemma 2.0.30 LguardsBC⟩
+  have h := ref axiom ["B.4.i"] ⟨AoffL, CoffL, BoffL⟩ ⟨LguardsAC, ref lemma 2.0.30 LguardsBC⟩
   contradiction
 
 

@@ -8,11 +8,11 @@ import Atlas
 /-!
 # Betweenness axioms
 
-Greenberg's betweenness axioms (B-1a, B-1b, B-2, B-3, B-4i, B-4ii) plus the
+Greenberg's betweenness axioms (["B.1.a"], ["B.1.b"], B-2, B-3, ["B.4.i"], ["B.4.ii"]) plus the
 three density-axiom witness lemmas (1.0.5, 1.0.6, 1.0.7) extracted from B-2.
 
 Same-side / opposite-side definitions and the `splits` / `guards` notation
-also live here — they're the conceptual layer that B-4i and B-4ii depend on.
+also live here — they're the conceptual layer that ["B.4.i"] and ["B.4.ii"] depend on.
 Page 108–110 of the text.
 -/
 
@@ -21,18 +21,18 @@ namespace Geometry.Theory
 open Atlas
 
 atlas commentary := by
-  ref axiom B-1a
+  ref axiom ["B.1.a"]
   page 108
   name "A-B-C implies A B C are distinct and collinear"
   preface "If A - B - C, then A,B,C are distinct points on the same line..."
 
-atlas axiom B-1a "A-B-C implies A B C are distinct and collinear"
+atlas axiom ["B.1.a"] "A-B-C implies A B C are distinct and collinear"
   {A B C : Point} : A - B - C -> distinct A B C ∧ collinear A B C
 attribute [simp, obvious] «A-B-C implies A B C are distinct and collinear»
 
 
 atlas commentary := by
-  ref axiom B-1b
+  ref axiom ["B.1.b"]
   page 108
   name "Betweenness Commutativity"
   preface "... and [A - B - C iff] C - B - A.\"\""
@@ -41,11 +41,11 @@ a bit easier. The author even notes, \"The second part (C * B * A) makes the obv
 that 'betwen A and C' means the same as 'between C and A'\" Making it a separate axiom means
 I won't have to dig it out of the pile of parts that is 1a."
 
-atlas axiom B-1b "Betweenness Commutativity"
+atlas axiom ["B.1.b"] "Betweenness Commutativity"
   {A B C : Point} : A - B - C ↔ C - B - A
 attribute [simp, obvious] «Betweenness Commutativity»
 
-/-- Endpoint-reversal projection of B-1b — exposes B-1b's commutativity
+/-- Endpoint-reversal projection of ["B.1.b"] — exposes ["B.1.b"]'s commutativity
     via dot notation: `BCD.symm` instead of `(«Betweenness Commutativity»).mp BCD`.
     Not atlas-tagged (this is a structural projection on the underlying
     `Between` relation, not book content). -/
@@ -142,27 +142,27 @@ notation:20 L " splits " A " and " B => ¬(SameSide A B L)
 notation:20 L " guards " A " and " B => SameSide A B L
 
 atlas commentary := by
-  ref axiom B-4i
+  ref axiom ["B.4.i"]
   page 110
   name "Same-side is transitive across a common middle point"
   preface "Betweenness Axiom 4 (Plane Separation). For every line L and for any
 three points A, B, and C not on L: (i) If A and B are on the same side of L and
 if B and C are on the same side of L, the A and C are on the same side of L..."
 
-atlas axiom B-4i "Same-side is transitive across a common middle point"
+atlas axiom ["B.4.i"] "Same-side is transitive across a common middle point"
   {A B C : Point} {L : Line} :
   (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L guards A and B) ∧ (L guards B and C) -> (L guards A and C)
 attribute [simp] «Same-side is transitive across a common middle point»
 
 atlas commentary := by
-  ref axiom B-4ii
+  ref axiom ["B.4.ii"]
   page 110
   name "Two opposite-side relations chain to a same-side relation"
   preface "... (ii) If A and B are on opposite sides of L and if B and C are opposite
 sides of L, then A and C are on the same side of L."
 
-atlas axiom B-4ii "Two opposite-side relations chain to a same-side relation"
+atlas axiom ["B.4.ii"] "Two opposite-side relations chain to a same-side relation"
   {A B C : Point} {L : Line} :
   (L avoids A) ∧ (L avoids B) ∧ (L avoids C) ->
   (L splits A and B) ∧ (L splits B and C) -> (L guards A and C)

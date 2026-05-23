@@ -72,6 +72,10 @@ atlas lemma 3.7.2 "If L intersects M, then there is a point at which it intersec
   {L M : Line} : L intersects M -> ∃ X : Point, L intersects M at X := by
   sorry
 
+atlas lemma 3.7.3 "If L splits A and B, then L intersects segment A B" 
+  {L : Line} {A B : Point} : (L splits A and B) -> (L intersects segment A B) := by
+  sorry
+
 
 end Intersection
 
