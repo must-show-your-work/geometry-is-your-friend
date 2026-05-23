@@ -78,8 +78,8 @@ atlas lemma 2.0.2 "Two distinct points on two lines force the lines to coincide"
 attribute [simp] «Two distinct points on two lines force the lines to coincide»
 
 atlas lemma 2.0.3 "Line Commutativity"
-  {AneB : A ≠ B} : line A B = line B A := by
-  suffices subset : ∀ A B : Point, A ≠ B -> line A B ⊆ line B A by
+  {AneB : A ≠ B} : (line A B : Set Point) = (line B A : Set Point) := by
+  suffices subset : ∀ A B : Point, A ≠ B -> (line A B : Set Point) ⊆ (line B A : Set Point) by
     exact Subset.antisymm
       (subset A B AneB)
       (subset B A AneB.symm)
@@ -96,9 +96,9 @@ atlas commentary := by
   preface "A segment is a subset of the line A B"
 
 atlas lemma 2.0.5 "Segment A B is a subset of line A B"
-  : segment A B ⊆ line A B := by
-  have h₁ : segment A B ⊆ ray A B := obvious
-  have h₂ : ray A B ⊆ line A B := ref lemma 1.0.18
+  : (segment A B : Set Point) ⊆ (line A B : Set Point) := by
+  have h₁ : (segment A B : Set Point) ⊆ (ray A B : Set Point) := obvious
+  have h₂ : (ray A B : Set Point) ⊆ (line A B : Set Point) := ref lemma 1.0.18
   intro P PonSeg
   rcases PonSeg with APB | AorBeqP
   repeat tauto
@@ -112,7 +112,7 @@ atlas lemma 2.0.6 "Line Points are Collinear"
   {AneB : A ≠ B} : P on line A B -> collinear A B P := by
   -- Direct Proof
   intro PonAB
-  simp only [mem_setOf_eq] at PonAB
+  simp only [LineThrough.mem_def] at PonAB
   rcases PonAB with PeqA | PeqB | tween | tween | tween
   todo "These should be reducible to a single invocation, maybe a suffices?"
   · rw [<- PeqA];
@@ -176,7 +176,7 @@ atlas lemma 2.0.9 "Ray Points are Collinear"
 
 
 atlas lemma 2.0.10 "Segment A B and extension A B are disjoint"
-  : segment A B ∩ extension A B = ∅ := by
+  : (segment A B : Set Point) ∩ (extension A B : Set Point) = ∅ := by
   apply Subset.antisymm
   · intro P ⟨PonSeg, PonExt⟩
     have ⟨ABP, AneP, BneP⟩ := PonExt
@@ -205,7 +205,7 @@ atlas commentary := by
   preface "A line is 'bigger' than a ray in the same way that a line is bigger than a segment"
 
 atlas lemma 2.0.12 "A ray A B is never equal to any line L"
-  { L : Line } {A B : Point}  (AneB : A ≠ B := by assumption) : ray A B ≠ L := by
+  { L : Line } {A B : Point}  (AneB : A ≠ B := by assumption) : (ray A B : Set Point) ≠ L := by
   by_contra ABeqL
   idea "construct a point X - A - B, X is on L, by definition, but off AB, also by def. but under the hypothesis L = AB, -><-"
   have ⟨X, colXAB, distinctXAB, XAB⟩ := ref lemma 1.0.5 A B AneB
@@ -232,8 +232,8 @@ atlas commentary := by
   preface "It helps to be able to commute these around, when we get to congruence this will make part of it trivial"
 
 atlas lemma 2.0.13 "Segment Commutativity"
-  : segment A B = segment B A := by
-  suffices subset : ∀ A B : Point, segment A B ⊆ segment B A by
+  : (segment A B : Set Point) = (segment B A : Set Point) := by
+  suffices subset : ∀ A B : Point, (segment A B : Set Point) ⊆ (segment B A : Set Point) by
     exact Subset.antisymm (subset A B) (subset B A)
   intro A B P hPinSegAB
   rcases hPinSegAB with APB | AeqP | BeqP
@@ -248,7 +248,7 @@ atlas commentary := by
   preface "A line is 'bigger' than a segment, in the same way that a line is bigger than a ray (2.0.12)"
 
 atlas lemma 2.0.14 "A segment A B is never equal to any line L"
-  { L : Line } {A B : Point}  (AneB : A ≠ B := by assumption) : segment A B ≠ L := by
+  { L : Line } {A B : Point}  (AneB : A ≠ B := by assumption) : (segment A B : Set Point) ≠ L := by
   intro ABeqL
   have AonL : A on L := by rw [<- ABeqL]; obvious
   have BonL : B on L := by rw [<- ABeqL]; obvious

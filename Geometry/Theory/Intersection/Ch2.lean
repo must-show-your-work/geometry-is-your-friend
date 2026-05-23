@@ -33,19 +33,19 @@ atlas commentary := by
   preface "No points are contained on the intersection of a segment and it's related extension"
 
 atlas lemma 2.0.15 "Segment A B and the related extension A B have empty intersection"
-  : segment A B ∩ extension A B = ∅ := by
-  unfold Segment; unfold Extension
+  : (segment A B : Set Point) ∩ (extension A B : Set Point) = ∅ := by
   ext P
   constructor
   -- Forward case.
-  · simp only [ne_eq, mem_inter_iff, mem_setOf_eq, mem_empty_iff_false, imp_false, not_and,
-    not_not] ; intro opts ABP AneP
+  · simp only [ne_eq, mem_inter_iff, Segment.carrier, Extension.carrier, mem_setOf_eq,
+      mem_empty_iff_false, imp_false, not_and, not_not] ; intro opts ABP AneP
     rcases opts with APB | AeqP | BeqP
     · exfalso ; exact ref lemma 1.0.37 ⟨ABP, APB⟩
     · contradiction
     · exact BeqP
   -- Reverse
-  · simp only [mem_empty_iff_false, ne_eq, mem_inter_iff, mem_setOf_eq, IsEmpty.forall_iff]
+  · simp only [mem_empty_iff_false, ne_eq, mem_inter_iff, Segment.carrier, Extension.carrier,
+      mem_setOf_eq, IsEmpty.forall_iff]
 
 
 atlas commentary := by
@@ -57,8 +57,8 @@ atlas lemma 2.0.16 "A point on a segment lies off the related extension"
   : X on segment A B -> X off extension A B := by
   intro XonAB
   by_contra! hNeg
-  have interEmpty : segment A B ∩ extension A B = ∅ := ref lemma 2.0.15
-  have XinInter : X ∈ (segment A B ∩ extension A B) := by tauto
+  have interEmpty : (segment A B : Set Point) ∩ (extension A B : Set Point) = ∅ := ref lemma 2.0.15
+  have XinInter : X ∈ ((segment A B : Set Point) ∩ (extension A B : Set Point)) := by tauto
   rw [interEmpty] at XinInter
   contradiction
 
@@ -72,8 +72,8 @@ atlas lemma 2.0.17 "A point on an extension lies off the related segment"
   : X on extension A B -> X off segment A B := by
   intro XonAB
   by_contra! hNeg
-  have interEmpty : segment A B ∩ extension A B = ∅ := ref lemma 2.0.15
-  have XinInter : X ∈ (segment A B ∩ extension A B) := by tauto
+  have interEmpty : (segment A B : Set Point) ∩ (extension A B : Set Point) = ∅ := ref lemma 2.0.15
+  have XinInter : X ∈ ((segment A B : Set Point) ∩ (extension A B : Set Point)) := by tauto
   rw [interEmpty] at XinInter
   contradiction
 
@@ -142,19 +142,19 @@ atlas lemma 2.0.21 "A line intersecting a segment intersects its containing ray 
   intro AneB LintABatX
   have XonSegAB : X on segment A B := ref lemma 1.0.33 LintABatX
   have XonL : X on L := ref lemma 1.0.32 LintABatX
-  have XonRayAB : X on ray A B := by unfold Ray; tauto
-  have LneRayAB : L ≠ ray A B := by
+  have XonRayAB : X on ray A B := by obvious
+  have LneRayAB : L ≠ (ray A B : Set Point) := by
     by_contra! hNeg
     rw [hNeg] at LintABatX
     unfold Intersects at LintABatX
-    have AonSegAB : A on segment A B := by tauto
-    have AonRayAB : A on ray A B := by unfold Ray; tauto
-    have AonIntRaySeg : A ∈ ray A B ∩ segment A B := by tauto
+    have AonSegAB : A on segment A B := by obvious
+    have AonRayAB : A on ray A B := by obvious
+    have AonIntRaySeg : A ∈ ((ray A B : Set Point) ∩ (segment A B : Set Point)) := by tauto
     rw [LintABatX] at AonIntRaySeg
     have AeqX : A = X := by tauto
-    have BonSegAB : B on segment A B := by tauto
-    have BonRayAB : B on ray A B := by unfold Ray; tauto
-    have BonIntRaySeg : B ∈ ray A B ∩ segment A B := by tauto
+    have BonSegAB : B on segment A B := by obvious
+    have BonRayAB : B on ray A B := by obvious
+    have BonIntRaySeg : B ∈ ((ray A B : Set Point) ∩ (segment A B : Set Point)) := by tauto
     rw [LintABatX] at BonIntRaySeg
     have BeqX : B = X := by tauto
     have AeqB : A = B := by rw [BeqX, AeqX]
@@ -217,21 +217,26 @@ atlas lemma 2.0.23 "A line intersecting a ray intersects its containing line at 
     push Not
     intro LneLineAB
     use X
+    tauto
   have LneRayAB : L ≠ ray A B := Ne.symm (ref lemma 2.0.12)
   have LneLineAB : L ≠ line A B := by
     by_contra! hNeg
     have AonLineAB : A on line A B := ref lemma 1.0.23
     have AonRayAB : A on ray A B := ref lemma 1.0.21
-    have AonL : A on L := by rw [<- hNeg] at AonLineAB; tauto
+    have AonL : A on L := by
+      have h : A ∈ (line A B : Set Point) := AonLineAB
+      rw [<- hNeg] at h; tauto
     have BonLineAB : B on line A B := ref lemma 1.0.24
     have BonRayAB : B on ray A B := ref lemma 1.0.22
-    have BonL : B on L := by rw [<- hNeg] at BonLineAB; tauto
+    have BonL : B on L := by
+      have h : B ∈ (line A B : Set Point) := BonLineAB
+      rw [<- hNeg] at h; tauto
     have AinIntLine : A ∈ L ∩ line A B := by tauto
     have BinIntLine : B ∈ L ∩ line A B := by tauto
     have AinIntRay : A ∈ L ∩ ray A B := by tauto
     have BinIntRay : B ∈ L ∩ ray A B := by tauto
-    have LintABatA : L intersects ray A B at A := (ref lemma 2.0.20 A L (Ray A B) ⟨LneRayAB, LnparRayAB⟩).mp AinIntRay
-    have LintABatB : L intersects ray A B at B := (ref lemma 2.0.20 B L (Ray A B) ⟨LneRayAB, LnparRayAB⟩).mp BinIntRay
+    have LintABatA : L intersects ray A B at A := (ref lemma 2.0.20 A L (ray A B : Set Point) ⟨LneRayAB, LnparRayAB⟩).mp AinIntRay
+    have LintABatB : L intersects ray A B at B := (ref lemma 2.0.20 B L (ray A B : Set Point) ⟨LneRayAB, LnparRayAB⟩).mp BinIntRay
     unfold Intersects at *
     rw [LintRay] at LintABatA
     rw [LintRay] at LintABatB
@@ -286,7 +291,7 @@ atlas lemma 2.0.25 "If A-X-B and L meets the segment at X then L splits A and B"
   distinguish
   use X
   constructor
-  · unfold Segment; simp only [mem_setOf_eq]; left; exact AXB
+  · simp only [Segment.mem_def]; left; exact AXB
   · exact ref lemma 1.0.32 LintAXBatX
 
 atlas commentary := by

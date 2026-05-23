@@ -51,9 +51,11 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
     have cABC : collinear A B C := (ref lemma 1.0.40 CAB).of_eq obvious
-    have ABisSameLine : line A B = cABC.line := ref lemma 2.0.2 AneB
+    have ABisSameLine : (line A B : Set Point) = cABC.line := ref lemma 2.0.2 AneB
       ⟨ref lemma 1.0.23, cABC.mem A, ref lemma 1.0.24, cABC.mem B⟩
-    rw [ABisSameLine] at PonL
+    have PonLineAB : P ∈ (line A B : Set Point) := PonL
+    rw [ABisSameLine] at PonLineAB
+    have PonL := PonLineAB
     exact (Collinear.insert cABC PonL).of_eq obvious
   comment "Expose the pairwise inequalities for the `forgetting` casts below."
   separate at distinctABCP

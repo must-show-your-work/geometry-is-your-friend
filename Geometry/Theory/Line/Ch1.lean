@@ -19,7 +19,7 @@ atlas commentary := by
   preface "A ray A B is a subset of the line A B"
 
 atlas lemma 1.0.18 "A ray A B is a subset of the line A B"
-  : ray A B ⊆ line A B := by
+  : (ray A B : Set Point) ⊆ (line A B : Set Point) := by
   intro P PonRay
   rcases PonRay with (APB | AeqP | BeqP) | h
   · right; right; left; assumption
@@ -35,8 +35,7 @@ atlas commentary := by
   preface "A ray contains the points that define it"
 
 atlas lemma 1.0.21 "A ray contains its left-hand defining endpoint"
-  : A on ray A B := by
-  simp only [mem_union, mem_setOf_eq, true_or, or_true, ne_eq, not_true_eq_false, false_and, and_false, or_false]
+  : A on ray A B := by obvious
 
 atlas commentary := by
   ref lemma 1.0.22
@@ -44,8 +43,7 @@ atlas commentary := by
   preface "A ray contains the points that define it"
 
 atlas lemma 1.0.22 "A ray contains its right-hand defining endpoint"
-  : B on ray A B := by
-  simp only [mem_union, mem_setOf_eq, or_true, ne_eq, not_true_eq_false, and_false, or_false]
+  : B on ray A B := by obvious
 
 atlas commentary := by
   ref lemma 1.0.23

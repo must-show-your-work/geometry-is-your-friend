@@ -33,13 +33,17 @@ syntax "clearly " term : tactic
 /-- Derive an auto-name component from a term used in a `clearly` clause.
     Identifiers map to their user-name; line-part expressions get short
     capitalized prefixes (`segment A B` → `SegAB`, `line A B` → `LineAB`, etc.). -/
-private def clearlyTermName (s : Lean.Syntax) : Lean.MacroM String := do
+private partial def clearlyTermName (s : Lean.Syntax) : Lean.MacroM String := do
   match s with
   | `($id:ident) => return id.getId.toString
   | `(segment $A:ident $B:ident) => return s!"Seg{A.getId}{B.getId}"
   | `(ray $A:ident $B:ident) => return s!"Ray{A.getId}{B.getId}"
   | `(extension $A:ident $B:ident) => return s!"Ext{A.getId}{B.getId}"
   | `(line $A:ident $B:ident) => return s!"Line{A.getId}{B.getId}"
+  -- Strip type ascription `(X : T)` and use the inner term's name. This
+  -- handles cross-line-part comparisons like
+  -- `clearly (segment A B : Set Point) ≠ (segment B C : Set Point)`.
+  | `(($inner : $_)) => clearlyTermName inner
   | _ => Lean.Macro.throwError "clearly: cannot derive an auto-name from this term"
 
 -- `macro_rules` (rather than `elab_rules`) expansion keeps the resulting tactics

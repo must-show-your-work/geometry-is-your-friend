@@ -53,13 +53,15 @@ atlas proposition 3.7 "Pasch's Postulate"
   (C off L -> ¬((L intersects segment A C) ∧ (L intersects segment B C))) := by
     comment "mise en place"
     separate at distinctABC
-    clearly segment A B ≠ segment B C := by
+    clearly (segment A B : Set Point) ≠ (segment B C : Set Point) := by
       idea "if AB = BC, then ABC are collinear, which is a contradiction"
       have colABC : collinear A B C := by
-        use segment A B
+        use (segment A B : Set Point)
         intro P PisABorC
         by_exhaustion PisABorC
-        repeat obvious
+        · obvious
+        · obvious
+        · rw [PeqC, SegABeqSegBC]; obvious
       contradiction
     clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (ref lemma 2.0.14)
     clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (ref lemma 2.0.14)
@@ -77,7 +79,7 @@ atlas proposition 3.7 "Pasch's Postulate"
     clearly A off L := by
       constructor
       · left ; have AonAB : A on segment A C := obvious
-        obvious
+        exact ⟨A, AonL, AonAB⟩
       · intros
         intuition "if A is on L, then since A is on AB and X is where L intersects AB, A = X, but A X B are distinct by
         assumption"
@@ -91,7 +93,7 @@ atlas proposition 3.7 "Pasch's Postulate"
       idea "same as above"
       constructor
       · right ; have BonBC : B on segment B C := obvious
-        obvious
+        exact ⟨B, BonL, BonBC⟩
       · intros
         have : B ∈ L ∩ segment A B := ⟨BonL, by obvious⟩
         rw [LintSegAB] at this

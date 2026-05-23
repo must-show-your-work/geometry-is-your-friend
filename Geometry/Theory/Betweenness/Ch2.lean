@@ -23,7 +23,9 @@ atlas commentary := by
 atlas lemma 2.0.30 "Guarding is symmetric in its two point arguments"
   : (L guards A and B) -> (L guards B and A) := by
     intro LguardsAB
-    unfold Guards at *; rw [<- ref lemma 2.0.13] ; tauto
+    unfold Guards at *
+    simp_all only [Segment.mem_def, «Betweenness Commutativity», eq_comm (a := B) (b := A)]
+    aesop
 
 
 atlas commentary := by
@@ -34,7 +36,9 @@ atlas commentary := by
 atlas lemma 2.0.31 "Splitting is symmetric in its two point arguments"
   : (L splits A and B) -> (L splits B and A) := by
     intro LsplitsAB
-    unfold Splits Guards at *; rw [<- ref lemma 2.0.13] ; tauto
+    unfold Splits Guards at *
+    simp_all only [Segment.mem_def, «Betweenness Commutativity», eq_comm (a := B) (b := A)]
+    aesop
 
 end Betweenness
 

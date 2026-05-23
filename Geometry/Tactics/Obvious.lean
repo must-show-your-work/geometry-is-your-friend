@@ -38,8 +38,11 @@ attribute [obvious]
   not_true_eq_false not_false_eq_true not_or not_and not_not
 
 attribute [obvious]
-  -- line parts (unfolded forms)
-  Segment Ray Extension LineThrough
+  -- line parts: `mem_def` simp lemmas bridge `P ∈ segment A B` to the
+  -- underlying disjunction. (The old setup tagged the `Segment`/etc.
+  -- defs themselves; with the typed-structure rewrite they're no longer
+  -- defs, and the `@[simp, obvious]` `mem_def` lemmas live next to the
+  -- structures in `Geometry/Theory/Constructors.lean`.)
   -- subset unfolding so simple subset goals reduce to pointwise membership.
   Set.subset_def
   -- split a subset-of-intersection into two subsets upfront so simp_all
@@ -79,10 +82,11 @@ macro "obvious" : tactic =>
       -- disjunct of the unfolded goal, and `tauto` picks it.
       | (simp_all only [obvious]; tauto)
       -- Goal-only unfold + propositional close (some sites have hyps
-      -- in normalized form already).
-      | (simp only [Segment, Ray, Extension, LineThrough]; tauto)
-      -- Last-ditch: unfold geometric defs everywhere and tauto.
-      | (unfold Segment Ray Extension LineThrough at *; tauto)
+      -- in normalized form already). Uses the typed-structure `mem_def`
+      -- lemmas to expose the underlying disjunction.
+      | (simp only [Segment.mem_def, Ray.mem_def, Extension.mem_def, LineThrough.mem_def]; tauto)
+      -- Last-ditch: simp through the mem_def bridges everywhere and tauto.
+      | (simp only [Segment.mem_def, Ray.mem_def, Extension.mem_def, LineThrough.mem_def] at *; tauto)
       -- The `ext` alternative is for Finset-literal equality goals
       -- (`{A,B,C} = {C,A,B}`). Guard with `first` so a `fail`
       -- alternative gives a clean error message when nothing closed.

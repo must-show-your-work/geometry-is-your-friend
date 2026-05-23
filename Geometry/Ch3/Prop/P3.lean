@@ -43,11 +43,11 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
   separate at distinctABCD
   have cL : collinear A B C D := via exercise 3.1.b ⟨ABC, ACD⟩
   quoting (2) "There exists a point E not on the line through A,B,C,D (Proposition 2.3)"
-  have LeqAB : cL = line A B := ref lemma 2.0.2 AneB
+  have LeqAB : cL = (line A B : Set Point) := ref lemma 2.0.2 AneB
     ⟨cL.mem A, ref lemma 1.0.23, cL.mem B, ref lemma 1.0.24⟩
   have ⟨E, EoffcL⟩ := proposition 2.3 cL
   quoting (3) "Consider line EC. Since (by hypothesis) AD meets this line in point C," ...
-  let EC := line E C
+  let EC := (line E C : Set Point)
   comment "Missing these simple conditions"
   detail "have to be specific here to avoid coercion issues."
   have BonAB : B on cL.line := cL.mem B
@@ -139,8 +139,8 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
     push Not at ECsplitsBandD
     specialize ECsplitsBandD BoffEC DoffEC
     have ⟨BneD, P, ⟨PonSegBD, PonEC⟩⟩ := ECsplitsBandD
-    have PinBDintEC : P ∈ line B D ∩ EC := ⟨(ref lemma 2.0.5 PonSegBD), PonEC⟩
-    have LeqBD : cL = line B D := LeqAB ▸ ref lemma 2.0.2 BneD
+    have PinBDintEC : P ∈ (line B D : Set Point) ∩ EC := ⟨(ref lemma 2.0.5 PonSegBD), PonEC⟩
+    have LeqBD : cL = (line B D : Set Point) := LeqAB ▸ ref lemma 2.0.2 BneD
       ⟨LeqAB ▸ BonAB, ref lemma 1.0.23, LeqAB ▸ DonAB, ref lemma 1.0.24⟩
     rw [LeqBD] at LintECatC
     rw [LintECatC] at PinBDintEC
