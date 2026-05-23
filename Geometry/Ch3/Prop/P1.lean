@@ -47,11 +47,9 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
       have ⟨ConAB, ConBA⟩ : C on ray A B ∧ C on ray B A := obvious
       rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, _, _⟩ | ⟨_, CAB, _⟩ | ⟨_, _ACB⟩
       · quoting (4) "If A - B - C holds, then C is not on the ray B A" ...
-        exfalso
         have CoffBA : C off ray B A := by obvious
         contradiction
       · quoting ... "if C - A - B holds, then C is not on the ray A B." ...
-        exfalso
         have CoffAB : C off ray A B := by obvious
         contradiction
       · quoting ... "In either case, C does not belong to both rays."
