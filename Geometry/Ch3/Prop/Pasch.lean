@@ -90,7 +90,7 @@ atlas proposition 3.7 "Pasch's Postulate"
         by_contra! LintBC
         intuition "If L intersects all three, then there is a sort of 'collinear-transititvity' that happens." 
         todo "Make the lookup coerce between types here, segment ⊆ ray ⊆ linethrough, etc"
-        have colABC := ref corollary 3.7.1 ⟨LintSegAB, LintBC, LintAC⟩
+        have colABC := ref lemma 3.7.1 ⟨LintSegAB, LintBC, LintAC⟩
         contradiction
     clearly B off L := by
       idea "similar to the above"
@@ -99,7 +99,7 @@ atlas proposition 3.7 "Pasch's Postulate"
         right; obvious
       · intro _; push Not; intro LintAC;
         by_contra! LintBC
-        have colABC := ref corollary 3.7.1 ⟨LintSegAB, LintBC, LintAC⟩
+        have colABC := ref lemma 3.7.1 ⟨LintSegAB, LintBC, LintAC⟩
         contradiction
     quoting ... "and the segment A B does intersect L (hypothesis and Axiom B-1)"
     comment "

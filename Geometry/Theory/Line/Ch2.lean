@@ -243,31 +243,7 @@ atlas lemma 2.0.13 "Segment Commutativity"
 attribute [obvious] «Segment Commutativity»
 
 
-atlas commentary := by
-  ref lemma 2.0.14
-  name "Segment A B is a subset of ray B A (the swapped-endpoint ray)"
-  preface "The endpoint B is in common here."
 
-atlas lemma 2.0.14 "Segment A B is a subset of ray B A (the swapped-endpoint ray)"
-  : segment A B ⊆ ray B A := by
-  intro P hPinSegAB
-  obvious
-
-
-/- lemma ABP_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/
-/-   A - B - P -> P on the line A B := by -/
-/-     intro ABP; -/
-/-     have distinctABP := ref lemma 1.0.39 ABP -/
-/-     have AneB := by distinguish distinctABP A B -/
-/-     have colABP := ref lemma 1.0.40 ABP -/
-/-     unfold LineThrough -/
-
-/- lemma APB_imp_P_on_line_AB (PneAB : P ≠ A ∧ P ≠ B) : -/
-/-   A - P - B -> P on the line A B := by -/
-/-     intro hABP; -/
-/-     have hPonSegAB : P on segment A B := APB_imp_P_on_segment_AB PneAB hABP -/
-/-     unfold LineThrough; simp only [mem_setOf_eq] -/
-/-     exact ref lemma 2.0.8 hPonSegAB -/
 
 end Line
 

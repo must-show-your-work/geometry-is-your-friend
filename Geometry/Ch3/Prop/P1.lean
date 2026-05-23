@@ -28,7 +28,7 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
   intro AneB
   apply Subset.antisymm
   · quoting (1) "By the definition of segment and ray, the segment A B ⊆ the ray A B [and ⊆ ray B A], so by definition of intersection, the segment AB ⊆ (ray A B ∩ ray B A)."
-    exact subset_inter obvious ref lemma 2.0.14
+    obvious
   · quoting (2) "Conversely, let the point C belong to the intersection, (ray A B ∩ ray B A); we wish to show that C belongs to the segment A B."
     intro C CinInt
     quoting (3) "If C = A or C = B, C is an endpoint of the segment A B" ...

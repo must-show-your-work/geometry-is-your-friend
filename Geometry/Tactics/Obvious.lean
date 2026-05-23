@@ -40,6 +40,13 @@ attribute [obvious]
 attribute [obvious]
   -- line parts (unfolded forms)
   Segment Ray Extension LineThrough
+  -- subset unfolding so simple subset goals reduce to pointwise membership.
+  Set.subset_def
+  -- split a subset-of-intersection into two subsets upfront so simp_all
+  -- gets bite-sized goals instead of trying to unfold the whole intersection
+  -- pointwise. Cheap rewrite that prevents the explosion observed on
+  -- `s ⊆ t ∩ u` goals.
+  Set.subset_inter_iff
 
 -- Title-form `@[obvious]` tags for the betweenness axioms (e.g.
 -- `«Betweenness Commutativity»`, `«A-B-C implies …»`) live in
@@ -60,6 +67,7 @@ attribute [obvious]
  own canonical normalizations and they accumulate progressively. -/
 macro "obvious" : tactic =>
   `(tactic| (
+      try intros
       normalize_eq
       first
       -- Pure rewrite closes the goal entirely (definitional only).
