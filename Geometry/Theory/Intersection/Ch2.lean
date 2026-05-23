@@ -279,7 +279,7 @@ atlas lemma 2.0.25 "If A-X-B and L meets the segment at X then L splits A and B"
   {L : Line} {A X B : Point} (AXB : A - X - B) :
   (L intersects M at X) -> (L splits A and B) := by
   intro LintAXBatX
-  unfold SameSide
+  unfold Splits Guards
   push Not
   intro AoffL BoffL
   have distinctAXB := ref lemma 1.0.39 AXB
@@ -288,6 +288,23 @@ atlas lemma 2.0.25 "If A-X-B and L meets the segment at X then L splits A and B"
   constructor
   · unfold Segment; simp only [mem_setOf_eq]; left; exact AXB
   · exact ref lemma 1.0.32 LintAXBatX
+
+atlas commentary := by
+  ref corollary 2.0.25
+  name "Drop the strict-betweenness premise from 2.0.25 by case analysis"
+  preface "If L intersects segment A B at X (no a priori betweenness assumption on X), then L splits A and B. Generalizes lemma 2.0.25 by handling the endpoint cases (X = A or X = B) via case analysis on the segment trichotomy. Shares number 2.0.25 with the parent lemma — call sites must use `via lemma 2.0.25 …` (type-dispatched across paired decls) rather than `ref lemma 2.0.25 …` (single-match)."
+
+atlas corollary 2.0.25 "If L intersects segment A B at X, then L splits A and B"
+  {L : Line} {A B X : Point} :
+  (L intersects (segment A B) at X) -> (L splits A and B) := by
+    intro LintABatX
+    have XonL : X on L := ref lemma 1.0.32 LintABatX
+    -- X ∈ Segment A B is the closed-segment trichotomy.
+    have hX : (A - X - B) ∨ A = X ∨ B = X := ref lemma 1.0.33 LintABatX
+    rcases hX with AXB | AeqX | BeqX
+    · exact ref lemma 2.0.25 AXB LintABatX
+    · intro Hsame; apply Hsame.1; rw [AeqX]; exact XonL
+    · intro Hsame; apply Hsame.2.1; rw [BeqX]; exact XonL
 
 
 atlas commentary := by
@@ -320,7 +337,7 @@ atlas lemma 2.0.27 "Crossing point of L through M between A and B forces A-X-B w
     have hA := ref lemma 2.0.26 AneX LintMatX
     have hB := ref lemma 2.0.26 BneX LintMatX
     tauto
-  unfold SameSide at MsplitsAB; push Not at MsplitsAB
+  unfold Splits Guards at MsplitsAB; push Not at MsplitsAB
   specialize MsplitsAB AoffM BoffM
   obtain ⟨AneB, P, PonSeg, PonM⟩ := MsplitsAB
   -- L and line A B are the same thing since two points determine a line.
@@ -379,7 +396,7 @@ atlas lemma 2.0.29 "A line crossing L at Z (not between A and B on L) guards A a
     (onL : A on L ∧ B on L)
     (notAZB : ¬(A - Z - B))
     : M guards A and B := by
-  rcases Classical.em (SameSide A B M) with guard | split
+  rcases Classical.em (Guards A B M) with guard | split
   · exact guard
   · exact absurd (ref lemma 2.0.27 AneZ BneZ LintMatZ onL split) notAZB
 

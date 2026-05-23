@@ -59,6 +59,26 @@ atlas lemma 3.0.2 "A line intersects itself (bare intersection of L with L)"
   rw [hNeg] at AonL
   contradiction
 
+atlas lemma 3.7.1 "If A and B are collinear, and B and C are collinear, and A and C are collinear, then A B and C are collinear."
+  {A B C : Point} : collinear A B ∧ collinear B C ∧ collinear A C -> collinear A B C := by
+  sorry
+
+atlas corollary 3.7.1 "If L intersects segments AB, BC, and AC, then A B and C are collinear"
+  {A B C : Point} {L : Line} :
+  L intersects segment A B ∧ L intersects segment B C ∧ L intersects segment A C -> collinear A B C := by
+  sorry
+
+atlas lemma 3.7.2 "If L intersects M, then there is a point at which it intersects M, WLOG X"
+  {L M : Line} : L intersects M -> ∃ X : Point, L intersects M at X := by
+  sorry
+
+atlas lemma 3.7.3 "If L splits A and B, then L intersects segment A B" 
+  {L : Line} {A B : Point} : (L splits A and B) -> (L intersects segment A B) := by
+  sorry
+
+atlas corollary 3.7.3 "If L guards A and B, then L does not intersect segment A B" 
+  {L : Line} {A B : Point} : (L guards A and B) -> ¬(L intersects segment A B) := by
+  sorry
 
 
 end Intersection

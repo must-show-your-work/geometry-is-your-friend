@@ -57,8 +57,8 @@ atlas commentary := by
 atlas lemma 2.0.2 "Two distinct points on two lines force the lines to coincide"
   {L M : Line} {A B : Point} : A ≠ B -> ((A on L) ∧ (A on M) ∧ (B on L) ∧ (B on M) -> L = M) := by
   intro AneB ⟨AonL, AonM, BonL, BonM⟩
-  have Aexists : A ∈ L ∩ M := by tauto
-  have Bexists : B ∈ L ∩ M := by tauto
+  have Aexists : A ∈ L ∩ M := by obvious
+  have Bexists : B ∈ L ∩ M := by obvious
   comment "This is a _sweet_ use of trichotomy. This proof was much longer prior to this."
   rcases ref lemma 2.0.1 L M with LparM | LintMatX | LeqM
   · -- the intersection is nonempty by assumption
@@ -69,8 +69,8 @@ atlas lemma 2.0.2 "Two distinct points on two lines force the lines to coincide"
     exfalso
     -- A and B are both in the intersection by hypothesis
     rw [Xinter] at Aexists Bexists
-    have AeqX : A = X := by tauto
-    have BeqX : B = X := by tauto
+    have AeqX : A = X := by obvious
+    have BeqX : B = X := by obvious
     rw [AeqX, BeqX] at AneB
     contradiction
   · exact LeqM
@@ -91,24 +91,13 @@ atlas lemma 2.0.3 "Line Commutativity"
 
 
 atlas commentary := by
-  ref lemma 2.0.4
-  name "Segment A B is a subset of ray A B"
-  preface "pXX By the definition of segment and ray, `the segment A B ⊆ the ray A B`"
-  notes "FIXME: this is a quote but I didn't write the page #
-FIXME: if it's obvious here, it's obvious at the callsite, so inline it"
-
-atlas lemma 2.0.4 "Segment A B is a subset of ray A B"
-  : segment A B ⊆ ray A B := obvious
-
-
-atlas commentary := by
   ref lemma 2.0.5
   name "Segment A B is a subset of line A B"
   preface "A segment is a subset of the line A B"
 
 atlas lemma 2.0.5 "Segment A B is a subset of line A B"
   : segment A B ⊆ line A B := by
-  have h₁ : segment A B ⊆ ray A B := ref lemma 2.0.4
+  have h₁ : segment A B ⊆ ray A B := obvious
   have h₂ : ray A B ⊆ line A B := ref lemma 1.0.18
   intro P PonSeg
   rcases PonSeg with APB | AorBeqP

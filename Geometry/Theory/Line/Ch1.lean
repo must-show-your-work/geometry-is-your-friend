@@ -30,22 +30,6 @@ atlas lemma 1.0.18 "A ray A B is a subset of the line A B"
 
 
 atlas commentary := by
-  ref lemma 1.0.19
-  name "A segment contains its left-hand defining endpoint"
-  preface "A segment contains the points that define it"
-
-atlas lemma 1.0.19 "A segment contains its left-hand defining endpoint"
-  : A on segment A B := by tauto
-
-atlas commentary := by
-  ref lemma 1.0.20
-  name "A segment contains its right-hand defining endpoint"
-  preface "A segment contains the points that define it"
-
-atlas lemma 1.0.20 "A segment contains its right-hand defining endpoint"
-  : B on segment A B := by tauto
-
-atlas commentary := by
   ref lemma 1.0.21
   name "A ray contains its left-hand defining endpoint"
   preface "A ray contains the points that define it"

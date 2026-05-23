@@ -87,7 +87,7 @@ atlas lemma 1.0.35 "On distinct lines crossing at X every other point on L is of
   intro ⟨LneM, LintMatX⟩ P ⟨PneX, PonL⟩
   unfold Intersects at LintMatX
   by_contra! PonM
-  have PinLintM : P ∈ (L ∩ M) := by tauto
+  have PinLintM : P ∈ (L ∩ M) := ⟨PonL, PonM⟩
   rw [LintMatX] at PinLintM
   contradiction
 
