@@ -71,6 +71,13 @@ def IntersectsSome (L M : Set Point) : Prop := Set.Nonempty (L ∩ M)
 lemma IntersectsSome.intersection_point {L M : Set Point} (h : IntersectsSome L M)
   : ∃ X, X ∈ L ∩ M := h
 
+/-- Forget the witness: `L intersects M at X` ⇒ `L intersects M`. Use via dot
+    notation as `h.bare` at call sites where the bare (witness-free) form is
+    expected. -/
+theorem Intersects.bare {L M : Set Point} {X : Point}
+  (h : Intersects L M X) : IntersectsSome L M :=
+  ⟨X, by rw [h]; rfl⟩
+
 
 -- Syntax for "L intersects M at X" (specific intersection point) and the bare
 -- form "L intersects M" asserting a unique shared point exists.
