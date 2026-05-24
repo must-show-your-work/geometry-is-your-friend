@@ -37,7 +37,7 @@ atlas corollary ["B.4.iii"] "Corollary to B-4: splits + guards transitivity"
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
   intro ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
-  have h := ref axiom ["B.4.i"] ⟨LguardsAC, ref lemma 2.0.30 LguardsBC⟩
+  have h := ref axiom ["B.4.i"] ⟨LguardsAC, LguardsBC.symm⟩
   contradiction
 
 

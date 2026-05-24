@@ -83,8 +83,8 @@ atlas lemma 2.0.3 "Line Commutativity"
       (subset B A AneB.symm)
   intro A B AneB P PinAB
   rcases PinAB with PeqA | PeqB | APB | ABP | PBA
-  · rw [PeqA]; exact ref lemma 1.0.24
-  · rw [PeqB]; exact ref lemma 1.0.23
+  · rw [PeqA]; obvious
+  · rw [PeqB]; obvious
   all_goals obvious
 
 
@@ -187,15 +187,6 @@ atlas lemma 2.0.10 "Segment A B and extension A B are disjoint"
   · intro _ absurdity; exfalso; contradiction
 
 
-atlas commentary := by
-  ref lemma 2.0.11
-  name "A line equals the set of all points lying on it"
-  preface "A line is the set of all points on it"
-  tags ["obvious"]
-
-atlas lemma 2.0.11 "A line equals the set of all points lying on it"
-  : ∀ L : Line, L.toSet = {P : Point | P on L} := by obvious
-
 
 atlas commentary := by
   ref lemma 2.0.12
@@ -211,7 +202,9 @@ atlas lemma 2.0.12 "A ray A B is never equal to any line L"
   have XonL : X on L := by
     idea "L = AB, and L = colXAB.line by the ref lemma 2.0.2"
     have LeqXAB : L = colXAB.line := by
-      have ABeqXAB := ref lemma 2.0.2 AneB ⟨ref lemma 1.0.21, colXAB.mem A, ref lemma 1.0.22, colXAB.mem B⟩
+      have ABeqXAB := ref lemma 2.0.2 AneB
+        ⟨(by obvious : A on ray A B), colXAB.mem A,
+         (by obvious : B on ray A B), colXAB.mem B⟩
       rw [<- ABeqXAB]; exact ABeqL.symm
     rw [LeqXAB]; exact colXAB.mem X
   rw [<- ABeqL] at XonL

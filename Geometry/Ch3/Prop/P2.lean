@@ -106,7 +106,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
         intro LsplitsBC
         quoting ... "then C and A are on the same side of L (by the law of the excluded middle and Betweenness Axiom 4(ii))."
         by_contra LsplitsAC
-        have LguardsAB := ref axiom ["B.4.ii"] ⟨LsplitsAC, ref lemma 2.0.31 LsplitsBC⟩
+        have LguardsAB := ref axiom ["B.4.ii"] ⟨LsplitsAC, LsplitsBC.symm⟩
         contradiction
       by_cases suppose: L splits B and C
       · specialize AseparatefromB suppose
@@ -134,7 +134,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       obtain ⟨PinHl, PinHr⟩ := PinInt
       have LguardsAandP : L guards A and P := PinHl
       have LguardsBandP : L guards B and P := PinHr
-      have LguardsPandB : L guards P and B := ref lemma 2.0.30 LguardsBandP
+      have LguardsPandB : L guards P and B := LguardsBandP.symm
       have PoffL : P off L := by tauto
       have LguardsAandB : L guards A and B := ref axiom ["B.4.i"] ⟨LguardsAandP, LguardsPandB⟩
       contradiction

@@ -98,16 +98,6 @@ atlas lemma 2.0.18 "Two points in the intersection of distinct nonparallel lines
 
 
 atlas commentary := by
-  ref lemma 2.0.19
-  name "The intersection of two distinct parallel lines is empty"
-  preface "If L and M are distinct, parallel lines, their intersection is empty"
-  tags ["obvious.parallel"]
-
-atlas lemma 2.0.19 "The intersection of two distinct parallel lines is empty"
-  : ∀ L M : Line, (L ≠ M) -> (L ∥ M) -> L ∩ M = ∅ := by obvious
-
-
-atlas commentary := by
   ref lemma 2.0.20
   name "Membership in the intersection of distinct nonparallel lines is the pointed intersection"
   preface "Intersections of distinct, nonparallel lines contain exactly one point"
@@ -134,29 +124,19 @@ atlas commentary := by
   ref lemma 2.0.21
   name "A line intersecting a segment intersects its containing ray at the same point"
   preface "If a line intersects a segment, then it intersects the ray containing that segment"
-  notes "TODO: I think some of the non-equality conditions are provable in general."
 
 atlas lemma 2.0.21 "A line intersecting a segment intersects its containing ray at the same point"
   : (A ≠ B) -> (L intersects segment A B at X) -> (L intersects ray A B at X) := by
   intro AneB LintABatX
   have XonSegAB : X on segment A B := ref lemma 1.0.33 LintABatX
   have XonL : X on L := ref lemma 1.0.32 LintABatX
-  have XonRayAB : X on ray A B := by obvious
   have LneRayAB : L ≠ (ray A B : Line) := by
     by_contra! hNeg
     rw [hNeg] at LintABatX
-    unfold Intersects at LintABatX
-    have AonSegAB : A on segment A B := by obvious
-    have AonRayAB : A on ray A B := by obvious
     have AonIntRaySeg : A ∈ ((ray A B : Line) ∩ (segment A B : Line)) := by obvious
-    rw [LintABatX] at AonIntRaySeg
-    have AeqX : A = X := by obvious
-    have BonSegAB : B on segment A B := by obvious
-    have BonRayAB : B on ray A B := by obvious
     have BonIntRaySeg : B ∈ ((ray A B : Line) ∩ (segment A B : Line)) := by obvious
-    rw [LintABatX] at BonIntRaySeg
-    have BeqX : B = X := by obvious
-    have AeqB : A = B := by rw [BeqX, AeqX]
+    rw [LintABatX] at AonIntRaySeg BonIntRaySeg
+    have AeqB : A = B := by obvious
     contradiction
   have LnparRayAB : L ∦ ray A B := by obvious
   -- assume there is some point not X that intersects the ray.
@@ -170,13 +150,13 @@ atlas lemma 2.0.21 "A line intersecting a segment intersects its containing ray 
   · push Not at counter
     apply Line.eq_of_subset
     · intro P PonLintRay
-      have XonLintRay : X ∈ L ∩ ray A B := Line.mem_inter.mpr ⟨XonL, XonRayAB⟩
+      have XonLintRay : X ∈ L ∩ ray A B := Line.mem_inter.mpr ⟨XonL, obvious⟩
       have PeqX : P = X := ref lemma 2.0.18 L (ray A B) LneRayAB LnparRayAB ⟨PonLintRay, XonLintRay⟩
       rw [PeqX]
       trivial
     · intro P PinSingleX
       have PeqX : P = X := by obvious
-      rw [PeqX]; trivial
+      rw [PeqX]; obvious
 
 
 atlas commentary := by
@@ -220,22 +200,18 @@ atlas lemma 2.0.23 "A line intersecting a ray intersects its containing line at 
   have LneRayAB : L ≠ ray A B := Ne.symm (ref lemma 2.0.12)
   have LneLineAB : L ≠ line A B := by
     by_contra! hNeg
-    have AonLineAB : A on line A B := ref lemma 1.0.23
-    have AonRayAB : A on ray A B := ref lemma 1.0.21
+    have AonLineAB : A on line A B := by obvious
+    have AonRayAB : A on ray A B := by obvious
     have AonL : A on L := by
       have h : A ∈ (line A B : Line) := AonLineAB
       rw [<- hNeg] at h; obvious
-    have BonLineAB : B on line A B := ref lemma 1.0.24
-    have BonRayAB : B on ray A B := ref lemma 1.0.22
+    have BonLineAB : B on line A B := by obvious
+    have BonRayAB : B on ray A B := by obvious
     have BonL : B on L := by
       have h : B ∈ (line A B : Line) := BonLineAB
       rw [<- hNeg] at h; obvious
-    have AinIntLine : A ∈ L ∩ line A B := by obvious
-    have BinIntLine : B ∈ L ∩ line A B := by obvious
-    have AinIntRay : A ∈ L ∩ ray A B := by obvious
-    have BinIntRay : B ∈ L ∩ ray A B := by obvious
-    have LintABatA : L intersects ray A B at A := (ref lemma 2.0.20 A L (ray A B : Line) ⟨LneRayAB, LnparRayAB⟩).mp AinIntRay
-    have LintABatB : L intersects ray A B at B := (ref lemma 2.0.20 B L (ray A B : Line) ⟨LneRayAB, LnparRayAB⟩).mp BinIntRay
+    have LintABatA : L intersects ray A B at A := (ref lemma 2.0.20 A L (ray A B : Line) ⟨LneRayAB, LnparRayAB⟩).mp obvious
+    have LintABatB : L intersects ray A B at B := (ref lemma 2.0.20 B L (ray A B : Line) ⟨LneRayAB, LnparRayAB⟩).mp obvious
     unfold Intersects at *
     rw [LintRay] at LintABatA
     rw [LintRay] at LintABatB
@@ -345,7 +321,7 @@ atlas lemma 2.0.27 "Crossing point of L through M between A and B forces A-X-B w
   specialize MsplitsAB AoffM BoffM
   obtain ⟨AneB, P, PonSeg, PonM⟩ := MsplitsAB
   -- L and line A B are the same thing since two points determine a line.
-  have LeqAB : L = line A B := ref lemma 2.0.2 AneB ⟨AonL, ref lemma 1.0.23, BonL, ref lemma 1.0.24⟩
+  have LeqAB : L = line A B := ref lemma 2.0.2 AneB ⟨AonL, obvious, BonL, obvious⟩
   -- so P on L
   have PonL : P on L := by
     apply ref lemma 2.0.5 at PonSeg
@@ -374,14 +350,15 @@ atlas commentary := by
 atlas lemma 2.0.28 "Through X on L and E off L: L and line E X are distinct, nonparallel, meet at X"
   {L : Line} {X E : Point} (XonL : X on L) (EoffL : E off L)
     : (L ≠ (line E X)) ∧ (L ∦ (line E X)) ∧ (L intersects (line E X) at X) := by
-  have XonEX : X on (line E X) := ref lemma 1.0.24
-  have EonEX : E on (line E X) := ref lemma 1.0.23
+  have XonEX : X on (line E X) := by obvious
+  have EonEX : E on (line E X) := by obvious
   have ne : L ≠ (line E X) := by
     by_contra! hNeg; rw [hNeg] at EoffL; contradiction
   have npar : L ∦ (line E X) := by
     intro hpar
     have XinInter : X ∈ L ∩ (line E X) := ⟨XonL, XonEX⟩
-    rw [ref lemma 2.0.19 L (line E X) (by obvious) hpar] at XinInter
+    have hEmpty : L ∩ (line E X) = ∅ := by obvious
+    rw [hEmpty] at XinInter
     exact absurd XinInter (Set.notMem_empty X)
   have XonLintEX : X ∈ L ∩ (line E X) := by obvious
   have int : L intersects (line E X) at X := (ref lemma 2.0.20 X L (line E X) ⟨ne, npar⟩).mp XonLintEX
