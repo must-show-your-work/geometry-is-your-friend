@@ -104,13 +104,10 @@ atlas commentary := by
   ref lemma 1.0.27
   name "Two lines sharing a common point are not parallel"
   preface "We need to be able to establish that two intersecting lines are never parallel"
+  tags ["obvious.parallel"]
 
 atlas lemma 1.0.27 "Two lines sharing a common point are not parallel"
-  {L M : Line} {P : Point} : (P on L) -> (P on M) -> (L ∦ M) := by
-      intros hPonM hPonL
-      unfold Parallel; push Not
-      intro hLMDistinct
-      use P
+  {L M : Line} {P : Point} : (P on L) -> (P on M) -> (L ∦ M) := by obvious
 
 
 atlas commentary := by

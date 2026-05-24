@@ -130,7 +130,8 @@ contains no points that lie on L, we say that A and B are _on the same side_ of 
 does intersect L, we say that A and B are _on opposite sides_ of L (see Figure 3.6). The law of the excluded middle
 (Logic Rule 10) tells us that A and B are either on the same side or on opposite sides of L"
 -/
-@[reducible] def Guards (A B : Point) (L : Line)
+@[reducible, obvious.guards]
+def Guards (A B : Point) (L : Line)
   := (A off L) ∧ (B off L) ∧ ((A = B) ∨ (∀ P : Point, (P on segment A B) -> (L avoids P)))
 
 /-- `Splits` and `Guards` are paired: `Splits L A B := ¬(Guards A B L)`. Both
@@ -146,6 +147,7 @@ does intersect L, we say that A and B are _on opposite sides_ of L (see Figure 3
     L "splits" A and B if A and B are on opposite sides of the 'wall' L; L
     "guards" them if they are both on the same side (we presume all points
     are allied with other points on their side of the line). -/
+@[obvious.guards]
 def Splits (L : Line) (A B : Point) : Prop := ¬(Guards A B L)
 
 notation:20 L " splits " A " and " B => Splits L A B

@@ -21,6 +21,7 @@ atlas commentary := by
   ref lemma 1.0.30
   name "Two pointed intersections of the same line pair share their point"
   preface "If two lines intersect, their intersection is unique."
+  tags ["obvious.intersects"]
 
 atlas lemma 1.0.30 "Two pointed intersections of the same line pair share their point"
   : (L intersects M at X) ∧ (L intersects M at Y) -> X = Y := by
@@ -29,12 +30,23 @@ atlas lemma 1.0.30 "Two pointed intersections of the same line pair share their 
   rw [LMatX] at LMatY
   exact Line.singleton_eq_singleton.mp LMatY
 
+-- `@[obvious]` not added: conditional rewrite from
+-- `(L intersects M at X) ∧ (L intersects M at Y)` to `X = Y` perturbs
+-- downstream simp normalization in unexpected ways. The lemma is
+-- discoverable via `ref lemma 1.0.30` and that's the right shape for now.
+
 
 atlas commentary := by
   ref lemma 1.0.31
   name "Pointed intersection is symmetric in its line arguments"
   preface "L intersects M is the same as M intersects L."
+  tags ["obvious.intersects"]
 
+-- Skipped `@[obvious]` here: the Iff form would normalize all
+-- `L intersects M at X` ↔ `M intersects L at X` in both directions,
+-- creating a simp loop. The `@[symm]` tag below gives `.symm`
+-- access; that's the right shape for `obvious` to discover the
+-- symmetric form on demand without rewriting it eagerly.
 atlas lemma 1.0.31 "Pointed intersection is symmetric in its line arguments"
   : (L intersects M at X) ↔ (M intersects L at X) := by
   unfold Intersects
@@ -54,6 +66,7 @@ atlas commentary := by
   ref lemma 1.0.32
   name "A pointed intersection's witness point lies on the left line"
   preface "If L intersects M at X, then X is on L"
+  tags ["obvious.intersects"]
 
 atlas lemma 1.0.32 "A pointed intersection's witness point lies on the left line"
   : (L intersects M at X) -> (X on L) := by
@@ -62,11 +75,18 @@ atlas lemma 1.0.32 "A pointed intersection's witness point lies on the left line
   have XinLintM : X ∈ L ∩ M := by rw [LMintX]; simp
   exact (Line.mem_inter.mp XinLintM).1
 
+-- `@[obvious]` not added: conditional rewrite triggered downstream
+-- simp regressions (e.g. `A on L` goals where simp explores the new
+-- rule's LHS). Tagged in atlas commentary as `obvious.intersects`
+-- so the relationship is recorded even though the simp-set membership
+-- isn't safe to enable yet.
+
 
 atlas commentary := by
   ref lemma 1.0.33
   name "A pointed intersection's witness point lies on the right line"
   preface "If L intersects M at X, then X is on M"
+  tags ["obvious.intersects"]
 
 atlas lemma 1.0.33 "A pointed intersection's witness point lies on the right line"
   : (L intersects M at X) -> (X on M) := by
@@ -74,6 +94,9 @@ atlas lemma 1.0.33 "A pointed intersection's witness point lies on the right lin
   intro LMintX
   have XinLintM : X ∈ L ∩ M := by rw [LMintX]; simp
   exact (Line.mem_inter.mp XinLintM).2
+
+-- Same as 1.0.32: `@[obvious]` deferred until the simp interaction
+-- is understood. Tagged in atlas commentary as `obvious.intersects`.
 
 
 atlas commentary := by

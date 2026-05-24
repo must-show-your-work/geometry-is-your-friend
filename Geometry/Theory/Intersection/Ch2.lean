@@ -101,13 +101,10 @@ atlas commentary := by
   ref lemma 2.0.19
   name "The intersection of two distinct parallel lines is empty"
   preface "If L and M are distinct, parallel lines, their intersection is empty"
+  tags ["obvious.parallel"]
 
 atlas lemma 2.0.19 "The intersection of two distinct parallel lines is empty"
-  : ∀ L M : Line, (L ≠ M) -> (L ∥ M) -> L ∩ M = ∅ := by
-  intro L M LneM LparM
-  apply Line.eq_of_subset
-  · obvious
-  · obvious
+  : ∀ L M : Line, (L ≠ M) -> (L ∥ M) -> L ∩ M = ∅ := by obvious
 
 
 atlas commentary := by

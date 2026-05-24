@@ -306,7 +306,8 @@ macro_rules
 
 /-! ## Intersections -/
 
-@[reducible] def Intersects (L M : Line) (X : Point) : Prop := L ∩ M = ({X} : Line)
+@[reducible, obvious.intersects]
+def Intersects (L M : Line) (X : Point) : Prop := L ∩ M = ({X} : Line)
 
 /-- Bare form of `L intersects M` — asserts the intersection is non-empty (i.e.
     `L` and `M` share *at least one* point, allowing the "L coincides with M"

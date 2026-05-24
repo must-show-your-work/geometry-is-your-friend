@@ -48,9 +48,14 @@ attribute [obvious]
 
 open Lean Lean.Elab.Tactic in
 /-- A single stage: shared `preamble` runs once, then each `closer` is
-    tried in turn against the saved post-preamble state. -/
+    tried in turn against the saved post-preamble state. The `applies`
+    predicate is a goal-shape gate — when it returns `false`, the stage
+    is skipped entirely (preamble + closers). Default `applies` returns
+    `true` (always-run); topic stages override it to check for distinctive
+    constants in the goal + hypothesis types. -/
 private structure ObviousStage where
   name : String
+  applies : MVarId → TacticM Bool := fun _ => pure true
   preamble : TSyntax `tactic
   closers : Array (String × TSyntax `tactic)
 
@@ -64,6 +69,22 @@ private def tryTimed (tac : TSyntax `tactic) : TacticM (Bool × Nat) := do
   let endMs ← IO.monoMsNow
   return (ok, endMs - startMs)
 
+open Lean Lean.Meta Lean.Elab.Tactic in
+/-- Does the main goal or any hypothesis mention the constant `c`?
+    Walks `Expr`s with `Expr.find?`, single traversal each. Used by
+    stage `applies` predicates to gate topic-specific stages on
+    whether the topic's constant is in scope. -/
+private def goalMentions (c : Name) (g : MVarId) : TacticM Bool := do
+  g.withContext do
+    let targetHas ← do
+      let t ← g.getType
+      pure (t.find? (·.isConstOf c)).isSome
+    if targetHas then return true
+    for ld in ← getLCtx do
+      if ld.isImplementationDetail then continue
+      if (ld.type.find? (·.isConstOf c)).isSome then return true
+    return false
+
 open Lean Lean.Elab.Tactic in
 /-- The cascade stages, in priority order. Each stage represents a *class
     of intuition* — a kind of reasoning the author would take for granted.
@@ -72,6 +93,13 @@ open Lean Lean.Elab.Tactic in
 private def obviousStages : TacticM (Array ObviousStage) := do
   let simpAll ← `(tactic| simp_all (config := { maxSteps := 2000 }) only [obvious])
   let unfoldParallel ← `(tactic| simp only [obvious.parallel] at *)
+  let unfoldIntersects ← `(tactic| simp only [obvious.intersects] at *)
+  -- The Guards stage pulls in the *main* `obvious` set alongside the
+  -- topic-specific one — Guards-form goals typically need both the
+  -- Guards/Splits unfold AND propositional normalizations like
+  -- Segment Commutativity (`{A,B} ↔ {B,A}`) and Betweenness Commutativity.
+  -- The `simp only` here is non-recursive so it converges.
+  let unfoldGuards ← `(tactic| simp only [obvious, obvious.guards] at *)
   let memDef ← `(tactic|
     simp only [Segment.mem_def, Ray.mem_def, Extension.mem_def, LineThrough.mem_def])
   let memDefAt ← `(tactic|
@@ -82,6 +110,7 @@ private def obviousStages : TacticM (Array ObviousStage) := do
   let assumptionT ← `(tactic| assumption)
   let decideT ← `(tactic| decide)
   let tautoT ← `(tactic| tauto)
+  let aesopT ← `(tactic| aesop)
   -- Cheap closers tried before tauto: done (simp_all already closed),
   -- assumption (hypothesis match), decide (decidable-instance reduction).
   -- Each is fast-to-fail when inapplicable, so paying them per-stage is cheap.
@@ -89,13 +118,34 @@ private def obviousStages : TacticM (Array ObviousStage) := do
     ("done", doneT), ("assumption", assumptionT),
     ("decide", decideT), ("tauto", tautoT)
   ]
+  -- `aesop` after the cheap-then-tauto run, for stages where the goal
+  -- shape demands eq-orientation / disjunct-reordering that tauto can't
+  -- do on its own. Strictly opt-in per stage — aesop is expensive.
+  let cheapTautoAesop := cheapThenTauto.push ("aesop", aesopT)
   return #[
     { name := "simp_all",
       preamble := simpAll,
       closers := cheapThenTauto },
+    -- Topic stages use runtime `Name` lookup (`.mkStr3` constructor)
+    -- instead of `` `` `` literals: the `Parallel` / `Intersects` defs live
+    -- in modules that transitively depend on this one, so a `name literal`
+    -- would create a circular import. The names are stable identifiers
+    -- — if a def is ever moved, update here.
     { name := "unfold Parallel",
+      applies := goalMentions (.mkStr3 "Geometry" "Theory" "Parallel"),
       preamble := unfoldParallel,
       closers := cheapThenTauto },
+    { name := "unfold Intersects",
+      applies := goalMentions (.mkStr3 "Geometry" "Theory" "Intersects"),
+      preamble := unfoldIntersects,
+      closers := cheapThenTauto },
+    -- `Splits := ¬Guards`, so either constant indicates the topic.
+    { name := "unfold Guards",
+      applies := fun g => do
+        if (← goalMentions (.mkStr3 "Geometry" "Theory" "Guards") g) then return true
+        goalMentions (.mkStr3 "Geometry" "Theory" "Splits") g,
+      preamble := unfoldGuards,
+      closers := cheapTautoAesop },
     { name := "mem_def goal",
       preamble := memDef,
       closers := cheapThenTauto },
@@ -116,6 +166,14 @@ elab "obvious" : tactic => do
   let mut stageReports : Array (String × Bool × Nat × Array (String × Nat)) := #[]
   for stage in stages do
     original.restore
+    -- Goal-shape gate: skip stages whose `applies` predicate rejects
+    -- the current main goal. Default `applies` is always-true; topic
+    -- stages override to check for distinctive constants in scope.
+    let g ← getMainGoal
+    if !(← stage.applies g) then
+      if ← isTracingEnabledFor `obvious then
+        addTrace `obvious m!"  {stage.name}: skipped (goal shape)"
+      continue
     let (preOk, preMs) ← tryTimed stage.preamble
     -- Strict: if preamble fails, skip closers. Matches v1 semantics where
     -- `simp_all only [obvious]; tauto` only runs tauto if simp_all

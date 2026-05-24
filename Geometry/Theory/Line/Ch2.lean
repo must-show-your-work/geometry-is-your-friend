@@ -191,12 +191,10 @@ atlas commentary := by
   ref lemma 2.0.11
   name "A line equals the set of all points lying on it"
   preface "A line is the set of all points on it"
+  tags ["obvious"]
 
 atlas lemma 2.0.11 "A line equals the set of all points lying on it"
-  : ∀ L : Line, L.toSet = {P : Point | P on L} := by
-  intro L
-  apply Subset.antisymm
-  repeat obvious
+  : ∀ L : Line, L.toSet = {P : Point | P on L} := by obvious
 
 
 atlas commentary := by

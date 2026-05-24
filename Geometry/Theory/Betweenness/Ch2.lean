@@ -21,11 +21,7 @@ atlas commentary := by
   preface "a line doesn't care about the order of the points it guards"
 
 atlas lemma 2.0.30 "Guarding is symmetric in its two point arguments"
-  : (L guards A and B) -> (L guards B and A) := by
-    intro LguardsAB
-    unfold Guards at *
-    simp_all only [Segment.mem_def, «Betweenness Commutativity», eq_comm (a := B) (b := A)]
-    aesop
+  : (L guards A and B) -> (L guards B and A) := by obvious
 
 
 atlas commentary := by
@@ -34,11 +30,7 @@ atlas commentary := by
   preface "a line doesn't care about the order of the points it splits"
 
 atlas lemma 2.0.31 "Splitting is symmetric in its two point arguments"
-  : (L splits A and B) -> (L splits B and A) := by
-    intro LsplitsAB
-    unfold Splits Guards at *
-    simp_all only [Segment.mem_def, «Betweenness Commutativity», eq_comm (a := B) (b := A)]
-    aesop
+  : (L splits A and B) -> (L splits B and A) := by obvious
 
 end Betweenness
 
