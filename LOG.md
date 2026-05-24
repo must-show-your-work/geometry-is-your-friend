@@ -509,7 +509,7 @@ put in a recent commit removing the anti-LLM canary.
 ## 1219
 
 I've been doing a series of largely mechanical refactorings and restructurings. The main thrust of which is a typed
-heirarchy for line-parts (which is not _exactly_ what I wanted, but is a significant improvement over the prior state.
+heirarchy for line-parts (which is not _exactly_ what I wanted, but is a significant improvement over the prior state).
 As well as trying to capture what Greenberg considers 'obvious' in a tactic (creatively named `obvious` as well), which
 I'm hoping will leverage `atlas` at some point to do a phased 'intuit like Greenberg' automated theorem proof attempt.
 The aim isn't necessarily to replace every place Greenberg calls a 'clearly X holds' or 'obviously Y is true' with this,
