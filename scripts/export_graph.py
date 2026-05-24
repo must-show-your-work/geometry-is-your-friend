@@ -185,6 +185,28 @@ def main() -> None:
             print(f"warning: blueprint/highlighted.json is malformed ({e});"
                   " falling back to plain source", file=sys.stderr)
 
+    # Pre-load obvious-uses edges: per-decl array of `{stage, closer, count}`.
+    # Empty for decls that didn't fire any obvious calls in the last
+    # `GIYF_DUMP_DEPS=1` build. Surfaced on the viewer card.
+    from collections import defaultdict
+    obvious_by_decl: dict[str, list[dict]] = defaultdict(list)
+    try:
+        rs = conn.execute(
+            """
+            MATCH (d:Decl)-[r:OBVIOUS_USES]->(s:ObviousStage)
+            RETURN d.name, s.name, r.closer, r.count
+            """
+        )
+        while rs.has_next():
+            decl, stage, closer, count = rs.get_next()
+            obvious_by_decl[decl].append({
+                "stage": stage, "closer": closer, "count": count,
+            })
+    except Exception:
+        # OBVIOUS_USES table absent (older DB without the schema entry,
+        # or no dump-deps data ingested yet). Silently fall through.
+        pass
+
     nodes = []
     kind_of: dict[str, str] = {}
     doc_of: dict[str, str | None] = {}
@@ -251,6 +273,11 @@ def main() -> None:
                 "atlas_kind": atlas_kind,
                 "atlas_number": atlas_number,
                 "atlas_title": atlas_title,
+                # Per-decl `obvious`-cascade usage records, populated by a
+                # `GIYF_DUMP_DEPS=1 lake build`. Each entry is
+                # `{stage, closer, count}`. Empty list when the decl
+                # didn't fire any obvious calls (or no dump data exists).
+                "obvious_uses": obvious_by_decl.get(name, []),
             }
         })
 

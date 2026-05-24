@@ -85,7 +85,7 @@ atlas corollary 3.7.3 "If L guards A and B, then L does not intersect segment A 
   rcases hCase with AeqB | hAvoids
   · subst AeqB
     rcases XonSeg with AXA | AeqX | AeqX
-    · have : distinct A X A := ref lemma 1.0.39 AXA
+    · have : distinct A X A := (ref axiom B.1 AXA).distinct
       separate at this; contradiction
     · rw [<- AeqX] at XonL; exact AoffL XonL
     · rw [<- AeqX] at XonL; exact AoffL XonL

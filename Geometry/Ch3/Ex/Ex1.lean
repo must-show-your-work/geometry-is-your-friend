@@ -35,8 +35,8 @@ atlas commentary := by
 atlas exercise 3.1.a "Exercise 1(a): four points from chained betweenness are distinct"
   : A - B - C ∧ A - C - D -> distinct A B C D := by
   intro ⟨ABC, ACD⟩
-  have distinctABC := ref lemma 1.0.39 ABC
-  have distinctACD := ref lemma 1.0.39 ACD
+  have distinctABC := (ref axiom B.1 ABC).distinct
+  have distinctACD := (ref axiom B.1 ACD).distinct
   separate at distinctABC
   separate at distinctACD
   have BneD : B ≠ D := by
@@ -61,8 +61,8 @@ atlas exercise 3.1.b "Exercise 1(b): four points from chained betweenness are co
   -- We only end up needing A ≠ C, but easy to get the whole thing.
   have distinctABCD : distinct A B C D := via exercise 3.1.a ⟨ABC, ACD⟩
   have AneC : A ≠ C := by distinguish
-  have colABC := ref lemma 1.0.40 ABC
-  have colACD := ref lemma 1.0.40 ACD
+  have colABC := (ref axiom B.1 ABC).collinear
+  have colACD := (ref axiom B.1 ACD).collinear
   have LeqM : colABC.line = colACD.line := ref lemma 2.0.2 AneC ⟨colABC.mem A, colACD.mem A, colABC.mem C, colACD.mem C⟩
   use colABC.line
   intro P PisABCD
@@ -87,8 +87,8 @@ atlas commentary := by
 atlas lemma 3.0.3 "Distinct four points from shifted chained betweenness (A-B-C and B-C-D)"
   : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
   intro ⟨ABC, BCD⟩
-  have distinctABC := ref lemma 1.0.39 ABC
-  have distinctBCD := ref lemma 1.0.39 BCD
+  have distinctABC := (ref axiom B.1 ABC).distinct
+  have distinctBCD := (ref axiom B.1 BCD).distinct
   separate at distinctABC
   separate at distinctBCD
   have AneD : A ≠ D := by
@@ -107,8 +107,8 @@ atlas lemma 3.0.4 "Collinear four points from shifted chained betweenness (A-B-C
   -- we only end up needing A ≠ C, but easy to get the whole thing.
   have distinctABCD := ref lemma 3.0.3 ⟨ABC, BCD⟩
   have BneC : B ≠ C := by distinguish
-  have colABC := ref lemma 1.0.40 ABC
-  have colBCD := ref lemma 1.0.40 BCD
+  have colABC := (ref axiom B.1 ABC).collinear
+  have colBCD := (ref axiom B.1 BCD).collinear
   have LeqM : colABC.line = colBCD.line := ref lemma 2.0.2 BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
   use colABC.line
   intro P PisABCD

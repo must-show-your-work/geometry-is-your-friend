@@ -160,6 +160,79 @@ def insert_imports_edges(conn: kuzu.Connection, mods: list[dict]) -> int:
     return n
 
 
+def insert_obvious_uses(
+    conn: kuzu.Connection,
+    decls: list[dict],
+    records: list[dict],
+) -> tuple[int, int, int]:
+    """Insert ObviousStage nodes (deduplicated) and OBVIOUS_USES edges.
+    Each record (`{module, line, stage, closer}`) is joined to its
+    enclosing decl by module match + line ∈ [line_start, line_end].
+    Multiple records mapping to the same (decl, stage, closer) triple
+    are aggregated into a single edge with `count` summed.
+
+    Returns (n_stage_nodes, n_edges, n_orphan_records). Orphans are
+    records whose `(module, line)` didn't match any decl's range —
+    usually a sign of stale dump data."""
+    from collections import defaultdict
+
+    # Index decls by module for O(records · max_decls_per_module) match.
+    by_mod: dict[str, list[dict]] = defaultdict(list)
+    for d in decls:
+        if d.get("module"):
+            by_mod[d["module"]].append(d)
+
+    def find_decl(module: str, line: int) -> dict | None:
+        for d in by_mod.get(module, []):
+            ls = d.get("line_start")
+            le = d.get("line_end")
+            if ls is not None and le is not None and ls <= line <= le:
+                return d
+        return None
+
+    edges: dict[tuple[str, str, str], int] = defaultdict(int)
+    stages: set[str] = set()
+    orphans = 0
+    for rec in records:
+        d = find_decl(rec["module"], rec["line"])
+        if d is None:
+            orphans += 1
+            continue
+        key = (d["name"], rec["stage"], rec["closer"])
+        edges[key] += 1
+        stages.add(rec["stage"])
+
+    for s in stages:
+        conn.execute("CREATE (:ObviousStage {name: $n})", {"n": s})
+
+    for (decl, stage, closer), count in edges.items():
+        conn.execute(
+            """
+            MATCH (d:Decl {name: $decl}), (s:ObviousStage {name: $stage})
+            CREATE (d)-[:OBVIOUS_USES {closer: $closer, count: $count}]->(s)
+            """,
+            {"decl": decl, "stage": stage, "closer": closer, "count": count},
+        )
+
+    return (len(stages), len(edges), orphans)
+
+
+def load_jsonl(path: Path) -> list[dict]:
+    """Read newline-delimited JSON. Returns [] if the file is missing."""
+    if not path.exists():
+        return []
+    out: list[dict] = []
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue  # tolerate truncated final lines / interleaving issues
+    return out
+
+
 def insert_tactics(conn: kuzu.Connection, tac_entries: list[dict]) -> tuple[int, int, int]:
     """Insert Tactic nodes (deduplicated) and USED_TACTIC edges. Returns
     (n_tactic_nodes, n_edges, n_decls_with_tactics)."""
@@ -206,6 +279,7 @@ def main() -> None:
 
     modules = load_json(BLUEPRINT_DIR / "modules.json") or []
     tactics = load_json(BLUEPRINT_DIR / "tactics.json") or []
+    obvious_uses = load_jsonl(BLUEPRINT_DIR / "obvious_uses.jsonl")
 
     # Idempotent: nuke any existing DB before creating fresh. Kuzu uses a
     # single-file format these days; older versions used a directory.
@@ -227,13 +301,17 @@ def main() -> None:
     n_declared = insert_declared_in(conn, decls, modules)
     n_imports = insert_imports_edges(conn, modules)
     n_tac_nodes, n_tac_edges, n_decls_with_tac = insert_tactics(conn, tactics)
+    n_stages, n_obvious_edges, n_orphan = insert_obvious_uses(conn, decls, obvious_uses)
 
     print(
         f"Ingested: {n_decls} decls, {n_mods} modules, "
         f"{n_uses} USES edges, {n_declared} DECLARED_IN edges, "
         f"{n_imports} IMPORTS edges, "
         f"{n_tac_nodes} tactics in {n_decls_with_tac} decls "
-        f"({n_tac_edges} USED_TACTIC edges)."
+        f"({n_tac_edges} USED_TACTIC edges), "
+        f"{n_stages} obvious stages "
+        f"({n_obvious_edges} OBVIOUS_USES edges"
+        f"{f'; {n_orphan} orphan records' if n_orphan else ''})."
     )
 
 

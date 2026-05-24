@@ -8,8 +8,10 @@ import Atlas
 /-!
 # Betweenness axioms
 
-Greenberg's betweenness axioms (["B.1.a"], ["B.1.b"], B-2, B-3, ["B.4.i"], ["B.4.ii"]) plus the
+Greenberg's betweenness axioms (B-1, B-2, B-3, ["B.4.i"], ["B.4.ii"]) plus the
 three density-axiom witness lemmas (1.0.5, 1.0.6, 1.0.7) extracted from B-2.
+B-1 returns `Between.Consequences` with `.distinct`, `.collinear`, `.symm`
+projections; `Between.symm` wires the mathlib `symm` tactic.
 
 Same-side / opposite-side definitions and the `splits` / `guards` notation
 also live here — they're the conceptual layer that ["B.4.i"] and ["B.4.ii"] depend on.
@@ -20,37 +22,34 @@ namespace Geometry.Theory
 
 open Atlas
 
+/-- `B.1`'s conclusion: three facts packaged together — distinctness,
+    collinearity, and commutativity (`.symm` gives the reversed
+    betweenness). `@[reducible]` over nested `And` so positional
+    destructuring (`⟨d, c, s⟩`) and dot-notation both work. -/
+@[reducible] def Between.Consequences (A B C : Point) : Prop :=
+  distinct A B C ∧ collinear A B C ∧ (C - B - A)
+
+namespace Between.Consequences
+@[reducible] def «distinct» {A B C : Point} (h : Between.Consequences A B C) : distinct A B C := h.1
+@[reducible] def «collinear» {A B C : Point} (h : Between.Consequences A B C) : collinear A B C := h.2.1
+@[reducible] def «symm» {A B C : Point} (h : Between.Consequences A B C) : C - B - A := h.2.2
+end Between.Consequences
+
 atlas commentary := by
-  ref axiom ["B.1.a"]
+  ref axiom B.1
   page 108
-  name "A-B-C implies A B C are distinct and collinear"
-  preface "If A - B - C, then A,B,C are distinct points on the same line..."
+  name "A-B-C implies distinctness, collinearity, and commutativity"
+  preface "If A - B - C, then A, B, C are distinct points on the same line, and C - B - A."
 
-atlas axiom ["B.1.a"] "A-B-C implies A B C are distinct and collinear"
-  {A B C : Point} : A - B - C -> distinct A B C ∧ collinear A B C
-attribute [simp, obvious] «A-B-C implies A B C are distinct and collinear»
+atlas axiom B.1 "A-B-C implies distinctness, collinearity, and commutativity"
+  {A B C : Point} : A - B - C -> Between.Consequences A B C
+attribute [simp, obvious] «A-B-C implies distinctness, collinearity, and commutativity»
 
-
-atlas commentary := by
-  ref axiom ["B.1.b"]
-  page 108
-  name "Betweenness Commutativity"
-  preface "... and [A - B - C iff] C - B - A.\"\""
-  notes "Note, I separated these parts of the axiom to make rewriting
-a bit easier. The author even notes, \"The second part (C * B * A) makes the obvious remark
-that 'betwen A and C' means the same as 'between C and A'\" Making it a separate axiom means
-I won't have to dig it out of the pile of parts that is 1a."
-
-atlas axiom ["B.1.b"] "Betweenness Commutativity"
-  {A B C : Point} : A - B - C ↔ C - B - A
-attribute [simp, obvious] «Betweenness Commutativity»
-
-/-- Endpoint-reversal projection of ["B.1.b"] — exposes ["B.1.b"]'s commutativity
-    via dot notation: `BCD.symm` instead of `(«Betweenness Commutativity»).mp BCD`.
-    Not atlas-tagged (this is a structural projection on the underlying
-    `Between` relation, not book content). -/
+/-- `@[symm]` wires the mathlib `symm` tactic + `h.symm` dot notation
+    on `h : A - B - C`. Body is just `(B.1 h).symm` via the structure
+    field. -/
 @[symm] def Between.symm {A B C : Point} (h : A - B - C) : C - B - A :=
-  («Betweenness Commutativity»).mp h
+  Between.Consequences.symm («A-B-C implies distinctness, collinearity, and commutativity» h)
 
 
 atlas commentary := by
@@ -130,7 +129,8 @@ contains no points that lie on L, we say that A and B are _on the same side_ of 
 does intersect L, we say that A and B are _on opposite sides_ of L (see Figure 3.6). The law of the excluded middle
 (Logic Rule 10) tells us that A and B are either on the same side or on opposite sides of L"
 -/
-@[reducible] def Guards (A B : Point) (L : Line)
+@[reducible, obvious.guards]
+def Guards (A B : Point) (L : Line)
   := (A off L) ∧ (B off L) ∧ ((A = B) ∨ (∀ P : Point, (P on segment A B) -> (L avoids P)))
 
 /-- `Splits` and `Guards` are paired: `Splits L A B := ¬(Guards A B L)`. Both
@@ -146,6 +146,7 @@ does intersect L, we say that A and B are _on opposite sides_ of L (see Figure 3
     L "splits" A and B if A and B are on opposite sides of the 'wall' L; L
     "guards" them if they are both on the same side (we presume all points
     are allied with other points on their side of the line). -/
+@[obvious.guards]
 def Splits (L : Line) (A B : Point) : Prop := ¬(Guards A B L)
 
 notation:20 L " splits " A " and " B => Splits L A B

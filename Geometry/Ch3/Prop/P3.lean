@@ -44,7 +44,7 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
   have cL : collinear A B C D := via exercise 3.1.b ⟨ABC, ACD⟩
   quoting (2) "There exists a point E not on the line through A,B,C,D (Proposition 2.3)"
   have LeqAB : cL = (line A B : Line) := ref lemma 2.0.2 AneB
-    ⟨cL.mem A, ref lemma 1.0.23, cL.mem B, ref lemma 1.0.24⟩
+    ⟨cL.mem A, obvious, cL.mem B, obvious⟩
   have ⟨E, EoffcL⟩ := proposition 2.3 cL
   quoting (3) "Consider line EC. Since (by hypothesis) AD meets this line in point C," ...
   let EC := (line E C : Line)
@@ -54,13 +54,13 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
   have DonAB : D on cL.line := cL.mem D
   todo "I need better tools for proving lines different from each other"
   have LneEC : cL ≠ EC := by
-    have EonEC : E on EC := ref lemma 1.0.23
+    have EonEC : E on EC := by obvious
     by_contra! hNeg; rw [hNeg] at EoffcL; contradiction
-  have ConEC : C on EC := ref lemma 1.0.24
+  have ConEC : C on EC := by obvious
   have ConLintEC : C on cL ∩ EC := ⟨cL.mem C, ConEC⟩
   have LnparEC : cL ∦ EC := by
     by_contra! hNeg
-    have emptyInter := ref lemma 2.0.19 cL EC LneEC hNeg
+    have emptyInter : cL ∩ EC = ∅ := by obvious
     rw [emptyInter] at ConLintEC
     contradiction
   have LintECatC : cL intersects EC at C := (ref lemma 2.0.20 C cL EC ⟨LneEC, LnparEC⟩).mp ConLintEC
@@ -94,9 +94,9 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
         intro P PinAXB
         simp only [Finset.mem_insert, Finset.mem_singleton] at PinAXB
         rcases PinAXB with PeqA | PeqX | PeqB
-        · rw [PeqA, LeqAB]; exact ref lemma 1.0.23
+        · rw [PeqA, LeqAB]; obvious
         · rwa [PeqX]
-        · rw [PeqB, LeqAB]; exact ref lemma 1.0.24
+        · rw [PeqB, LeqAB]; obvious
       have AneX : A ≠ X := by by_contra! hNeg; rw [hNeg] at AoffEC; contradiction
       have BneX : B ≠ X := by by_contra! hNeg; rw [hNeg] at BoffEC; contradiction
       have distinctAXB : distinct A X B := by
@@ -142,7 +142,7 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
     have ⟨BneD, P, ⟨PonSegBD, PonEC⟩⟩ := ECsplitsBandD
     have PinBDintEC : P ∈ (line B D : Line) ∩ EC := ⟨(ref lemma 2.0.5 PonSegBD), PonEC⟩
     have LeqBD : cL = (line B D : Line) := LeqAB ▸ ref lemma 2.0.2 BneD
-      ⟨LeqAB ▸ BonAB, ref lemma 1.0.23, LeqAB ▸ DonAB, ref lemma 1.0.24⟩
+      ⟨LeqAB ▸ BonAB, obvious, LeqAB ▸ DonAB, obvious⟩
     rw [LeqBD] at LintECatC
     rw [LintECatC] at PinBDintEC
     have PeqC : P = C := by obvious

@@ -28,6 +28,12 @@ call regardless of whether `done` or `tauto` ultimately closes.
 
 initialize Lean.registerTraceClass `obvious
 
+-- Dump-deps tracking is opted in via the env var `GIYF_DUMP_DEPS=1`,
+-- read at tactic runtime in `dumpObviousUse` below. Env var instead of
+-- a Lean option because custom options can't be set via Lake's `-D` flag
+-- (Lake validates flags before imports load, so it never learns of
+-- project-local option names). The `just graph` recipe exports this var.
+
 namespace Geometry.Theory
 
 attribute [obvious]
@@ -48,9 +54,14 @@ attribute [obvious]
 
 open Lean Lean.Elab.Tactic in
 /-- A single stage: shared `preamble` runs once, then each `closer` is
-    tried in turn against the saved post-preamble state. -/
+    tried in turn against the saved post-preamble state. The `applies`
+    predicate is a goal-shape gate — when it returns `false`, the stage
+    is skipped entirely (preamble + closers). Default `applies` returns
+    `true` (always-run); topic stages override it to check for distinctive
+    constants in the goal + hypothesis types. -/
 private structure ObviousStage where
   name : String
+  applies : MVarId → TacticM Bool := fun _ => pure true
   preamble : TSyntax `tactic
   closers : Array (String × TSyntax `tactic)
 
@@ -65,6 +76,51 @@ private def tryTimed (tac : TSyntax `tactic) : TacticM (Bool × Nat) := do
   return (ok, endMs - startMs)
 
 open Lean Lean.Elab.Tactic in
+/-- Append a JSONL record of a successful `obvious` invocation.
+    File: `blueprint/obvious_uses.jsonl`. Each line records the module,
+    source-line number, stage that fired, and closer that closed.
+    Append-only and per-line atomic via O_APPEND; safe under lake's
+    parallel module compilation. -/
+private def dumpObviousUse (stage : String) (closer : String) : TacticM Unit := do
+  let env ← getEnv
+  let modName := env.header.mainModule.toString
+  let stx ← getRef
+  let fileMap ← getFileMap
+  let posn := stx.getPos?.getD 0
+  let lineNum := (fileMap.toPosition posn).line
+  let escape (s : String) : String := (s.replace "\\" "\\\\").replace "\"" "\\\""
+  let record :=
+    "{\"module\":\"" ++ escape modName ++ "\",\"line\":" ++ toString lineNum ++
+    ",\"stage\":\"" ++ escape stage ++ "\",\"closer\":\"" ++ escape closer ++ "\"}\n"
+  let path : System.FilePath := "blueprint/obvious_uses.jsonl"
+  try
+    let h ← IO.FS.Handle.mk path .append
+    h.putStr record
+  catch _ =>
+    -- Directory may not exist; create it and retry once.
+    try
+      IO.FS.createDirAll "blueprint"
+      let h ← IO.FS.Handle.mk path .append
+      h.putStr record
+    catch _ => pure ()  -- give up silently; dump tracking is best-effort
+
+open Lean Lean.Meta Lean.Elab.Tactic in
+/-- Does the main goal or any hypothesis mention the constant `c`?
+    Walks `Expr`s with `Expr.find?`, single traversal each. Used by
+    stage `applies` predicates to gate topic-specific stages on
+    whether the topic's constant is in scope. -/
+private def goalMentions (c : Name) (g : MVarId) : TacticM Bool := do
+  g.withContext do
+    let targetHas ← do
+      let t ← g.getType
+      pure (t.find? (·.isConstOf c)).isSome
+    if targetHas then return true
+    for ld in ← getLCtx do
+      if ld.isImplementationDetail then continue
+      if (ld.type.find? (·.isConstOf c)).isSome then return true
+    return false
+
+open Lean Lean.Elab.Tactic in
 /-- The cascade stages, in priority order. Each stage represents a *class
     of intuition* — a kind of reasoning the author would take for granted.
     Long-term, stage selection will be driven by the theorem graph / goal
@@ -72,6 +128,12 @@ open Lean Lean.Elab.Tactic in
 private def obviousStages : TacticM (Array ObviousStage) := do
   let simpAll ← `(tactic| simp_all (config := { maxSteps := 2000 }) only [obvious])
   let unfoldParallel ← `(tactic| simp only [obvious.parallel] at *)
+  let unfoldIntersects ← `(tactic| simp only [obvious.intersects] at *)
+  -- The Guards stage pulls in the *main* `obvious` set alongside the
+  -- topic-specific one — Guards-form goals typically need both the
+  -- Guards/Splits unfold AND the propositional normalizations
+  -- (Segment Commutativity, etc.) that live in the main set.
+  let unfoldGuards ← `(tactic| simp only [obvious, obvious.guards] at *)
   let memDef ← `(tactic|
     simp only [Segment.mem_def, Ray.mem_def, Extension.mem_def, LineThrough.mem_def])
   let memDefAt ← `(tactic|
@@ -82,6 +144,7 @@ private def obviousStages : TacticM (Array ObviousStage) := do
   let assumptionT ← `(tactic| assumption)
   let decideT ← `(tactic| decide)
   let tautoT ← `(tactic| tauto)
+  let aesopT ← `(tactic| aesop)
   -- Cheap closers tried before tauto: done (simp_all already closed),
   -- assumption (hypothesis match), decide (decidable-instance reduction).
   -- Each is fast-to-fail when inapplicable, so paying them per-stage is cheap.
@@ -89,13 +152,34 @@ private def obviousStages : TacticM (Array ObviousStage) := do
     ("done", doneT), ("assumption", assumptionT),
     ("decide", decideT), ("tauto", tautoT)
   ]
+  -- `aesop` after the cheap-then-tauto run, for stages where the goal
+  -- shape demands eq-orientation / disjunct-reordering that tauto can't
+  -- do on its own. Strictly opt-in per stage — aesop is expensive.
+  let cheapTautoAesop := cheapThenTauto.push ("aesop", aesopT)
   return #[
     { name := "simp_all",
       preamble := simpAll,
       closers := cheapThenTauto },
+    -- Topic stages use runtime `Name` lookup (`.mkStr3` constructor)
+    -- instead of `` `` `` literals: the `Parallel` / `Intersects` defs live
+    -- in modules that transitively depend on this one, so a `name literal`
+    -- would create a circular import. The names are stable identifiers
+    -- — if a def is ever moved, update here.
     { name := "unfold Parallel",
+      applies := goalMentions (.mkStr3 "Geometry" "Theory" "Parallel"),
       preamble := unfoldParallel,
       closers := cheapThenTauto },
+    { name := "unfold Intersects",
+      applies := goalMentions (.mkStr3 "Geometry" "Theory" "Intersects"),
+      preamble := unfoldIntersects,
+      closers := cheapThenTauto },
+    -- `Splits := ¬Guards`, so either constant indicates the topic.
+    { name := "unfold Guards",
+      applies := fun g => do
+        if (← goalMentions (.mkStr3 "Geometry" "Theory" "Guards") g) then return true
+        goalMentions (.mkStr3 "Geometry" "Theory" "Splits") g,
+      preamble := unfoldGuards,
+      closers := cheapTautoAesop },
     { name := "mem_def goal",
       preamble := memDef,
       closers := cheapThenTauto },
@@ -116,6 +200,14 @@ elab "obvious" : tactic => do
   let mut stageReports : Array (String × Bool × Nat × Array (String × Nat)) := #[]
   for stage in stages do
     original.restore
+    -- Goal-shape gate: skip stages whose `applies` predicate rejects
+    -- the current main goal. Default `applies` is always-true; topic
+    -- stages override to check for distinctive constants in scope.
+    let g ← getMainGoal
+    if !(← stage.applies g) then
+      if ← isTracingEnabledFor `obvious then
+        addTrace `obvious m!"  {stage.name}: skipped (goal shape)"
+      continue
     let (preOk, preMs) ← tryTimed stage.preamble
     -- Strict: if preamble fails, skip closers. Matches v1 semantics where
     -- `simp_all only [obvious]; tauto` only runs tauto if simp_all
@@ -134,6 +226,8 @@ elab "obvious" : tactic => do
         if ← isTracingEnabledFor `obvious then
           addTrace `obvious
             m!"closed by {stage.name} → {cName} (preamble {preMs}ms, closer {cMs}ms)"
+        if (← IO.getEnv "GIYF_DUMP_DEPS").isSome then
+          dumpObviousUse stage.name cName
         closed := true
         break
       closerReports := closerReports.push (cName, cMs)

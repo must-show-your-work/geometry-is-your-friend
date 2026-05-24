@@ -86,7 +86,7 @@ atlas proposition 3.7 "Pasch's Postulate"
         have : A ∈ L ∩ segment A B := ⟨AonL, by obvious⟩
         rw [LintSegAB] at this
         have AeqX : A = X := this
-        have dAXB := (ref axiom ["B.1.a"] AXB).left
+        have dAXB := (ref axiom B.1 AXB).distinct
         separate at dAXB
         contradiction
     clearly B off L := by
@@ -98,7 +98,7 @@ atlas proposition 3.7 "Pasch's Postulate"
         have : B ∈ L ∩ segment A B := ⟨BonL, by obvious⟩
         rw [LintSegAB] at this
         have BeqX : X = B := this.symm
-        have dAXB := (ref axiom ["B.1.a"] AXB).left
+        have dAXB := (ref axiom B.1 AXB).distinct
         separate at dAXB
         contradiction
     quoting ... "and the segment A B does intersect L (hypothesis and Axiom B-1)"

@@ -44,15 +44,15 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
   comment "Some mise en place"
   clearly A ≠ P; clearly B ≠ P; clearly C ≠ P
   have distinctABCP : distinct A B C P := by
-    have dABC : distinct A B C := (ref lemma 1.0.39 CAB).of_eq obvious
+    have dABC : distinct A B C := ((ref axiom B.1 CAB).distinct).of_eq obvious
     separate
     distinguish
     repeat assumption
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
-    have cABC : collinear A B C := (ref lemma 1.0.40 CAB).of_eq obvious
+    have cABC : collinear A B C := ((ref axiom B.1 CAB).collinear).of_eq obvious
     have ABisSameLine : (line A B : Line) = cABC.line := ref lemma 2.0.2 AneB
-      ⟨ref lemma 1.0.23, cABC.mem A, ref lemma 1.0.24, cABC.mem B⟩
+      ⟨obvious, cABC.mem A, obvious, cABC.mem B⟩
     have PonLineAB : P ∈ (line A B : Line) := PonL
     rw [ABisSameLine] at PonLineAB
     have PonL := PonLineAB

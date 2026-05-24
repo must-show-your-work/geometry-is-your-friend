@@ -52,21 +52,21 @@ def jsonEscape (s : String) : String :=
     Keep these names stable — the corresponding CSS lives in
     `scripts/graph.html`. -/
 def tokenClass : Token.Kind → String
-  | .keyword ..        => "lean-kw"
-  | .const _ _ _ true  => "lean-def"      -- definition site
-  | .const ..          => "lean-const"    -- reference to a constant
-  | .anonCtor ..       => "lean-ctor"
-  | .var ..            => "lean-var"
-  | .str _             => "lean-str"
-  | .option ..         => "lean-opt"
-  | .docComment        => "lean-doc"
-  | .sort _            => "lean-sort"
-  | .levelVar _        => "lean-lvl"
-  | .levelOp _         => "lean-lvl"
-  | .levelConst _      => "lean-lvl"
-  | .moduleName _      => "lean-mod"
-  | .withType _        => "lean-typed"
-  | .unknown           => "lean-unk"
+  | .keyword ..          => "lean-kw"
+  | .const _ _ _ true _  => "lean-def"      -- definition site
+  | .const ..            => "lean-const"    -- reference to a constant
+  | .anonCtor ..         => "lean-ctor"
+  | .var ..              => "lean-var"
+  | .str _               => "lean-str"
+  | .option ..           => "lean-opt"
+  | .docComment          => "lean-doc"
+  | .sort _              => "lean-sort"
+  | .levelVar _          => "lean-lvl"
+  | .levelOp _           => "lean-lvl"
+  | .levelConst _        => "lean-lvl"
+  | .moduleName _        => "lean-mod"
+  | .withType _          => "lean-typed"
+  | .unknown             => "lean-unk"
 
 /-- Walk a `Highlighted` tree, emitting HTML. Tactic spans and
     info spans are flattened (we don't surface their goal/message

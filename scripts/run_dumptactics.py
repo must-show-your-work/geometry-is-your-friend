@@ -88,7 +88,7 @@ def run_one(mod: str, idx: int, total: int) -> int:
     cmd = (
         f"ulimit -v {ULIMIT_V_KB} && "
         f"nice -n 19 ionice -c 3 "
-        f"env LEAN_NUM_THREADS=1 lake exe dumptactics {mod}"
+        f"env LEAN_NUM_THREADS=1 lake env lean --run scripts/DumpTactics.lean {mod}"
     )
     print(f"[run_dumptactics] [{idx}/{total}] {mod}", flush=True)
     r = subprocess.run(cmd, shell=True, executable=SHELL, cwd=ROOT)

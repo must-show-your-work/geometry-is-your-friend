@@ -38,7 +38,7 @@ noncomputable instance collinearCoe {points : Finset Point} (h : Collinear point
 /-- Cast `Collinear` between propositionally-equal Finsets — Finsets are unordered,
     so two literals describing the same elements are equal even when they don't unify
     definitionally. Useful when stitching together facts produced under different
-    insertion orders (e.g. `ref lemma 1.0.40 (CAB : C - A - B)` yields
+    insertion orders (e.g. `(ref axiom B.1 (CAB : C - A - B)).collinear` yields
     `Collinear {C, A, B}` but a consumer wants `Collinear {A, B, C}`). -/
 lemma of_eq {s t : Finset Point} (c : Collinear s) (h : s = t) : Collinear t := h ▸ c
 

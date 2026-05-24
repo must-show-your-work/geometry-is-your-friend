@@ -793,6 +793,32 @@ body::after {
   border-radius: 2px;
   color: #586e75;
 }
+.node-obvious-uses .node-section-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+.ou-chip {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 0.1em 0.45em;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.82em;
+  background: rgba(133, 153, 0, 0.08);
+  border: 1px solid rgba(133, 153, 0, 0.3);
+  border-radius: 2px;
+  color: #586e75;
+  white-space: nowrap;
+}
+.ou-arrow { margin: 0 0.3em; color: #93a1a1; }
+.ou-count {
+  margin-left: 0.45em;
+  padding: 0 0.35em;
+  background: rgba(133, 153, 0, 0.15);
+  border-radius: 2px;
+  font-size: 0.85em;
+  color: #586e75;
+}
 .cb-preface {
   margin: 0;
   padding: 0.5em 0.8em;
@@ -1957,6 +1983,30 @@ function renderCommentarySection(declId) {
 }
 window.renderCommentarySection = renderCommentarySection;
 
+/* Per-decl `obvious`-cascade usage. Populated by
+ * `GIYF_DUMP_DEPS=1 lake build` → blueprint/obvious_uses.jsonl
+ * → ingest.py (OBVIOUS_USES edges) → export_graph.py (per-node array).
+ * Renders one chip per (stage, closer) pair with the firing count.
+ * Returns '' when the decl has no recorded uses (most non-atlas defs
+ * fall here). */
+function renderObviousUsesSection(d) {
+  const uses = d.obvious_uses || [];
+  if (!uses.length) return '';
+  const sorted = [...uses].sort((a, b) =>
+    (b.count - a.count) || a.stage.localeCompare(b.stage));
+  const chips = sorted.map(u =>
+    `<span class="ou-chip">${escapeHtml(u.stage)}` +
+    `<span class="ou-arrow">→</span>${escapeHtml(u.closer)}` +
+    `<span class="ou-count">${u.count}</span></span>`
+  ).join('');
+  return `
+    <div class="node-section node-obvious-uses">
+      <div class="node-section-label">obvious cascade</div>
+      <div class="node-section-body">${chips}</div>
+    </div>`;
+}
+window.renderObviousUsesSection = renderObviousUsesSection;
+
 // Render one marker's left-column content.
 function renderMarkerLeft(m) {
   if (m._kind === 'quoting') {
@@ -2167,6 +2217,7 @@ function renderNodeCard(d) {
           </div>
           ${commentarySection}
           ${renderCommentarySection(d.id)}
+          ${renderObviousUsesSection(d)}
           ${sourceSection}
         </div>
         ${metaFooter}
@@ -2190,6 +2241,7 @@ function renderNodeCard(d) {
           <div class="node-type${typeHtml ? '' : ' empty'}">${typeHtml}</div>
         </div>
         ${commentarySection}
+        ${renderObviousUsesSection(d)}
         ${sourceSection}
         ${bookNarrativeSection}
       </div>

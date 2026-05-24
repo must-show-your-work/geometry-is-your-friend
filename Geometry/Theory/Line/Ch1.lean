@@ -30,46 +30,6 @@ atlas lemma 1.0.18 "A ray A B is a subset of the line A B"
 
 
 atlas commentary := by
-  ref lemma 1.0.21
-  name "A ray contains its left-hand defining endpoint"
-  preface "A ray contains the points that define it"
-
-atlas lemma 1.0.21 "A ray contains its left-hand defining endpoint"
-  : A on ray A B := by obvious
-
-atlas commentary := by
-  ref lemma 1.0.22
-  name "A ray contains its right-hand defining endpoint"
-  preface "A ray contains the points that define it"
-
-atlas lemma 1.0.22 "A ray contains its right-hand defining endpoint"
-  : B on ray A B := by obvious
-
-atlas commentary := by
-  ref lemma 1.0.23
-  name "A line contains its left-hand defining endpoint"
-  preface "A line contains the points that define it"
-
-atlas lemma 1.0.23 "A line contains its left-hand defining endpoint"
-  : A on line A B := (ref lemma 1.0.18) (ref lemma 1.0.21)
-
-atlas commentary := by
-  ref lemma 1.0.24
-  name "A line contains its right-hand defining endpoint"
-  preface "A line contains the points that define it"
-
-atlas lemma 1.0.24 "A line contains its right-hand defining endpoint"
-  : B on line A B := (ref lemma 1.0.18) (ref lemma 1.0.22)
-
-atlas commentary := by
-  ref lemma 1.0.25
-  name "A line contains both of its defining endpoints"
-  preface "A line contains the points that define it"
-
-atlas lemma 1.0.25 "A line contains both of its defining endpoints"
-  : A on line A B ∧ B on line A B := ⟨ref lemma 1.0.23, ref lemma 1.0.24⟩
-
-atlas commentary := by
   ref lemma 1.0.26
   page 71
   name "Three pairwise-distinct concurrent lines meet at a unique point"
@@ -98,19 +58,6 @@ atlas lemma 1.0.26 "Three pairwise-distinct concurrent lines meet at a unique po
         rw [hPQisL, hPQisM]
     have hLneqM : L ≠ M := hDistinct.left
     contradiction
-
-
-atlas commentary := by
-  ref lemma 1.0.27
-  name "Two lines sharing a common point are not parallel"
-  preface "We need to be able to establish that two intersecting lines are never parallel"
-
-atlas lemma 1.0.27 "Two lines sharing a common point are not parallel"
-  {L M : Line} {P : Point} : (P on L) -> (P on M) -> (L ∦ M) := by
-      intros hPonM hPonL
-      unfold Parallel; push Not
-      intro hLMDistinct
-      use P
 
 
 atlas commentary := by

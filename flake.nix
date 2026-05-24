@@ -68,8 +68,17 @@
         pythonFlake = nixpkgs-python.packages.${system};
         pythonInterp = pythonFlake."3.13.1";
         pip = pkgs.python3Packages;
+        # Libraries that need to be on the linker's search path when
+        # `lake exe <name>` compiles a Lean program down to a native
+        # binary. Lean's codegen emits `-lc++ -lc++abi -lgmp -luv`
+        # flags; without these in `LIBRARY_PATH` (link time) and
+        # `LD_LIBRARY_PATH` (runtime), `clang` (set as `LEAN_CC`)
+        # fails with the now-classic "cannot find -lc++" cascade.
         ld_deps = [
           pkgs.stdenv.cc.cc.lib
+          pkgs.gmp
+          pkgs.libuv
+          pkgs.llvmPackages.libcxx
         ];
         deps = with pkgs; {
           ci = [];
@@ -174,6 +183,11 @@
               # not honour a `postShellHook` field, so the export has to
               # live here.
               export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath ld_deps}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+              # `LIBRARY_PATH` is the LINK-time counterpart — `clang -l<x>`
+              # consults this for finding `lib<x>.{so,a}`. Required for
+              # `lake exe` builds; the runtime-only `LD_LIBRARY_PATH`
+              # above doesn't help the linker.
+              export LIBRARY_PATH="${pkgs.lib.makeLibraryPath ld_deps}''${LIBRARY_PATH:+:$LIBRARY_PATH}"
             '';
           };
         };

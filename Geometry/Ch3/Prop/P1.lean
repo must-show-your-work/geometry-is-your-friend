@@ -40,8 +40,8 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
         use ray A B
         intro P PinABC
         by_exhaustion PinABC
-        · rw [PeqA]; exact ref lemma 1.0.21
-        · rw [PeqB]; exact ref lemma 1.0.22
+        · rw [PeqA]; obvious
+        · rw [PeqB]; obvious
         · rw [PeqC]; exact CinInt.left
       quoting ... "so exactly one of A - C - B, A - B - C, or C - A - B holds (Axiom B-3)." ...
       have ⟨ConAB, ConBA⟩ : C on ray A B ∧ C on ray B A := obvious
@@ -76,9 +76,9 @@ atlas proposition 3.1.ii "Two rays from common endpoints union to their line"
   · intro P PinLine
     -- Need to handle the equality cases first, we'll refer to these later in the proof
     by_cases AneP : A = P
-    · rw [<- AneP]; exact mem_union_left (ray B A) ref lemma 1.0.21
+    · rw [<- AneP]; exact mem_union_left (ray B A) (by obvious : A on ray A B)
     by_cases BneP : B = P
-    · rw [<- BneP]; exact mem_union_left (ray B A) ref lemma 1.0.22
+    · rw [<- BneP]; exact mem_union_left (ray B A) (by obvious : B on ray A B)
     -- the main proof
     rcases PinLine with eq | eq | tween | tween | tween
     -- the equality cases are handled separately above

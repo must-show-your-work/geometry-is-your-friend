@@ -9,10 +9,37 @@
 # killed by the kernel before it can hang the machine. Per-module
 # mtime cache means second runs only re-do touched files.
 graph:
-    lake build
-    lake exe dumpdecls
-    lake exe dumpimports
+    rm -f blueprint/obvious_uses.jsonl
+    # Force a clean rebuild with `GIYF_DUMP_DEPS=1` so every `obvious`
+    # invocation appends its `(module, line, stage, closer)` record to
+    # blueprint/obvious_uses.jsonl. Lake's `.olean` cache wouldn't
+    # re-run tactic elaboration without the clean. Env var rather than
+    # a Lean option because custom options can't be set via Lake's `-D`.
+    lake clean
+    GIYF_DUMP_DEPS=1 lake build
+    # Use `lean --run` rather than `lake exe` — the latter native-compiles
+    # via clang and on NixOS hits a missing `-lc++` / `-lgmp` / `-luv`
+    # cascade unless the dev shell exports `LIBRARY_PATH` correctly
+    # (flake.nix has the proper setup as of the recent linker fix, but
+    # `lean --run` sidesteps the compile entirely so it works regardless).
+    lake env lean --run scripts/DumpDecls.lean
+    lake env lean --run scripts/DumpImports.lean
     -python scripts/run_dumptactics.py
+    python scripts/ingest.py
+    python scripts/export_graph.py
+
+# Fast iteration on the obvious-uses pipeline only — skips
+# `run_dumptactics.py` (the slow per-module re-elaboration) so the
+# rebuild + re-ingest path runs in a couple of minutes instead of 20+.
+# Highlighted source in the viewer stays stale; everything else
+# (deletions, new tags, obvious_uses chips) is fresh. Use `just graph`
+# for a full refresh.
+dump-obvious:
+    rm -f blueprint/obvious_uses.jsonl
+    lake clean
+    GIYF_DUMP_DEPS=1 lake build
+    lake env lean --run scripts/DumpDecls.lean
+    lake env lean --run scripts/DumpImports.lean
     python scripts/ingest.py
     python scripts/export_graph.py
 

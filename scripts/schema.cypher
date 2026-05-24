@@ -42,3 +42,16 @@ CREATE REL TABLE IMPORTS(FROM Module TO Module);
 // Tactic occurrence inside a declaration's proof body.
 // `count` aggregates multiple uses; `line` is the first occurrence.
 CREATE REL TABLE USED_TACTIC(FROM Decl TO Tactic, line INT64, count INT64);
+
+// `obvious`-cascade stages — `simp_all`, `unfold Parallel`,
+// `unfold Intersects`, `unfold Guards`, `mem_def goal`, `mem_def at*`,
+// `Finset ext`. Populated from blueprint/obvious_uses.jsonl when the
+// project is built with `GIYF_DUMP_DEPS=1`.
+CREATE NODE TABLE ObviousStage(name STRING PRIMARY KEY);
+
+// Decl `d` closed an `obvious` invocation via `(stage, closer)`. `count`
+// aggregates multiple invocations within the same decl that fired the
+// same (stage, closer) pair. The closer (`done` / `tauto` / `assumption`
+// / `decide` / `aesop`) is the tactic that ultimately closed after the
+// stage's preamble ran.
+CREATE REL TABLE OBVIOUS_USES(FROM Decl TO ObviousStage, closer STRING, count INT64);

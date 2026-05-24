@@ -35,7 +35,7 @@ require «doc-gen4» from git
 require "leanprover-community" / "mathlib"
 
 -- mostly borrowed from mathlib
-abbrev opts : Array LeanOption := #[
+abbrev baseOpts : Array LeanOption := #[
   -- pretty-prints `fun a ↦ b`
   ⟨`pp.unicode.fun, true⟩,
   ⟨`relaxedAutoImplicit, true⟩,
@@ -55,6 +55,8 @@ abbrev opts : Array LeanOption := #[
   -- of these are real problems for us — disable.
   ⟨`weak.linter.style.header, false⟩
 ]
+
+abbrev opts : Array LeanOption := baseOpts
 
 
 -- Main package

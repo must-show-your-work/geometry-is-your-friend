@@ -50,9 +50,9 @@ atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
     obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := ref lemma 1.0.26 ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
     comment "This lemma was not suggested by the author, but is handy. The proof is not long and simply establishes the
     'Parallel' fact for each pair of lines. We need the unique point and the negative condition to build these"
-    have hABnotparBC : (AB ∦ BC) := ref lemma 1.0.27 hPonAB hPonBC
-    have hABnotparAC : (AB ∦ AC) := ref lemma 1.0.27 hPonAB hPonAC
-    have hBCnotparAC : (BC ∦ AC) := ref lemma 1.0.27 hPonBC hPonAC
+    have hABnotparBC : (AB ∦ BC) := by obvious
+    have hABnotparAC : (AB ∦ AC) := by obvious
+    have hBCnotparAC : (BC ∦ AC) := by obvious
     idea "If P is on AB and BC, then P must be the intersection of those two lines, we already know B is on
     both AB and BC, and by P1, we know the intersection is unique, so P = B, but that means B is on AC, which
     which is false."

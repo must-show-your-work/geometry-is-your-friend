@@ -21,7 +21,7 @@ one another"
 atlas lemma 1.0.36 "Betweenness contradiction: A-B-C cannot coexist with B-A-C"
   : A - B - C ∧ B - A - C -> False := by
   intro ⟨ABC, _⟩
-  obtain ⟨distinctABC, colABC⟩ := ref axiom ["B.1.a"] ABC
+  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 ABC
   rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
   repeat contradiction
 
@@ -35,7 +35,7 @@ one another"
 atlas lemma 1.0.37 "Betweenness contradiction: A-B-C cannot coexist with A-C-B"
   : A - B - C ∧ A - C - B -> False := by
   intro ⟨ABC, _⟩
-  obtain ⟨distinctABC, colABC⟩ := ref axiom ["B.1.a"] ABC
+  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 ABC
   rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
   repeat contradiction
 
@@ -47,37 +47,13 @@ atlas commentary := by
 
 atlas lemma 1.0.38 "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
   : A - B - C ∧ C - A - B -> False := by
-  intro ⟨ABC, _⟩
-  obtain ⟨distinctABC, colABC⟩ := ref axiom ["B.1.a"] ABC
-  rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
-  rw [ref axiom ["B.1.b"]] at nBAC;
-  repeat contradiction
+  intro ⟨ABC, CAB⟩
+  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 ABC
+  rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨_, nBAC, _⟩ | ⟨nABC, _, _⟩ | ⟨nABC, _, _⟩
+  · exact nBAC CAB.symm
+  · exact nABC ABC
+  · exact nABC ABC
 
-
-atlas commentary := by
-  ref lemma 1.0.39
-  name "Betweenness A-B-C implies the three points are distinct"
-  preface "betweeness implies distinctness"
-  notes "TODO: use the `distinct` condition here"
-
-atlas lemma 1.0.39 "Betweenness A-B-C implies the three points are distinct"
-  : A - B - C -> distinct A B C := by
-  intro ABC
-  have ⟨h,  _⟩ := (ref axiom ["B.1.a"] ABC)
-  exact h
-
-
-atlas commentary := by
-  ref lemma 1.0.40
-  name "Betweenness A-B-C implies the three points are collinear"
-  preface "betweeness implies collinearity"
-
-atlas lemma 1.0.40 "Betweenness A-B-C implies the three points are collinear"
-  : A - B - C -> collinear A B C := by
-  intro ABC
-  exact (ref axiom ["B.1.a"] ABC).right
-
-  
 end Betweenness
 
 end Geometry.Theory

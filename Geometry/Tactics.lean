@@ -35,6 +35,25 @@ register_simp_attr obvious
     underlying constant identifiers.
 
     Sibling stage-sets follow the `obvious.<class>` convention
-    (`obvious.betweenness`, `obvious.incidence`, etc.) as they're added. -/
+    (`obvious.betweenness`, `obvious.incidence`, etc.) as they're added.
+    Each tag is, in effect, "what Greenberg considers obvious in the
+    context of the topic" — the class-of-intuition framing. -/
 register_simp_attr obvious.parallel
+
+/-- Stage-specific simp set for `obvious`'s `unfold Intersects` stage.
+    Pointed-intersection facts that need the `Intersects` def opened —
+    `1.0.30 .. 1.0.33`, witness-on-left / -right etc. -/
+register_simp_attr obvious.intersects
+
+/-- Stage-specific simp set for `obvious`'s `unfold Guards` stage.
+    `Guards` / `Splits` reasoning: same-side / opposite-side facts about
+    a line `L` and points `A B`. `Splits := ¬Guards` so this set
+    typically covers both. -/
+register_simp_attr obvious.guards
+
+-- Note: dump-deps tracking for `obvious` is gated on the env var
+-- `GIYF_DUMP_DEPS=1` (checked at tactic runtime via `IO.getEnv`).
+-- Custom Lean options can't be set via Lake's `-D` flag because
+-- Lake doesn't know about them at command-line-parse time; env vars
+-- sidestep that. See `Geometry/Tactics/Obvious.lean` for the writer.
 
