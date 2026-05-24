@@ -503,3 +503,76 @@ put in a recent commit removing the anti-LLM canary.
 
 "I do not care."
 
+
+# 24-MAY-2026
+
+## 1219
+
+I've been doing a series of largely mechanical refactorings and restructurings. The main thrust of which is a typed
+heirarchy for line-parts (which is not _exactly_ what I wanted, but is a significant improvement over the prior state.
+As well as trying to capture what Greenberg considers 'obvious' in a tactic (creatively named `obvious` as well), which
+I'm hoping will leverage `atlas` at some point to do a phased 'intuit like Greenberg' automated theorem proof attempt.
+The aim isn't necessarily to replace every place Greenberg calls a 'clearly X holds' or 'obviously Y is true' with this,
+but most of the cases where he does, the result is really trivial and should be inferred without argument. _Sometimes_
+(as in Pasch's 'A and B are clearly not on L') the argument isn't necessarily so obvious, though, and these are
+interesting places where Greenberg's intuition might've been making 'leaps of faith' which should have been justified
+more thoroughly. In the end I hope to capture all the little intuitive, subconscious arguments that Greenberg used and
+develop something like a 'If Greenberg were arguing here, he would consider this subtextually true / true without
+argument' as a sort of research artifact.
+
+The process of getting there has been an interesting application of LLMs in this space.
+
+In particular, the process has been one of "Let's build up a structure that ties into the existing mathlib machinery to
+represent lineparts." This involved fighting with Coe and the elaborator and some other syntax fighting. I estimate it
+would've taken a few weeks of solid effort to get done, Claude finished in a day. That's an honest-to-goodness savings
+on work I really didn't want to do. Most of it was weedy, mechanical shit of wiring up and rewriting after each
+iteration to get the corpus compiling. I'm barely 20% through the book and have about 4KLOC of lean, most of which are
+lemmas-in-anger, so being able to mechanically replace a component like that was a very legitimate value add.
+
+I don't think, however, it would've come up with the structure on it's own. It was struggling to understand _why_ I
+cared about making these parts flow together; and frequently suggested some flavor of "We're at the limits of what Lean
+can do." until I reminded it of some other extension we could try. We did eventually hit the limit (there is an
+irreducible type ascription necessary in some few cases of intra-type equality comparisons), but it was only after
+blowing past a few others that the machine thought existed.
+
+Once the apparatus was built and installed, the really interesting step happened. The `obvious` tactic was able to close
+out entire lemmas that were proved before, resulting in a significant reduction in the total surface area of nontrivial
+theorems. If a proof is just `:= obvious`, then every `ref` to that theorem can be replaced by `obvious` to drop one
+layer of indirection. So I instructed the machine to do the following:
+
+1. Go to each lemma, replace it by `obvious` and see if it closes, if it does, mark it for inlining.
+2. Go to each marked lemma and inline it, replacing all of it's occurences with a `obvious`. If the inline fails, raise a flag
+
+No flags were raised, and a bunch of lemmas (about a dozen) dropped away. Crucially, though, some of them _didn't_ and
+in fact, _couldn't_, these were the core underlying 'obvious' facts that Greenberg takes without proof, but are
+necessary in formalization. I landed on something very neat, by 'shaking the tree' to try to refactor proofs to use more
+of Greenbergs intuition. I got proofs back that were closer to the book, but also got proofs that were irreducible and
+unstated by the author, meaning they represent some fundamental component of his intuition. They were required by
+`obvious` to close the other goals.
+
+It also led me down this other interesting path adjacent to but distinct from other automatic theorem prover tactics.
+Consider the humble `tauto`, which has this problem:
+
+> Given an arbitrary type with universal and existential quantifiers, a proofstate full of hypotheses of arbitrary
+> shape (also with various quantification) and a corpus of theorems about as wide as `@[simp]`'ll get you, resolve the
+> goal.
+
+There is no context on what kinds of theorems there are, no insight into the relevant corpus of math, no ability to
+filter or prune anything. It's a really hard problem, and people have come up with extremely clever ways to optimize it,
+but math isn't a 'prove any theorem' game, it's a 'prove _this_ theorem' game. When proving, one has the _context_ to
+rely on. I know I'm proving theorems in synthetic geometry here, I don't need to consider calculus or number theory
+(yet). I can limit my scope much more aggressively if I look at the proof goal and see it involves intersections, I can
+make more complicated, geometry-local arguments that wouldn't necessarily translate wholesale to other fields. In a
+sense, the progress in the unconstrained world is stymied _by_ the lack of constraint. It is much harder to do math if
+you don't specialize.
+
+So `obvious` is sort of a start towards a specialized "geometry" tactic, but it's even more specific than that, it's
+_Greenberg_ that I'm modelling here. It's a _specific_ intuition (as captured by the book and my formalization of it,
+which means it is not without some bias), and I think that's pretty cool. I can imagine building up a little library for
+designing these bespoke tactics per book. Then when the time comes to prove something new I can throw a corpus and it's
+corresponding intuition at it for the low cost of translating it to the language that tactic understands.
+
+I'm sure the idea isn't novel, but it is fun, and blends nicely with the `atlas` thing I've worked on. I should be able
+to incorporate some ranking/searching directly in the graph, which means I can have the structure inform how best to use
+the structure (a theorem with a high pagerank after a specific filter is applied might be a good way to search corpii
+efficiently).
