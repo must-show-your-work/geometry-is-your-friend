@@ -14,6 +14,12 @@ import Mathlib.Tactic.Contrapose
 import Mathlib.Data.Set.Pairwise.Basic
 import Mathlib.Data.List.Basic
 
+-- Atlas-refs panel widget: auto-wraps every tactic-bodied `atlas <kind>`
+-- proof with `with_atlas_refs`, surfacing the citation list in the
+-- InfoView. Imported here (not in a leaf module) so the macro_rules
+-- override applies project-wide before any atlas command elaborates.
+import Geometry.AtlasRefs
+
 /-- Simp set for `obvious` — see `Geometry/Theory/Axioms.lean` for the
     macro that uses it. Tag chapter-by-chapter as you encounter
     canonical normalizations that Greenberg treats as background.
