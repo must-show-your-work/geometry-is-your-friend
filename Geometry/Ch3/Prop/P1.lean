@@ -60,6 +60,9 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
 atlas commentary := by
   ref proposition 3.1.ii
   page 109
+  aliases [
+    -- exercise 3.0.2.a
+  ]
   name "Two rays from common endpoints union to their line"
   preface "... (ii) Ray A B ∪ Ray B A = LineThrough A B"
   notes "similar to the above, an implied A ≠ B condition was added"

@@ -34,7 +34,9 @@ open Atlas
 
 
 atlas commentary := by
-  ref exercise ["3.B.3"]
+  -- TODO: We need support for theorem complexes. A 'virtual' theorem here and it's descriptions, then some
+  -- way of saying "this is a complex of all the subparts.
+  ref exercise ["3.0.3"]
   page 146
   preface "Given A-B-C
     (a) Use Proposition 3.3 to prove that AB ⊆ AC. Interchanging A and C, deduce CD ⊂ CA; which axiom justifies this
@@ -44,17 +46,54 @@ interchange?
     (c) Finish the proof of proposition 3.5. (Hint: If P ≠ B and P ∈ AB ∩ BC, use another line through P to get a
     contradiction.)
   "
-  notes "Author has triggered a pet peeve, I would have written (b) and (c) as '(x) Statement (Hint).' and not '(x) Statement. (Hint.)'"
+  notes "Author has triggered a pet peeve, I would have written (b) and (c) as '(x) Statement (Hint).' and not '(x) Statement. (Hint.)'
 
-atlas exercise ["3.B.3.a"] "If A-B-C, then AB ⊆ AC"
+  Additionally, I think the second part of (a) is wrong. Introducing a new point (`D`), we can place that anywhere. I
+think the author clearly _meant_ B here, and that is what I've proved. In fact, place D such that D-A-B, then clearly
+¬(CD ⊂ CA), since A-B-C. However, BC ⊂ AC makes perfect sense. The use of proper vs improper subset here is also odd,
+AB ⊂ AC clearly; but the author uses `⊆`. I've maintained fidelity despite the oddity.
+  
+  Finally, I've broken the first statement into individual sub exercises. Atlas gangs all these together as a theorem
+complex, so it is easiest to just break down by conclusion.
+  "
 
+atlas exercise ["3.0.3.a.i"] "If A-B-C, then AB ⊆ AC"
+  {A B C : Point} (ABC : A - B - C := by assumption) :
+  ((segment A B : Line) ⊆ (segment A C)) := by 
+  sorry
 
+-- FIXME: commented because ssubset isn't supported
+/- atlas exercise ["3.0.3.a.ii"] "[If A-B-C, then] CB ⊂ CA; which axiom justifies this interchange?" -/
+/-   {A B C : Point} (ABC : A - B - C := by assumption) : -/
+/-   ((segment C B : Line) ⊂ (segment C A)) := by -/ 
+/-   sorry -/
 
+atlas exercise ["3.0.3.b"] "[If A-B-C,] then AC ⊂ AB ∪ BC."
+  {A B C : Point} (ABC : A - B - C := by assumption) :
+  (segment A B : Line) ⊆ (segment A C) := by
+  sorry
+
+atlas commentary := by
+  ref exercise ["3.0.2"]
+  page 146
+  preface "
+    (a) Finish the proof of proposiiton 3.1 by showing that ray A B ∪ ray B A = line A B
+    (b) Finish the proof of proposition 3.3 by showing that A-B-D
+    (c) Prove the converse of Proposition 3.3 by applying Axiom B-1
+    (d) Prove the corollary to Proposition 3.3
+  "
+  notes "Most of these are covered elsewhere, this just gangs the results to a complex"
+
+atlas exercise ["3.0.2.c"] "Given B-C-D and A-B-D, then A-B-C and A-C-D"
+  (BCD : B - C - D := by assumption) (ABD : A - B - D := by assumption) :
+  A-B-C ∧ A-C-D := by
+  sorry
+  
 atlas commentary := by
   ref proposition 3.5
   page 114
   aliases [
-    -- (exercise ["3.B.3.c"])
+    -- exercise ["3.0.3.c"]
   ]
   name "Given A-B-C. Then AC = AB ∪ BC and B is the only point common to segments AB and BC."
   preface "Here are some more results on betweenness and separation that you will be asked to prove in the exercises"
@@ -69,7 +108,9 @@ atlas proposition 3.5 "If A-B-C then AC = AB ∪ BC..."
   apply Line.eq_of_subset
   · intro P PonAC
     rcases PonAC with APC | PeqA | PeqC
-    · idea "Prop 3.3?"
+    · idea "converse of Prop 3.3? start with APC to get APB or BPC"
+      comment "Author does not, as far as I can see, get into a generalization of the ternary 'betweenness' syntax to an
+n-point 'arrangement' syntax. A tragedy."
       sorry
     all_goals obvious
   · intro P PonABorBC
@@ -78,7 +119,26 @@ atlas proposition 3.5 "If A-B-C then AC = AB ∪ BC..."
       obvious
     · obvious
     · obvious
-    · have APC : A - P - C := by
+    · -- ABC = ACD, so BPC = CXD, no 3.3 variant for that.
+      -- A - B   -   C
+      --     B - P - C
+      -- A   B   P   C
+      -- *   *       *
+      --     *   *   *
+      -- A   B   C   D
+      --
+      -- need      1101 and 0111 to conclude 1011
+      -- 3.3.i  is 1110 and 1011 to conclude 0111
+      -- 3.3.ii is 1110 and 1011 to conclude 1101
+      -- 3.3.ci is 1110 and 0111 to conclude 1011
+      --
+      -- I just need arrangements, this is untenable. I'm going to need to prove 800 variants of prop 3.3 to do all this
+      -- bookkeeping.
+      --
+      -- this is as simple as `A - B - C - D - ...` for any finite list of points, the arrangement is in order, and we can
+      -- naturally conclude any ordered triple is a true claim about the betweenness of the points.
+      --
+      have APC : A - P - C := by
         sorry
       obvious
     · obvious

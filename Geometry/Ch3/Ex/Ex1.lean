@@ -25,6 +25,9 @@ open Geometry.Ch3.Prop
 open Geometry.Ch3.Ex
 open Atlas
 
+-- TODO: Renumber, there are 4 sections of this chapter, this is ex 1 from 'Exercises on Betweenness'
+-- the numbering should probably be `$ch.$section.$ex#.$subex`, so this'd be 3.0.1.b
+-- will also need to FIXME: Natively support up to 6 dots deep; just for safety
 atlas commentary := by
   ref exercise 3.1.a
   page 146
