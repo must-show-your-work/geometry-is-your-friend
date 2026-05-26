@@ -8,6 +8,7 @@ scripts/vendor
 *.paux
 blueprint/lean_decls
 blueprint/graph.kuzu/
+Geometry/Demos/
 .venv/
 .claude/
 web/
