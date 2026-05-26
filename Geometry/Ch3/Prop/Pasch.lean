@@ -34,20 +34,25 @@ open Atlas
 
 
 atlas commentary := by
-  ref proposition 3.7
+  ref theorem 3.0
   page 114
   aliases [
-    Geometry.Theory.pasch
+    Geometry.Theory.pasch,
+    «Pasch's Postulate»,
+    «Pasch's Proposition»
   ]
-  name "Pasch's Postulate"
+  name "Pasch's Theorem"
   preface "If A,B,C are distinct noncollinear points and L is any line intersecting AB in a point between A and B, then L
 also intersects AC or BC (see figure 3.10). If C does not lie on L, then L does not intersect both AC and BC.
   
   Intuititively, this theorem says that if a line \"goes into\" a triangle through one side, it must \"come out\" through
 another side."
+  notes "The author doesn't give Pasch's a number, but also calls it a 'theorem', eschewing the possible alliteration.
+  While this dodge is sad, it is the case, and theorems are fortunately numbered separately from propositions, solving our
+  possible off-by-one situation. Perhaps our disappointment was worth it after all."
   figure := by
     file "./assets/pasch_fig1.svg"
-    title "Pasch's Postulate"
+    title "Pasch's Theorem"
     index 1
     caption "A line L crosses segment AB at X and exits through BC."
   figure := by
@@ -57,7 +62,7 @@ another side."
     caption "L crosses AB at X and exits through AC at Y."
 
 
-atlas proposition 3.7 "Pasch's Postulate"
+atlas theorem 3.0 "Pasch's Theorem"
   {A B C : Point} {L : Line} {distinctABC : distinct A B C} {AXB : A - X - B}
   (triABC : ¬(collinear A B C)) (LintSegAB : L intersects segment A B at X) :
   ((L intersects segment A C) ∨ (L intersects segment B C)) ∧
