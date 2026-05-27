@@ -68,44 +68,8 @@ atlas axiom B.2 "Two distinct points admit a left, middle, and right witness on 
 attribute [simp] «Two distinct points admit a left, middle, and right witness on their line»
 
 
-atlas commentary := by
-  ref lemma 1.0.5
-  name "Density axiom witness: a point left of two distinct points"
-  preface "Construct a point 'to the left' of points BD on the induced line B D"
-
-atlas lemma 1.0.5 "Density axiom witness: a point left of two distinct points"
-  : ∀ B D : Point, B ≠ D -> ∃ A : Point, collinear A B D ∧ distinct A B D ∧ (A - B - D) := by
-      intro B D BneD
-      have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := ref axiom B.2 B D BneD
-      use A
-      obvious
-
-
-atlas commentary := by
-  ref lemma 1.0.6
-  name "Density axiom witness: a point between two distinct points"
-  preface "Construct a point 'in between' points BD on the induced line B D"
-
-atlas lemma 1.0.6 "Density axiom witness: a point between two distinct points"
-  : ∀ B D : Point, B ≠ D -> ∃ C : Point, collinear B C D ∧ distinct B C D ∧ (B - C - D) := by
-      intro B D BneD
-      have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := ref axiom B.2 B D BneD
-      use C
-      obvious
-
-
-atlas commentary := by
-  ref lemma 1.0.7
-  name "Density axiom witness: a point right of two distinct points"
-  preface "Construct a point 'to the right' points BD on the induced line B D"
-
-atlas lemma 1.0.7 "Density axiom witness: a point right of two distinct points"
-  : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ distinct B D E ∧ (B - D - E) := by
-      intro B D BneD
-      have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := ref axiom B.2 B D BneD
-      use E
-      obvious
-
+-- Density witness lemmas 1.0.5 / 1.0.6 / 1.0.7 (extracted from B.2)
+-- moved to `Geometry/Theory/Interpendices/A.lean` (axiom-derivable).
 
 atlas commentary := by
   ref axiom B.3

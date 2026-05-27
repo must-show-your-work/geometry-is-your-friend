@@ -1,6 +1,6 @@
 /- Extensions and useful construct -/
 
-import Geometry.Theory.Set
+import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Distinct
 import Geometry.Theory.Forgetting
 import Geometry.Theory.Extending

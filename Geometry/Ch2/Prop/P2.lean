@@ -2,7 +2,7 @@ import Geometry.Tactics
 
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
-import Geometry.Theory.Line.Ch1
+import Geometry.Theory.Interpendices.A
 import Atlas
 
 import Geometry.Ch2.Prop.P1

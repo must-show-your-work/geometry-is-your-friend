@@ -7,8 +7,7 @@ import Geometry.Tactics
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Ch2
-import Geometry.Theory.Line.Ch2
-import Geometry.Theory.Betweenness.Ch2
+import Geometry.Theory.Interpendices.B
 import Atlas
 
 import Geometry.Ch2.Prop

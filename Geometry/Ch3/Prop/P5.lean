@@ -13,14 +13,10 @@ import Geometry.Ch3.Prop.P3
 import Geometry.Ch3.Prop.P4
 import Geometry.Ch3.Ex.Ex1
 import Geometry.Theory.Distinct
-import Geometry.Theory.Collinear.Ch1
-import Geometry.Theory.Collinear.Ch2
-import Geometry.Theory.Betweenness.Ch1
-import Geometry.Theory.Betweenness.Ch2
-import Geometry.Theory.Line.Ch1
-import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Interpendices.A
+import Geometry.Theory.Interpendices.B
+import Geometry.Theory.Interpendices.C
 import Geometry.Theory.Forgetting
-import Geometry.Theory.Intersection.Ch3
 import Atlas
 
 namespace Geometry.Ch3.Prop
@@ -71,7 +67,12 @@ atlas exercise ["3.0.3.a.i"] "If A-B-C, then AB ⊆ AC"
 atlas exercise ["3.0.3.b"] "[If A-B-C,] then AC ⊂ AB ∪ BC."
   {A B C : Point} (ABC : A - B - C := by assumption) :
   (segment A B : Line) ⊆ (segment A C) := by
-  sorry
+  intro P PonAB
+  rcases PonAB with APB | rfl | rfl
+  · have APBC : A - P - B - C := by organize ABC APB
+    have APC : A - P - C := APBC
+    obvious
+  all_goals obvious
 
 atlas commentary := by
   ref exercise ["3.0.2"]
@@ -86,8 +87,8 @@ atlas commentary := by
 
 atlas exercise ["3.0.2.c"] "Given B-C-D and A-B-D, then A-B-C and A-C-D"
   (BCD : B - C - D := by assumption) (ABD : A - B - D := by assumption) :
-  A-B-C ∧ A-C-D := by
-  sorry
+  A-B-C ∧ A-C-D := by arranging ABD BCD
+  
   
 atlas commentary := by
   ref proposition 3.5
@@ -108,46 +109,25 @@ atlas proposition 3.5 "If A-B-C then AC = AB ∪ BC..."
   apply Line.eq_of_subset
   · intro P PonAC
     rcases PonAC with APC | PeqA | PeqC
-    · idea "converse of Prop 3.3? start with APC to get APB or BPC"
-      comment "Author does not, as far as I can see, get into a generalization of the ternary 'betweenness' syntax to an
-n-point 'arrangement' syntax. A tragedy."
-      sorry
+    · arranging ABC APC
     all_goals obvious
   · intro P PonABorBC
-    rcases PonABorBC with (APB | _ | _) | (BPC | _ | _)
-    · have APC : A - P - C := (via proposition 3.3.ii ⟨APB, ABC⟩)
-      obvious
-    · obvious
-    · obvious
-    · -- ABC = ACD, so BPC = CXD, no 3.3 variant for that.
-      -- A - B   -   C
-      --     B - P - C
-      -- A   B   P   C
-      -- *   *       *
-      --     *   *   *
-      -- A   B   C   D
-      --
-      -- need      1101 and 0111 to conclude 1011
-      -- 3.3.i  is 1110 and 1011 to conclude 0111
-      -- 3.3.ii is 1110 and 1011 to conclude 1101
-      -- 3.3.ci is 1110 and 0111 to conclude 1011
-      --
-      -- I just need arrangements, this is untenable. I'm going to need to prove 800 variants of prop 3.3 to do all this
-      -- bookkeeping.
-      --
-      -- this is as simple as `A - B - C - D - ...` for any finite list of points, the arrangement is in order, and we can
-      -- naturally conclude any ordered triple is a true claim about the betweenness of the points.
-      --
-      have APC : A - P - C := by
-        sorry
-      obvious
-    · obvious
-    · obvious
+    arranging ABC PonABorBC into (APB | _ | _) | (BPC | _ | _)
 
 atlas corollary 3.5 "[If A-B-C then ...], and AB intersects BC at B"
   {A B C : Point} (ABC : A - B - C := by assumption) :
   (segment A B intersects segment B C at B) := by
-  sorry
+  ext P; constructor
+  · intro ⟨PinAB, PinBC⟩
+    rcases PinAB with APB | PeqA | PeqB
+    · have APBC : A - P - B - C := by organize ABC APB
+      have PoffBC : P off segment B C := via lemma 2.0.30 APBC
+      contradiction
+    · rw [PeqA] at ABC
+      have PoffBC : P off segment B C := via lemma 2.0.30 ABC
+      contradiction
+    · obvious
+  · intro PisB; obvious
 
 
 end Geometry.Ch3.Prop
