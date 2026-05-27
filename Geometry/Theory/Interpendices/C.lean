@@ -20,7 +20,7 @@ atlas commentary := by
   preface "Given A - B - C and A - C - D, the four ordered triples of [A, B, C, D] are: A-B-C and A-C-D (inputs); B-C-D (Prop 3.3.i); A-B-D (Prop 3.3.ii)."
 
 atlas lemma 3.0.3 "Four-point arrangement from two overlapping outer-pair triples"
-  {A B C D : Point} (h₁ : A - B - C) (h₂ : A - C - D) : Arrangement [A, B, C, D] := by
+  {A B C D : Point} (h₁ : A - B - C) (h₂ : A - C - D) : A - B - C - D := by
   have h₃ : B - C - D := via proposition 3.3.i ⟨h₁, h₂⟩
   have h₄ : A - B - D := via proposition 3.3.ii ⟨h₁, h₂⟩
   refine ⟨by simp, ?_⟩

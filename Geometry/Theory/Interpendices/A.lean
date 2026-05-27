@@ -443,6 +443,10 @@ atlas lemma 1.0.39 "Three-point arrangement from a single between"
   obtain ⟨rfl, rfl, rfl⟩ : i = 0 ∧ j = 1 ∧ k = 2 := by omega
   exact h
 
+macro_rules (kind := dashChain)
+  | `($a:term - $b:term - $c:term - $d:term $[- $rest:term]*) =>
+    `(Arrangement [$a, $b, $c, $d, $rest,*])
+
 end Geometry.Theory
 
 namespace Geometry.Theory.Arrangement
