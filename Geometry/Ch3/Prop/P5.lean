@@ -13,14 +13,9 @@ import Geometry.Ch3.Prop.P3
 import Geometry.Ch3.Prop.P4
 import Geometry.Ch3.Ex.Ex1
 import Geometry.Theory.Distinct
-import Geometry.Theory.Collinear.Ch1
-import Geometry.Theory.Collinear.Ch2
-import Geometry.Theory.Betweenness.Ch1
-import Geometry.Theory.Betweenness.Ch2
-import Geometry.Theory.Line.Ch1
-import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Interpendices.A
+import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
-import Geometry.Theory.Intersection.Ch3
 import Atlas
 
 namespace Geometry.Ch3.Prop

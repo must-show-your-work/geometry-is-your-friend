@@ -10,18 +10,6 @@ import Geometry.Tactics
 import Geometry.Ch2.Prop
 import Atlas
 
-/-!
-# Interpendix B — after Prop 2.1
-
-Provable after Greenberg's Prop 2.1 ("Distinct non-parallel lines
-share a unique point"). All theorems here transitively use either
-Prop 2.1 directly or lemma 2.0.1 (which depends on Prop 2.1).
-
-Migrated wholesale from `Theory/{Line/Ch2, Intersection/Ch2,
-Intersection/Ch3, Betweenness/Ch2}.lean`. Topics multiplex via
-nested namespaces.
--/
-
 namespace Geometry.Theory
 
 open Set
@@ -30,8 +18,6 @@ open Geometry.Ch2.Prop
 open Atlas
 
 set_option maxRecDepth 5000
-
-/-! ## Line — Ch2 line/segment/ray/extension lemmas (2.0.1–14) -/
 
 namespace Line
 
@@ -262,8 +248,6 @@ attribute [obvious] «A segment A B is never equal to any line L»
                     «A ray A B is never equal to any line L»
 
 end Line
-
-/-! ## Intersection — Ch2/Ch3 intersection lemmas (2.0.15–29, 3.0.1–2, 3.7.2–3) -/
 
 namespace Intersection
 
@@ -622,8 +606,6 @@ atlas lemma 2.0.29 "A line crossing L at Z (not between A and B on L) guards A a
   · exact guard
   · exact absurd (ref lemma 2.0.27 AneZ BneZ LintMatZ onL split) notAZB
 
-/-! ## Intersection — Ch3 (lemmas 3.0.1, 3.0.2, 3.7.2, 3.7.3) -/
-
 atlas commentary := by
   ref lemma 3.0.1
   name "Bare intersection plus a shared point implies pointed intersection or coincidence"
@@ -697,8 +679,6 @@ atlas corollary 3.7.3 "If L guards A and B, then L does not intersect segment A 
   · exact (hAvoids X XonSeg) XonL
 
 end Intersection
-
-/-! ## Betweenness — Guards / Splits dot-notation wrappers -/
 
 /-- Dot-notation wrappers -/
 @[symm] def Guards.symm {A B : Point} {L : Line} (h : Guards A B L) : Guards B A L := by obvious

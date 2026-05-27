@@ -8,12 +8,8 @@ import Geometry.Tactics
 import Geometry.Ch2.Prop
 import Geometry.Ch3.Prop.P1
 import Geometry.Ch3.Prop.B4iii
-import Geometry.Theory.Betweenness.Ch1
-import Geometry.Theory.Betweenness.Ch2
-import Geometry.Theory.Line.Ch1
-import Geometry.Theory.Line.Ch2
-import Geometry.Theory.Collinear.Ch1
-import Geometry.Theory.Collinear.Ch2
+import Geometry.Theory.Interpendices.A
+import Geometry.Theory.Interpendices.B
 import Atlas
 
 namespace Geometry.Ch3.Ex

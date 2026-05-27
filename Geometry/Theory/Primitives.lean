@@ -128,6 +128,13 @@ axiom Between : Point -> Point -> Point -> Prop
 -- to type `\ast` every time.
 notation:65 A:66 " - " B:66 " - " C:65 => Between A B C
 
+syntax:65 (name := arrangementChain)
+  term:66 " - " term:66 " - " term:66 " - " term:66 (" - " term:66)* : term
+
+macro_rules
+  | `($a:term - $b:term - $c:term - $d:term $[- $rest:term]*) =>
+    `(Geometry.Theory.Arrangement [$a, $b, $c, $d, $rest,*])
+
 /-! ## Examples -/
 
 section Examples

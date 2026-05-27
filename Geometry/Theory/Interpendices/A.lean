@@ -9,18 +9,7 @@ import Atlas
 
 /-!
 # Interpendix A — axiom-derivable theorems
-
-The earliest interpendix. Every theorem here is provable from the
-incidence and betweenness axioms (I.1–I.3, B.1–B.4) alone, with no
-book-content prerequisites.
-
-Migrated wholesale from `Theory/{Set,Point/Ch1,Collinear/Ch1,
-Line/Ch1,Intersection/Ch1,Betweenness/Ch1}.lean`; density lemmas
-(1.0.5–7) also lifted out of `Theory/Axioms/Betweenness.lean`. Topics
-multiplex via nested namespaces.
 -/
-
-/-! ## Set helpers (`namespace Set`) -/
 
 namespace Set
 
@@ -66,8 +55,6 @@ open Set
 open Geometry.Theory
 open Atlas
 
-/-! ## Density witnesses from B.2 (lemmas 1.0.5–7) -/
-
 atlas commentary := by
   ref lemma 1.0.5
   name "Density axiom witness: a point left of two distinct points"
@@ -106,8 +93,6 @@ atlas lemma 1.0.7 "Density axiom witness: a point right of two distinct points"
       use E
       obvious
 
-/-! ## Point — existence of distinct points (lemma 1.0.11) -/
-
 namespace Point
 
 atlas commentary := by
@@ -129,8 +114,6 @@ atlas lemma 1.0.11 "For every Point there exists at least one distinct Point"
     use A
 
 end Point
-
-/-! ## Collinear — Finset-based collinearity helpers + Ch1 lemmas -/
 
 namespace Collinear
 
@@ -200,8 +183,6 @@ atlas lemma 1.0.17 "Collinearity ignores interleaved duplicate point (B A B ↔ 
 attribute [simp] «Collinearity ignores interleaved duplicate point (B A B ↔ A B)»
 
 end Collinear
-
-/-! ## Line — Ch1 line lemmas (1.0.18, 1.0.26, 1.0.28, 1.0.29) -/
 
 namespace Line
 
@@ -302,8 +283,6 @@ atlas lemma 1.0.29 "Two lines are distinct iff some point lies on exactly one"
 
 end Line
 
-/-! ## Intersection — Ch1 intersection lemmas (1.0.30–35) -/
-
 namespace Intersection
 
 atlas commentary := by
@@ -394,8 +373,6 @@ atlas lemma 1.0.35 "On distinct lines crossing at X every other point on L is of
 
 end Intersection
 
-/-! ## Betweenness — contradictions from B.3 trichotomy (lemmas 1.0.36–38) -/
-
 namespace Betweenness
 
 atlas commentary := by
@@ -442,4 +419,92 @@ atlas lemma 1.0.38 "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
 
 end Betweenness
 
+structure Arrangement (pts : List Point) : Prop where
+  three_plus : pts.length ≥ 3
+  ordered_triple : ∀ (i j k : Fin pts.length),
+    i.val < j.val → j.val < k.val →
+    Between (pts.get i) (pts.get j) (pts.get k)
+
+atlas commentary := by
+  ref lemma 1.0.39
+  name "Three-point arrangement from a single between"
+  preface "A single A-B-C betweenness packages directly as an Arrangement [A, B, C]."
+
+atlas lemma 1.0.39 "Three-point arrangement from a single between"
+  {A B C : Point} (h : A - B - C) : Arrangement [A, B, C] := by
+  refine ⟨by simp, ?_⟩
+  intro i j k hij hjk
+  rcases i with ⟨i, hi⟩
+  rcases j with ⟨j, hj⟩
+  rcases k with ⟨k, hk⟩
+  simp only [show ([A, B, C] : List Point).length = 3 from rfl] at hi hj hk
+  have hij : i < j := hij
+  have hjk : j < k := hjk
+  obtain ⟨rfl, rfl, rfl⟩ : i = 0 ∧ j = 1 ∧ k = 2 := by omega
+  exact h
+
 end Geometry.Theory
+
+namespace Geometry.Theory.Arrangement
+
+open Lean Elab Tactic Meta
+
+private partial def listExprToArray : Expr → Option (Array Expr) :=
+  fun e => go e #[]
+where
+  go (e : Expr) (acc : Array Expr) : Option (Array Expr) :=
+    match e.getAppFnArgs with
+    | (``List.cons, #[_, hd, tl]) => go tl (acc.push hd)
+    | (``List.nil, _)             => some acc
+    | _                           => none
+
+private def findIndex (pts : Array Expr) (target : Expr) : MetaM (Option Nat) := do
+  for h : i in [:pts.size] do
+    if ← isDefEq pts[i] target then
+      return some i
+  return none
+
+syntax (name := arrangementTac) "arrangement" term : tactic
+
+@[tactic arrangementTac]
+def elabArrangementTac : Tactic := fun stx => match stx with
+  | `(tactic| arrangement $h:term) => do
+    let goal ← getMainGoal
+    goal.withContext do
+      let target ← instantiateMVars (← goal.getType)
+      let some (x, y, z) := target.app3? ``Between
+        | throwError "arrangement: goal is not of the form 'X - Y - Z'"
+      let hExpr ← Term.elabTerm h none
+      let hType ← instantiateMVars (← inferType hExpr)
+      let some ptsExpr := hType.app1? ``Geometry.Theory.Arrangement
+        | throwError "arrangement: hypothesis is not an `Arrangement`"
+      let some pts := listExprToArray ptsExpr
+        | throwError "arrangement: arrangement's point list is not a literal list"
+      let some i ← findIndex pts x
+        | throwError m!"arrangement: cannot find {x} in the arrangement"
+      let some j ← findIndex pts y
+        | throwError m!"arrangement: cannot find {y} in the arrangement"
+      let some k ← findIndex pts z
+        | throwError m!"arrangement: cannot find {z} in the arrangement"
+      let iLit := Syntax.mkNumLit (toString i)
+      let jLit := Syntax.mkNumLit (toString j)
+      let kLit := Syntax.mkNumLit (toString k)
+      if i < j && j < k then
+        let tac ← `(tactic|
+          exact ($h).ordered_triple
+            ⟨$iLit, by simp⟩ ⟨$jLit, by simp⟩ ⟨$kLit, by simp⟩
+            (by simp) (by simp))
+        evalTactic tac
+      else if k < j && j < i then
+        let tac ← `(tactic|
+          exact (($h).ordered_triple
+            ⟨$kLit, by simp⟩ ⟨$jLit, by simp⟩ ⟨$iLit, by simp⟩
+            (by simp) (by simp)).symm)
+        evalTactic tac
+      else
+        throwError m!"arrangement: points are not in monotonic order \
+          (indices {i}, {j}, {k}). Both X-Y-Z and Z-Y-X are supported; \
+          any other interleaving needs to be derived manually."
+  | _ => throwUnsupportedSyntax
+
+end Geometry.Theory.Arrangement
