@@ -55,24 +55,24 @@ complex, so it is easiest to just break down by conclusion.
 
 atlas exercise ["3.0.3.a.i"] "If A-B-C, then AB ⊆ AC"
   {A B C : Point} (ABC : A - B - C := by assumption) :
-  ((segment A B : Line) ⊆ (segment A C)) := by 
-  sorry
-
--- FIXME: commented because ssubset isn't supported
-/- atlas exercise ["3.0.3.a.ii"] "[If A-B-C, then] CB ⊂ CA; which axiom justifies this interchange?" -/
-/-   {A B C : Point} (ABC : A - B - C := by assumption) : -/
-/-   ((segment C B : Line) ⊂ (segment C A)) := by -/ 
-/-   sorry -/
-
-atlas exercise ["3.0.3.b"] "[If A-B-C,] then AC ⊂ AB ∪ BC."
-  {A B C : Point} (ABC : A - B - C := by assumption) :
-  (segment A B : Line) ⊆ (segment A C) := by
+  ((segment A B : Line) ⊆ (segment A C)) := by
   intro P PonAB
   rcases PonAB with APB | rfl | rfl
   · have APBC : A - P - B - C := by organize ABC APB
     have APC : A - P - C := APBC
     obvious
   all_goals obvious
+
+-- FIXME: commented because ssubset isn't supported
+atlas exercise ["3.0.3.a.ii"] "[If A-B-C, then] CB ⊂ CA; which axiom justifies this interchange?"
+  {A B C : Point} (ABC : A - B - C := by assumption) :
+  ((segment C B : Line) ⊂ (segment C A)) := by 
+  sorry
+
+atlas exercise ["3.0.3.b"] "[If A-B-C,] then AC ⊂ AB ∪ BC."
+  {A B C : Point} (ABC : A - B - C := by assumption) :
+  (segment A C : Line) ⊂ (segment A B) ∪ (segment B C) := by
+  sorry
 
 atlas commentary := by
   ref exercise ["3.0.2"]

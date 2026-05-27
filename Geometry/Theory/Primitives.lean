@@ -21,6 +21,9 @@ instance : Membership Point Line where
 instance : HasSubset Line where
   Subset L M := L.toSet ⊆ M.toSet
 
+instance : HasSSubset Line where
+  SSubset L M := L.toSet ⊂ M.toSet
+
 instance : Inter Line where
   inter L M := ⟨L.toSet ∩ M.toSet⟩
 
@@ -36,6 +39,8 @@ instance : Singleton Point Line where
 @[simp, obvious] theorem Line.mem_def {L : Line} {P : Point} : P ∈ L ↔ P ∈ L.toSet := Iff.rfl
 
 @[simp, obvious] theorem Line.subset_def {L M : Line} : L ⊆ M ↔ L.toSet ⊆ M.toSet := Iff.rfl
+
+@[simp, obvious] theorem Line.ssubset_def {L M : Line} : L ⊂ M ↔ L.toSet ⊂ M.toSet := Iff.rfl
 
 @[simp, obvious] theorem Line.inter_toSet (L M : Line) : (L ∩ M).toSet = L.toSet ∩ M.toSet := rfl
 
