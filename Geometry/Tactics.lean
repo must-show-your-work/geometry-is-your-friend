@@ -14,6 +14,13 @@ import Mathlib.Tactic.Contrapose
 import Mathlib.Data.Set.Pairwise.Basic
 import Mathlib.Data.List.Basic
 
+-- Atlas brings in the `atlas`-macro-rules override that auto-wraps
+-- every tactic-bodied `atlas <kind>` proof with `with_atlas_refs`,
+-- surfacing the citation panel in the InfoView. Imported here (not
+-- in a leaf module) so the override applies project-wide before any
+-- atlas command elaborates.
+import Atlas
+
 /-- Simp set for `obvious` — see `Geometry/Theory/Axioms.lean` for the
     macro that uses it. Tag chapter-by-chapter as you encounter
     canonical normalizations that Greenberg treats as background.
@@ -42,7 +49,7 @@ register_simp_attr obvious.parallel
 
 /-- Stage-specific simp set for `obvious`'s `unfold Intersects` stage.
     Pointed-intersection facts that need the `Intersects` def opened —
-    `1.0.30 .. 1.0.33`, witness-on-left / -right etc. -/
+    `1.0.12 .. 1.0.15`, witness-on-left / -right etc. -/
 register_simp_attr obvious.intersects
 
 /-- Stage-specific simp set for `obvious`'s `unfold Guards` stage.

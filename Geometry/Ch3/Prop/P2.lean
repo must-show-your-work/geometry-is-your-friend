@@ -62,8 +62,8 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       unfold Intersects
       have OonAO : O on segment A O := by obvious
       have OonInt : O on L ∩ segment A O := by obvious
-      exact (ref lemma 2.0.20 O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
-    have h := ref lemma 2.0.21 AneO LintAOatO
+      exact (ref lemma 2.0.17 O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
+    have h := ref lemma 2.0.18 AneO LintAOatO
     unfold Ray at h
     have BonExtAO : B on extension A O := ⟨bBOA.symm, AneB, BneO.symm⟩
     have BonRayAO : B on ray A O := by obvious
@@ -106,7 +106,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
         intro LsplitsBC
         quoting ... "then C and A are on the same side of L (by the law of the excluded middle and Betweenness Axiom 4(ii))."
         by_contra LsplitsAC
-        have LguardsAB := ref axiom ["B.4.ii"] ⟨LsplitsAC, LsplitsBC.symm⟩
+        have LguardsAB := ref axiom B.4.ii ⟨LsplitsAC, LsplitsBC.symm⟩
         contradiction
       by_cases suppose: L splits B and C
       · specialize AseparatefromB suppose
@@ -136,7 +136,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       have LguardsBandP : L guards B and P := PinHr
       have LguardsPandB : L guards P and B := LguardsBandP.symm
       have PoffL : P off L := by tauto
-      have LguardsAandB : L guards A and B := ref axiom ["B.4.i"] ⟨LguardsAandP, LguardsPandB⟩
+      have LguardsAandB : L guards A and B := ref axiom B.4.i ⟨LguardsAandP, LguardsPandB⟩
       contradiction
     · intro P PinEmpty
       contradiction

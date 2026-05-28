@@ -11,16 +11,11 @@ import Geometry.Ch3.Prop.B4iii
 import Geometry.Ch3.Prop.P2
 import Geometry.Ch3.Prop.P3
 import Geometry.Ch3.Prop.P4
-import Geometry.Ch3.Ex.Ex1
+import Geometry.Ch3.Ex.Betweenness.Ex1
 import Geometry.Theory.Distinct
-import Geometry.Theory.Collinear.Ch1
-import Geometry.Theory.Collinear.Ch2
-import Geometry.Theory.Betweenness.Ch1
-import Geometry.Theory.Betweenness.Ch2
-import Geometry.Theory.Line.Ch1
-import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Interpendices.A
+import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
-import Geometry.Theory.Intersection.Ch3
 import Atlas
 
 namespace Geometry.Ch3.Prop
@@ -34,19 +29,35 @@ open Atlas
 
 
 atlas commentary := by
-  ref proposition 3.7
+  ref theorem 3.0
   page 114
   aliases [
-    Geometry.Theory.pasch
+    Geometry.Theory.pasch,
+    «Pasch's Postulate»,
+    «Pasch's Proposition»
   ]
-  name "Pasch's Postulate"
+  name "Pasch's Theorem"
   preface "If A,B,C are distinct noncollinear points and L is any line intersecting AB in a point between A and B, then L
 also intersects AC or BC (see figure 3.10). If C does not lie on L, then L does not intersect both AC and BC.
   
   Intuititively, this theorem says that if a line \"goes into\" a triangle through one side, it must \"come out\" through
 another side."
+  notes "The author doesn't give Pasch's a number, but also calls it a 'theorem', eschewing the possible alliteration.
+  While this dodge is sad, it is the case, and theorems are fortunately numbered separately from propositions, solving our
+  possible off-by-one situation. Perhaps our disappointment was worth it after all."
+  figure := by
+    file "./assets/pasch_fig1.svg"
+    title "Pasch's Theorem"
+    index 1
+    caption "A line L crosses segment AB at X and exits through BC."
+  figure := by
+    file "./assets/pasch_fig2.svg"
+    title "Alternative crossing"
+    index 2
+    caption "L crosses AB at X and exits through AC at Y."
 
-atlas proposition 3.7 "Pasch's Postulate"
+
+atlas theorem 3.0 "Pasch's Theorem"
   {A B C : Point} {L : Line} {distinctABC : distinct A B C} {AXB : A - X - B}
   (triABC : ¬(collinear A B C)) (LintSegAB : L intersects segment A B at X) :
   ((L intersects segment A C) ∨ (L intersects segment B C)) ∧
@@ -63,9 +74,9 @@ atlas proposition 3.7 "Pasch's Postulate"
         · obvious
         · rw [PeqC, SegABeqSegBC]; obvious
       contradiction
-    clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (ref lemma 2.0.14)
-    clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (ref lemma 2.0.14)
-    clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (ref lemma 2.0.14)
+    clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (ref lemma 2.0.12)
+    clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (ref lemma 2.0.12)
+    clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (ref lemma 2.0.12)
     quoting (1) "Either C lies on L or it does not; if it does, the theorem holds (law the excluded middle)"
     clearly C off L := by
       have ConAC : C on segment A C := obvious
@@ -107,24 +118,24 @@ atlas proposition 3.7 "Pasch's Postulate"
     the author's justification that A and B are off L.
     "
     quoting (3) "Hence, A and B lie on opposite sides of L (by definition)"
-    have LsplitsAB : L splits A and B := via corollary 2.0.25 (via lemma 3.7.2 LneSegAB LintSegAB.bare).choose_spec
+    have LsplitsAB : L splits A and B := via corollary 2.0.22 (via lemma 3.7.2 LneSegAB LintSegAB.bare).choose_spec
     quoting (4) "From step 1 we may assume that C does not lie on L, in which case C is either on the same side of L as A or
            on the same side of L as B (separation axiom)"
     have LguardsACorBC : (L guards A and C) ∨ (L guards B and C) := by
       by_contra! ⟨LsplitsAC, LsplitsBC⟩
-      exact absurd (ref axiom ["B.4.ii"] ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
+      exact absurd (ref axiom B.4.ii ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
     rcases LguardsACorBC with LguardsAC | LguardsBC
     · quoting (5) "If C is on the same side of L as A, then C is on the opposite side from B, which means that L intersects BC
            and does not intersect AC" ...
-      have LsplitsBC : L splits B and C := ref corollary ["B.4.iii"] ⟨LsplitsAB.symm, LguardsAC⟩
+      have LsplitsBC : L splits B and C := ref corollary B.4.iii ⟨LsplitsAB.symm, LguardsAC⟩
       have LintBC : L intersects segment B C := via lemma 3.7.3 LsplitsBC
-      have LguardsAC := ref axiom ["B.4.ii"] ⟨LsplitsAB, LsplitsBC⟩
+      have LguardsAC := ref axiom B.4.ii ⟨LsplitsAB, LsplitsBC⟩
       constructor
       · right; exact LintBC
       · intro; push Not; contrapose!; intro;
         exact ref corollary 3.7.3 LguardsAC
     · quoting ... "similarly, if C is on the same side of L as B, then L intersects AC and does not intersect BC (separation axiom)."
-      have LsplitsAC := ref corollary ["B.4.iii"] ⟨LsplitsAB, LguardsBC⟩
+      have LsplitsAC := ref corollary B.4.iii ⟨LsplitsAB, LguardsBC⟩
       have LintAC := via lemma 3.7.3 LsplitsAC
       constructor
       · left; exact LintAC
@@ -134,4 +145,5 @@ atlas proposition 3.7 "Pasch's Postulate"
 
 
 end Geometry.Ch3.Prop
+
 

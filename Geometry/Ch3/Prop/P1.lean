@@ -5,7 +5,7 @@ import Mathlib.Data.Set.Insert
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Ch2
-import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Interpendices.B
 
 import Geometry.Tactics
 import Atlas
@@ -60,6 +60,9 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
 atlas commentary := by
   ref proposition 3.1.ii
   page 109
+  aliases [
+    -- exercise 3.Review.2.a
+  ]
   name "Two rays from common endpoints union to their line"
   preface "... (ii) Ray A B ∪ Ray B A = LineThrough A B"
   notes "similar to the above, an implied A ≠ B condition was added"
@@ -70,29 +73,16 @@ atlas proposition 3.1.ii "Two rays from common endpoints union to their line"
   apply Line.eq_of_subset
   · intro P PinUnion
     rcases PinUnion with PinAB | PinBA
-    · exact ref lemma 1.0.18 PinAB
-    · apply ref lemma 1.0.18 at PinBA
-      rwa [(@Line.«Line Commutativity» A B AneB)]
+    · exact ref lemma 1.0.8 PinAB
+    · apply ref lemma 1.0.8 at PinBA
+      obvious
   · intro P PinLine
-    -- Need to handle the equality cases first, we'll refer to these later in the proof
-    by_cases AneP : A = P
-    · rw [<- AneP]; exact mem_union_left (ray B A) (by obvious : A on ray A B)
-    by_cases BneP : B = P
-    · rw [<- BneP]; exact mem_union_left (ray B A) (by obvious : B on ray A B)
+    comment "Need to handle the equality cases first, we'll refer to these later in the proof"
+    clearly A ≠ P; clearly B ≠ P;
     -- the main proof
     rcases PinLine with eq | eq | tween | tween | tween
-    -- the equality cases are handled separately above
     · exfalso; exact absurd eq.symm AneP
     · exfalso; exact absurd eq.symm BneP
-    -- the case where P is on the segment
-    · have PonSegAB : P on segment A B := obvious
-      have PonRayAB : P ∈ (ray A B : Line) := by obvious
-      exact mem_union_left _ PonRayAB
-    -- this is where we need the PneA and PneB conditions
-    · have PonExtAB : P on extension A B := obvious
-      left; right; exact PonExtAB
-    -- here too, P is on the other extension
-    · have PonExtBA : P on extension B A := obvious
-      right; right; exact PonExtBA
+    all_goals obvious
 
 end Geometry.Ch3.Prop

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200">
+  <style>
+    .pt { fill: #073642; }
+    .lbl { font: 14px serif; fill: #073642; }
+    .seg { stroke: #073642; stroke-width: 1.5; fill: none; }
+    .line { stroke: #268bd2; stroke-width: 1.5; fill: none; }
+    .x { fill: #cb4b16; }
+  </style>
+  <polygon class="seg" points="40,170 200,170 120,40"/>
+  <line class="line" x1="0" y1="170" x2="240" y2="100"/>
+  <circle class="pt" cx="40" cy="170" r="3"/>
+  <text class="lbl" x="28" y="188">A</text>
+  <circle class="pt" cx="200" cy="170" r="3"/>
+  <text class="lbl" x="206" y="188">B</text>
+  <circle class="pt" cx="120" cy="40" r="3"/>
+  <text class="lbl" x="115" y="32">C</text>
+  <circle class="x" cx="120" cy="135" r="3.5"/>
+  <text class="lbl" x="126" y="138">X</text>
+  <text class="lbl" x="220" y="106" fill="#268bd2">L</text>
+</svg>

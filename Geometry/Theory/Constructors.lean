@@ -226,7 +226,7 @@ instance {A B : Point} : CoeHead (LineThrough A B) Line where
     The `CoeHead X (Set Point)` instances above let call sites coerce
     explicitly: `(↑(ray A B) : Set Point) ⊆ line A B` (or the symmetric
     ascription on the RHS). Affects only the few subset-between-line-parts
-    lemmas (1.0.18, 2.0.5); the typical `P on x` / `s ≠ L` use cases work
+    lemmas (1.0.8, 2.0.4); the typical `P on x` / `s ≠ L` use cases work
     without ascription.
 -/
 

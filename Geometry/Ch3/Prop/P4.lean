@@ -10,14 +10,10 @@ import Geometry.Ch3.Prop.P1
 import Geometry.Ch3.Prop.B4iii
 import Geometry.Ch3.Prop.P2
 import Geometry.Ch3.Prop.P3
-import Geometry.Ch3.Ex.Ex1
+import Geometry.Ch3.Ex.Betweenness.Ex1
 import Geometry.Theory.Distinct
-import Geometry.Theory.Collinear.Ch1
-import Geometry.Theory.Collinear.Ch2
-import Geometry.Theory.Betweenness.Ch1
-import Geometry.Theory.Betweenness.Ch2
-import Geometry.Theory.Line.Ch1
-import Geometry.Theory.Line.Ch2
+import Geometry.Theory.Interpendices.A
+import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
 import Atlas
 
@@ -87,14 +83,14 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
         · quoting (6) "If P-B-C, then combining this with P-A-B (step 2) gives A-B-C (Proposition 3.3), contradiction the
               hypothesis."
           exfalso
-          exact ref lemma 1.0.38 ⟨via proposition 3.3.i ⟨PAB, PBC⟩, CAB⟩
+          exact ref lemma 1.0.20 ⟨via proposition 3.3.i ⟨PAB, PBC⟩, CAB⟩
         · quoting (7) "If C-P-B, then combining this with C-A-P (step 4) gives A-P-B (Proposition 3.3), contradiction step 2."
           exfalso
-          exact ref lemma 1.0.36 ⟨via proposition 3.3.i ⟨CAP, (BPC.symm)⟩, PAB⟩
+          exact ref lemma 1.0.18 ⟨via proposition 3.3.i ⟨CAP, (BPC.symm)⟩, PAB⟩
         · quoting (8) "If B-C-P, then combining this with B-A-C (hypothesis and Betweenness Axiom 1) gives A-C-P (Proposition 3.3),
              contradicting step 4."
           exfalso
-          exact ref lemma 1.0.36 ⟨via proposition 3.3.i ⟨CAB.symm, PCB.symm⟩, CAP⟩
+          exact ref lemma 1.0.18 ⟨via proposition 3.3.i ⟨CAB.symm, PCB.symm⟩, CAP⟩
       · quoting (9) "Since we obtain a contradiction in all three cases, C-A-P does not hold (RAA conclusion)."
         comment "this is covered by the above .em elimination"
         quoting (10) "Therefore, C-P-A or P-C-A (step 3), which means that P lies on the opposite ray A C. ∎"

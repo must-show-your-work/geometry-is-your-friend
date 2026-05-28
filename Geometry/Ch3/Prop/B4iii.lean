@@ -7,8 +7,7 @@ import Geometry.Tactics
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
 import Geometry.Theory.Ch2
-import Geometry.Theory.Line.Ch2
-import Geometry.Theory.Betweenness.Ch2
+import Geometry.Theory.Interpendices.B
 import Atlas
 
 import Geometry.Ch2.Prop
@@ -21,7 +20,7 @@ open Geometry.Ch2.Prop
 open Atlas
 
 atlas commentary := by
-  ref corollary ["B.4.iii"]
+  ref corollary B.4.iii
   page 111
   name "Corollary to B-4: splits + guards transitivity"
   preface "Corollary. (iii) If A and B are on opposite sides of L and if B and C are on the same side of L, then A and C are on opposite sides of L"
@@ -30,14 +29,14 @@ previous proposition
 
 FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument."
 
-atlas corollary ["B.4.iii"] "Corollary to B-4: splits + guards transitivity"
+atlas corollary B.4.iii "Corollary to B-4: splits + guards transitivity"
   (AoffL : A off L := by assumption)
   (BoffL : B off L := by assumption)
   (CoffL : C off L := by assumption) :
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
   intro ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
-  have h := ref axiom ["B.4.i"] ⟨LguardsAC, LguardsBC.symm⟩
+  have h := ref axiom B.4.i ⟨LguardsAC, LguardsBC.symm⟩
   contradiction
 
 

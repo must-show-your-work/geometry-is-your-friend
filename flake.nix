@@ -68,14 +68,30 @@
         pythonFlake = nixpkgs-python.packages.${system};
         pythonInterp = pythonFlake."3.13.1";
         pip = pkgs.python3Packages;
-        # Libraries that need to be on the linker's search path when
-        # `lake exe <name>` compiles a Lean program down to a native
-        # binary. Lean's codegen emits `-lc++ -lc++abi -lgmp -luv`
-        # flags; without these in `LIBRARY_PATH` (link time) and
-        # `LD_LIBRARY_PATH` (runtime), `clang` (set as `LEAN_CC`)
-        # fails with the now-classic "cannot find -lc++" cascade.
-        ld_deps = [
+        # Runtime libs — go on `LD_LIBRARY_PATH` so dlopen at import time
+        # (e.g. the `kuzu` Python wheel pulling in libstdc++, or lean.nvim's
+        # Lua FFI dlopen of `libresvg.so` for SVG rendering) finds them.
+        # Keep this set MINIMAL: putting linker-only deps here causes
+        # version conflicts with other tools (e.g. shipping a newer
+        # libuv shadows nvim's libluv expectations, breaking symbol
+        # lookups like `uv_tcp_keepalive_ex`).
+        runtime_deps = [
           pkgs.stdenv.cc.cc.lib
+          # `libresvg.so` — lean.nvim's `lua/tui/svg.lua` FFI-loads this
+          # to rasterize ProofWidgets SVG output into the Kitty graphics
+          # protocol. Without it on LD_LIBRARY_PATH, the InfoView falls
+          # back to printing the SVG tree as text.
+          pkgs.resvg
+        ];
+
+        # Link-time libs — go on `LIBRARY_PATH` so `clang -l<x>` resolves
+        # `lib<x>.{so,a}` during `lake exe` compilation. Lean's codegen
+        # emits `-lc++ -lc++abi -lgmp -luv`; without these the build
+        # fails with the classic "cannot find -lc++" cascade.
+        # These are NOT exported to `LD_LIBRARY_PATH` — at runtime,
+        # binaries either have RPATH baked in or use the system loader's
+        # default search.
+        linker_deps = [
           pkgs.gmp
           pkgs.libuv
           pkgs.llvmPackages.libcxx
@@ -106,6 +122,11 @@
               just
               kuzu
               pandoc
+              # `resvg` is needed by lean.nvim's terminal-graphics feature
+              # to rasterize ProofWidgets SVG output into inline kitty
+              # graphics-protocol images. Without it on PATH, lean.nvim
+              # falls back to text-serializing the SVG tree.
+              resvg
               ripgrep
               timg
               texlivePackages.pdfcrop
@@ -178,16 +199,15 @@
               export PYTHONPATH=`pwd`/$VENV/${pkgs.python3.sitePackages}/:$PYTHONPATH
               pip install -r requirements.txt
 
-              # Make libstdc++ (and other native deps) discoverable for
-              # dlopen-at-import-time wheels like `kuzu`. `mkShell` does
-              # not honour a `postShellHook` field, so the export has to
-              # live here.
-              export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath ld_deps}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+              # Runtime libs (e.g. libstdc++) on `LD_LIBRARY_PATH` so
+              # dlopen-at-import-time wheels like `kuzu` find them.
+              # MINIMAL set — keeping linker-only deps off this list
+              # avoids version conflicts with other shell tools.
+              export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath runtime_deps}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               # `LIBRARY_PATH` is the LINK-time counterpart — `clang -l<x>`
-              # consults this for finding `lib<x>.{so,a}`. Required for
-              # `lake exe` builds; the runtime-only `LD_LIBRARY_PATH`
-              # above doesn't help the linker.
-              export LIBRARY_PATH="${pkgs.lib.makeLibraryPath ld_deps}''${LIBRARY_PATH:+:$LIBRARY_PATH}"
+              # uses this to find `lib<x>.{so,a}` during `lake exe`
+              # compilation. Doesn't affect runtime dlopen behavior.
+              export LIBRARY_PATH="${pkgs.lib.makeLibraryPath (runtime_deps ++ linker_deps)}''${LIBRARY_PATH:+:$LIBRARY_PATH}"
             '';
           };
         };

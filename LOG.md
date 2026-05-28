@@ -509,7 +509,7 @@ put in a recent commit removing the anti-LLM canary.
 ## 1219
 
 I've been doing a series of largely mechanical refactorings and restructurings. The main thrust of which is a typed
-heirarchy for line-parts (which is not _exactly_ what I wanted, but is a significant improvement over the prior state.
+heirarchy for line-parts (which is not _exactly_ what I wanted, but is a significant improvement over the prior state).
 As well as trying to capture what Greenberg considers 'obvious' in a tactic (creatively named `obvious` as well), which
 I'm hoping will leverage `atlas` at some point to do a phased 'intuit like Greenberg' automated theorem proof attempt.
 The aim isn't necessarily to replace every place Greenberg calls a 'clearly X holds' or 'obviously Y is true' with this,
@@ -576,3 +576,71 @@ I'm sure the idea isn't novel, but it is fun, and blends nicely with the `atlas`
 to incorporate some ranking/searching directly in the graph, which means I can have the structure inform how best to use
 the structure (a theorem with a high pagerank after a specific filter is applied might be a good way to search corpii
 efficiently).
+
+# 27-MAY-2026
+
+## 1156
+
+Working on adding 'Arrangements' to the theory. This extends the betweenness syntax to arbitrary ordered lists of
+points. In the text, Greenberg uses figures to disambiguate these arrangements, which is unfortunately not really
+available to Lean.
+
+The implementation of Arrangements involves a great deal of fiddly list math, and so it's implementation is largely
+Agent-built, but works off the properties proved in Prop 3.3 and its compatriots. The syntax works thusly:
+
+given some set of betweenness statements, you can attempt to prove or reduce another betweenness/arrangement by the
+following pattern:
+
+```lean
+have h : A - B - C - D := by organize ABC BCD
+```
+
+In this case, it will close the proof by the simple application of P3.5. However, if you had `A-B-C` and `A-P-C`, the
+case is ambiguous -- there are three possible placements of P (to the left, right, or on top of B), so you get a proof
+like:
+
+```lean
+have h : A - P - B ∨ P = B ∨ B - P - C := by organize ABC APC
+rcases h with APB | rfl | BPC
+all_goals obvious
+```
+
+This is fine, but I wanted something a little bit cleaner for that as well as for the other branch in 3.5 which results
+in 6 different cases to close, all of which are obvious up to some re-arranging / deduction of the arrangement.
+
+In some sense this means I didn't write the proofs for 3.5 really, they fall out of the work the agent did to encode
+arrangements; but one of the nice things about Lean and math more generally is that so long as the proof proofs, then we
+know the thing works. I don't necessarily plan to dig in and rebuild this apparatus unless I have to, but I suppose some
+human-fidelity is lost in this.
+
+Given that the apparatus is really just 'bookkeeping applications of Prop 3.3 and topological sorting', I'm pretty
+alright with that state of affairs; but wanted to be clear.
+
+The syntax I settled on was:
+
+```lean
+arranging <hypos> [into <rcases-like-breakdown>]
+. proof-by-cases-if-necessary
+```
+
+This takes the given hypos and optionally a naming cluster like `rcases`, then it attempts to `obvious` off any produced
+goals before finally returning a minimal set of nonobvious cases. Under the hood this uses the `organize` apparatus, but
+arranged more like the `distinguish` tactic, which uses available proofstate to try to weed through simple goals. I've
+sort of mentally decided that anything that just needs to sweep the proofstate once is fundamentally not expensive and
+well worth doing proactively. So far compile times haven't suffered to the point of being noticable, like with prior
+experience with `tauto` and `simp`.
+
+As part of it, I also implemented `CoeDep` (value-dependent coercion) for arrangements down to betweenesses; which means
+they are drop-in wherever a Betweenness is allowed. This makes it pretty gentle to use overall. Derive the full
+arrangement then drop it into place. The mechanism here is good old _macros_, like the C-preproc kind (except done with
+elab). This generates a finite suite of instances to do each coercion for each finite arrangement size. We can't
+natively support arbitrary arrangements without introducing a tactic, which would ruin the drop-in ability, but
+practially arrangements of up to 7 points are supported for about ~2s of compile time over the n=5 case. The book never
+gets above 5 points in a line from my brief survey, so should be fine.
+
+## 1602
+
+Currently renaming all of the lemmas/exercises and reorganizing again. LLMs are a godsend for fiddling with this kind of
+thing.
+
+

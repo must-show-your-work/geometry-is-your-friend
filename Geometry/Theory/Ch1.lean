@@ -1,7 +1,8 @@
-/- Chapter 1, general theory -/
+/- Chapter 1, general theory.
 
-import Geometry.Theory.Point.Ch1
-import Geometry.Theory.Betweenness.Ch1
-import Geometry.Theory.Collinear.Ch1
-import Geometry.Theory.Intersection.Ch1
-import Geometry.Theory.Line.Ch1
+   Now a thin re-export wrapper around `Interpendices.A` (axiom-
+   derivable). Kept so existing aggregator imports (`import
+   Geometry.Theory.Ch1`) keep working; eventually inline at call sites
+   and delete this. -/
+
+import Geometry.Theory.Interpendices.A

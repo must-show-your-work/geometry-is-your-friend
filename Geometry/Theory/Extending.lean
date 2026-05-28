@@ -11,7 +11,7 @@ import Mathlib.Data.Finset.Card
 
 import Geometry.Theory.Axioms
 import Geometry.Theory.Distinct
-import Geometry.Theory.Collinear.Ch1
+import Geometry.Theory.Interpendices.A
 
 import Geometry.Tactics
 

@@ -2,7 +2,7 @@ import Geometry.Tactics
 
 import Geometry.Theory.Axioms
 import Geometry.Theory.Ch1
-import Geometry.Theory.Line.Ch1
+import Geometry.Theory.Interpendices.A
 import Atlas
 
 import Geometry.Ch2.Prop.P1
@@ -47,7 +47,7 @@ atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
     constructor; trivial
     by_contra! hNeg
     comment "Let's find the Point the Author talks about in the proposed lemma"
-    obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := ref lemma 1.0.26 ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
+    obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := ref lemma 1.0.9 ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
     comment "This lemma was not suggested by the author, but is handy. The proof is not long and simply establishes the
     'Parallel' fact for each pair of lines. We need the unique point and the negative condition to build these"
     have hABnotparBC : (AB ∦ BC) := by obvious
