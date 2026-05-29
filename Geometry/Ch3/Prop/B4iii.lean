@@ -20,7 +20,7 @@ open Geometry.Ch2.Prop
 open Atlas
 
 atlas commentary := by
-  ref corollary B.4.iii
+  via corollary B.4.iii
   page 111
   name "Corollary to B-4: splits + guards transitivity"
   preface "Corollary. (iii) If A and B are on opposite sides of L and if B and C are on the same side of L, then A and C are on opposite sides of L"
@@ -36,7 +36,7 @@ atlas corollary B.4.iii "Corollary to B-4: splits + guards transitivity"
   (L splits A and B) ∧ (L guards B and C) -> (L splits A and C) := by
   intro ⟨LsplitsAB, LguardsBC⟩
   by_contra! LguardsAC
-  have h := ref axiom B.4.i ⟨LguardsAC, LguardsBC.symm⟩
+  have h := via axiom B.4.i ⟨LguardsAC, LguardsBC.symm⟩
   contradiction
 
 

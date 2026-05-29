@@ -32,7 +32,7 @@ open Atlas
 atlas commentary := by
   -- TODO: We need support for theorem complexes. A 'virtual' theorem here and it's descriptions, then some
   -- way of saying "this is a complex of all the subparts.
-  ref exercise 3.Review.3
+  via exercise 3.Review.3
   page 146
   preface "Given A-B-C
     (a) Use Proposition 3.3 to prove that AB ⊆ AC. Interchanging A and C, deduce CD ⊂ CA; which axiom justifies this

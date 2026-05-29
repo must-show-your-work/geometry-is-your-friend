@@ -10,7 +10,7 @@ open Geometry.Theory
 open Atlas
 
 atlas commentary := by
-  ref proposition 2.4
+  via proposition 2.4
   page 71
   name "Every point has at least one line not through it"
   preface "For every point, there is at least one line not passing through it."

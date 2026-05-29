@@ -27,7 +27,7 @@ open Geometry.Ch3.Ex
 open Atlas  -- enables `atlas commentary := by …` field keywords (scoped)
 
 atlas commentary := by
-  ref proposition 3.4
+  via proposition 3.4
   page 113
   name "Line Separation Property"
   aliases [
@@ -40,14 +40,14 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
   comment "Some mise en place"
   clearly A ≠ P; clearly B ≠ P; clearly C ≠ P
   have distinctABCP : distinct A B C P := by
-    have dABC : distinct A B C := ((ref axiom B.1 CAB).distinct).of_eq obvious
+    have dABC : distinct A B C := ((via axiom B.1 CAB).distinct).of_eq obvious
     separate
     distinguish
     repeat assumption
   have AneB : A ≠ B := by distinguish
   have colABCP : collinear A B C P := by
-    have cABC : collinear A B C := ((ref axiom B.1 CAB).collinear).of_eq obvious
-    have ABisSameLine : (line A B : Line) = cABC.line := ref lemma 2.0.2 AneB
+    have cABC : collinear A B C := ((via axiom B.1 CAB).collinear).of_eq obvious
+    have ABisSameLine : (line A B : Line) = cABC.line := via lemma 2.0.2 AneB
       ⟨obvious, cABC.mem A, obvious, cABC.mem B⟩
     have PonLineAB : P ∈ (line A B : Line) := PonL
     rw [ABisSameLine] at PonLineAB
@@ -61,7 +61,7 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
     left; trivial
   · quoting ... "so assume it doesn't; then P - A - B (Betweenness Axiom 3)"
     have PAB : P - A - B := by
-      have h := ref axiom B.3 P A B ⟨distinctABCP forgetting C, colABCP forgetting C⟩
+      have h := via axiom B.3 P A B ⟨distinctABCP forgetting C, colABCP forgetting C⟩
       rcases h with ⟨PAB,_,_⟩ | ⟨_,APB,_⟩ | ⟨_, _, ABP⟩
       · exact PAB
       · have PonSegAB : P on segment A B := obvious
@@ -74,23 +74,23 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
     · quoting ... "then P lies on ray A C (by definition)" ...
       obvious
     · quoting ... "so assume P ≠ C; then exactly one of the relations C-A-P, C-P-A, or P-C-A holds (Betweeness Axiom 3 again)."
-      have hCAP := ref axiom B.3 C A P ⟨distinctABCP forgetting B, colABCP forgetting B⟩
+      have hCAP := via axiom B.3 C A P ⟨distinctABCP forgetting B, colABCP forgetting B⟩
       quoting (4) "Suppose the relation C-A-P holds (RAA Hypothesis)"
       rcases Classical.em (C - A - P) with CAP | nCAP
       · quoting (5) "We know (by Betweenness Axiom 3) that exactly one of the relations P-C-B, C-P-B, or C-B-P holds."
-        have hPBC := ref axiom B.3 P B C ⟨distinctABCP forgetting A, colABCP forgetting A⟩
+        have hPBC := via axiom B.3 P B C ⟨distinctABCP forgetting A, colABCP forgetting A⟩
         rcases hPBC with ⟨PBC,_,_⟩ | ⟨_,BPC,_⟩ | ⟨_, _, PCB⟩
         · quoting (6) "If P-B-C, then combining this with P-A-B (step 2) gives A-B-C (Proposition 3.3), contradiction the
               hypothesis."
           exfalso
-          exact ref lemma 1.0.20 ⟨via proposition 3.3.i ⟨PAB, PBC⟩, CAB⟩
+          exact via lemma 1.0.20 ⟨via proposition 3.3.i ⟨PAB, PBC⟩, CAB⟩
         · quoting (7) "If C-P-B, then combining this with C-A-P (step 4) gives A-P-B (Proposition 3.3), contradiction step 2."
           exfalso
-          exact ref lemma 1.0.18 ⟨via proposition 3.3.i ⟨CAP, (BPC.symm)⟩, PAB⟩
+          exact via lemma 1.0.18 ⟨via proposition 3.3.i ⟨CAP, (BPC.symm)⟩, PAB⟩
         · quoting (8) "If B-C-P, then combining this with B-A-C (hypothesis and Betweenness Axiom 1) gives A-C-P (Proposition 3.3),
              contradicting step 4."
           exfalso
-          exact ref lemma 1.0.18 ⟨via proposition 3.3.i ⟨CAB.symm, PCB.symm⟩, CAP⟩
+          exact via lemma 1.0.18 ⟨via proposition 3.3.i ⟨CAB.symm, PCB.symm⟩, CAP⟩
       · quoting (9) "Since we obtain a contradiction in all three cases, C-A-P does not hold (RAA conclusion)."
         comment "this is covered by the above .em elimination"
         quoting (10) "Therefore, C-P-A or P-C-A (step 3), which means that P lies on the opposite ray A C. ∎"

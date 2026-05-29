@@ -17,7 +17,7 @@ open Set
 open Atlas
 
 atlas commentary := by
-  ref lemma 0.0.5
+  via lemma 0.0.5
   name "Disjoint-union subset cancellation"
   preface "If S is disjoint from T and V, then S ∪ T ⊆ S ∪ V implies T ⊆ V"
 
@@ -32,7 +32,7 @@ atlas lemma 0.0.5 "Disjoint-union subset cancellation"
 
 
 atlas commentary := by
-  ref lemma 0.0.6
+  via lemma 0.0.6
   name "Disjoint-union equality cancellation"
   preface "If S is disjoint from T and V, then S ∪ T = S ∪ V implies T = V (TODO: may be iff)"
 
@@ -44,7 +44,7 @@ atlas lemma 0.0.6 "Disjoint-union equality cancellation"
     exact Subset.antisymm
       (h T V ⟨(Eq.subset SuTeqSuV), SintTempty, SintVempty⟩)
       (h V T ⟨(Eq.subset SuTeqSuV.symm), SintVempty, SintTempty⟩)
-  exact ref lemma 0.0.5 S
+  exact via lemma 0.0.5 S
 
 end Set
 
@@ -56,54 +56,54 @@ open Geometry.Theory
 open Atlas
 
 atlas commentary := by
-  ref lemma 1.0.1
+  via lemma 1.0.1
   name "Density axiom witness: a point left of two distinct points"
   preface "Construct a point 'to the left' of points BD on the induced line B D"
 
 atlas lemma 1.0.1 "Density axiom witness: a point left of two distinct points"
   : ∀ B D : Point, B ≠ D -> ∃ A : Point, collinear A B D ∧ distinct A B D ∧ (A - B - D) := by
       intro B D BneD
-      have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := ref axiom B.2 B D BneD
+      have ⟨A, _, _, colABCDE, distinctABCDE, ABD, _, _⟩ := via axiom B.2 B D BneD
       use A
       obvious
 
 
 atlas commentary := by
-  ref lemma 1.0.2
+  via lemma 1.0.2
   name "Density axiom witness: a point between two distinct points"
   preface "Construct a point 'in between' points BD on the induced line B D"
 
 atlas lemma 1.0.2 "Density axiom witness: a point between two distinct points"
   : ∀ B D : Point, B ≠ D -> ∃ C : Point, collinear B C D ∧ distinct B C D ∧ (B - C - D) := by
       intro B D BneD
-      have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := ref axiom B.2 B D BneD
+      have ⟨_, C, _, colABCDE, distinctABCDE, _, BCD, _⟩ := via axiom B.2 B D BneD
       use C
       obvious
 
 
 atlas commentary := by
-  ref lemma 1.0.3
+  via lemma 1.0.3
   name "Density axiom witness: a point right of two distinct points"
   preface "Construct a point 'to the right' points BD on the induced line B D"
 
 atlas lemma 1.0.3 "Density axiom witness: a point right of two distinct points"
   : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ distinct B D E ∧ (B - D - E) := by
       intro B D BneD
-      have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := ref axiom B.2 B D BneD
+      have ⟨_, _, E, colABCDE, distinctABCDE, _, _, BDE⟩ := via axiom B.2 B D BneD
       use E
       obvious
 
 namespace Point
 
 atlas commentary := by
-  ref lemma 1.0.4
+  via lemma 1.0.4
   name "For every Point there exists at least one distinct Point"
   preface "For every Point, there is at least one point that isn't that point."
 
 atlas lemma 1.0.4 "For every Point there exists at least one distinct Point"
   : ∀ P : Point, ∃ Q : Point, P ≠ Q := by
     intro P
-    obtain ⟨A, B, C, hDistinct, _⟩ := ref axiom I.3
+    obtain ⟨A, B, C, hDistinct, _⟩ := via axiom I.3
     idea "There is a configuration of 3 non-colinear points. Either P is one of those points, or it's none of
     them. If it's one of them, there are two other points distinct from P; if it's not one of them, then
     there are three distinct points."
@@ -133,19 +133,19 @@ noncomputable instance collinearCoe {points : Finset Point} (h : Collinear point
 /-- Cast `Collinear` between propositionally-equal Finsets — Finsets are unordered,
     so two literals describing the same elements are equal even when they don't unify
     definitionally. Useful when stitching together facts produced under different
-    insertion orders (e.g. `(ref axiom B.1 (CAB : C - A - B)).collinear` yields
+    insertion orders (e.g. `(via axiom B.1 (CAB : C - A - B)).collinear` yields
     `Collinear {C, A, B}` but a consumer wants `Collinear {A, B, C}`). -/
 lemma of_eq {s t : Finset Point} (c : Collinear s) (h : s = t) : Collinear t := h ▸ c
 
 atlas commentary := by
-  ref lemma 1.0.5
+  via lemma 1.0.5
   name "Any two distinct points are collinear"
   preface "There is a line between any two points, so by definition any two points are collinear"
 
 atlas lemma 1.0.5 "Any two distinct points are collinear"
   : A ≠ B -> collinear A B := by
   intro AneB
-  have ⟨L, ⟨AonL, BonL⟩, _h⟩ := ref axiom I.1 A B AneB
+  have ⟨L, ⟨AonL, BonL⟩, _h⟩ := via axiom I.1 A B AneB
   unfold Collinear
   use L
   intro P PinSub
@@ -187,7 +187,7 @@ end Collinear
 namespace Line
 
 atlas commentary := by
-  ref lemma 1.0.8
+  via lemma 1.0.8
   name "A ray A B is a subset of the line A B"
   preface "A ray A B is a subset of the line A B"
 
@@ -203,7 +203,7 @@ atlas lemma 1.0.8 "A ray A B is a subset of the line A B"
 
 
 atlas commentary := by
-  ref lemma 1.0.9
+  via lemma 1.0.9
   page 71
   name "Three pairwise-distinct concurrent lines meet at a unique point"
   preface "Author suggests a lemma, \"... to prove it, I could first prove a lemma that if three lines
@@ -224,7 +224,7 @@ atlas lemma 1.0.9 "Three pairwise-distinct concurrent lines meet at a unique poi
     -- uniqueness
     intro Q ⟨hQonL, hQonM, hQonN⟩
     by_contra! hNeg
-    have ⟨PQ, _, hPQUniq⟩ := ref axiom I.1 P Q hNeg.symm
+    have ⟨PQ, _, hPQUniq⟩ := via axiom I.1 P Q hNeg.symm
     have hPQisL := hPQUniq L ⟨hPonL, hQonL⟩
     have hPQisM := hPQUniq M ⟨hPonM, hQonM⟩
     have hLeqM : L = M := by
@@ -234,7 +234,7 @@ atlas lemma 1.0.9 "Three pairwise-distinct concurrent lines meet at a unique poi
 
 
 atlas commentary := by
-  ref lemma 1.0.10
+  via lemma 1.0.10
   name "Line Extensionality"
   preface "Two lines are coincident iff every point on one is on the other."
 
@@ -248,15 +248,15 @@ atlas lemma 1.0.10 "Line Extensionality"
      rw [LeqM]
      -- Backward Case
      intro hAllPonLonM
-     obtain ⟨A,B,AneB,AonL,BonL⟩ := ref axiom I.2 L
-     obtain ⟨C,D,CneD,ConM,DonM⟩ := ref axiom I.2 M
+     obtain ⟨A,B,AneB,AonL,BonL⟩ := via axiom I.2 L
+     obtain ⟨C,D,CneD,ConM,DonM⟩ := via axiom I.2 M
      have ABonM : (A on M) ∧ (B on M) := by
         have AonM := hAllPonLonM A
         have BonM := hAllPonLonM B
         obvious
      idea "Above, we show that under this case, A,B are on M, so let's construct the unique line AB from AB
      This is obviously equal to both L and M, since it's uniquely defined by A and B"
-     obtain ⟨AB, ⟨AonAB, BonAB⟩, ABuniq⟩ := ref axiom I.1 A B AneB
+     obtain ⟨AB, ⟨AonAB, BonAB⟩, ABuniq⟩ := via axiom I.1 A B AneB
      have ABeqL := ABuniq L ⟨AonL, BonL⟩
      have ABeqM := ABuniq M ABonM
      rw [ABeqL, ABeqM]
@@ -265,7 +265,7 @@ attribute [obvious] «Line Extensionality»
 
 
 atlas commentary := by
-  ref lemma 1.0.11
+  via lemma 1.0.11
   name "Two lines are distinct iff some point lies on exactly one"
   preface "Two lines are distinct iff they have at least one point not in common"
 
@@ -286,7 +286,7 @@ end Line
 namespace Intersection
 
 atlas commentary := by
-  ref lemma 1.0.12
+  via lemma 1.0.12
   name "Two pointed intersections of the same line pair share their point"
   preface "If two lines intersect, their intersection is unique."
   tags ["obvious.intersects"]
@@ -300,7 +300,7 @@ atlas lemma 1.0.12 "Two pointed intersections of the same line pair share their 
 
 
 atlas commentary := by
-  ref lemma 1.0.13
+  via lemma 1.0.13
   name "Pointed intersection is symmetric in its line arguments"
   preface "L intersects M is the same as M intersects L."
   tags ["obvious.intersects"]
@@ -321,7 +321,7 @@ attribute [symm] «Pointed intersection is symmetric in its line arguments»
 
 
 atlas commentary := by
-  ref lemma 1.0.14
+  via lemma 1.0.14
   name "A pointed intersection's witness point lies on the left line"
   preface "If L intersects M at X, then X is on L"
   tags ["obvious.intersects"]
@@ -335,7 +335,7 @@ atlas lemma 1.0.14 "A pointed intersection's witness point lies on the left line
 
 
 atlas commentary := by
-  ref lemma 1.0.15
+  via lemma 1.0.15
   name "A pointed intersection's witness point lies on the right line"
   preface "If L intersects M at X, then X is on M"
   tags ["obvious.intersects"]
@@ -349,16 +349,16 @@ atlas lemma 1.0.15 "A pointed intersection's witness point lies on the right lin
 
 
 atlas commentary := by
-  ref lemma 1.0.16
+  via lemma 1.0.16
   name "A pointed intersection's witness point lies on both lines"
   preface "If L intersects M at X, then X is on L and M"
 
 atlas lemma 1.0.16 "A pointed intersection's witness point lies on both lines"
-  : (L intersects M at X) -> (X on L) ∧ (X on M) := by intro inter; exact ⟨ref lemma 1.0.14 inter, ref lemma 1.0.15 inter⟩
+  : (L intersects M at X) -> (X on L) ∧ (X on M) := by intro inter; exact ⟨via lemma 1.0.14 inter, via lemma 1.0.15 inter⟩
 
 
 atlas commentary := by
-  ref lemma 1.0.17
+  via lemma 1.0.17
   name "On distinct lines crossing at X every other point on L is off M"
   preface "If L intersects M at X, then forall P not equal to X, if P on L, then P off M."
 
@@ -376,7 +376,7 @@ end Intersection
 namespace Betweenness
 
 atlas commentary := by
-  ref lemma 1.0.18
+  via lemma 1.0.18
   name "Betweenness contradiction: A-B-C cannot coexist with B-A-C"
   preface "With respect to a fixed point, every pair of points can be said to either be 'to the left' or 'to the right' of
 one another"
@@ -384,13 +384,13 @@ one another"
 atlas lemma 1.0.18 "Betweenness contradiction: A-B-C cannot coexist with B-A-C"
   : A - B - C ∧ B - A - C -> False := by
   intro ⟨ABC, _⟩
-  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 ABC
-  rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
+  obtain ⟨distinctABC, colABC, _⟩ := via axiom B.1 ABC
+  rcases via axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
   repeat contradiction
 
 
 atlas commentary := by
-  ref lemma 1.0.19
+  via lemma 1.0.19
   name "Betweenness contradiction: A-B-C cannot coexist with A-C-B"
   preface "With respect to a fixed point, every pair of points can be said to either be 'to the left' or 'to the right' of
 one another"
@@ -398,21 +398,21 @@ one another"
 atlas lemma 1.0.19 "Betweenness contradiction: A-B-C cannot coexist with A-C-B"
   : A - B - C ∧ A - C - B -> False := by
   intro ⟨ABC, _⟩
-  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 ABC
-  rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
+  obtain ⟨distinctABC, colABC, _⟩ := via axiom B.1 ABC
+  rcases via axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, nBAC, nACB⟩ | ⟨nABC,BAC,nACB⟩ | ⟨nABC,nBAC,ACB⟩
   repeat contradiction
 
 
 atlas commentary := by
-  ref lemma 1.0.20
+  via lemma 1.0.20
   name "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
   preface "With respect to a pair of fixed points, another point is either 'to the left' or 'to the right' of the pair"
 
 atlas lemma 1.0.20 "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
   : A - B - C ∧ C - A - B -> False := by
   intro ⟨ABC, CAB⟩
-  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 ABC
-  rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨_, nBAC, _⟩ | ⟨nABC, _, _⟩ | ⟨nABC, _, _⟩
+  obtain ⟨distinctABC, colABC, _⟩ := via axiom B.1 ABC
+  rcases via axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨_, nBAC, _⟩ | ⟨nABC, _, _⟩ | ⟨nABC, _, _⟩
   · exact nBAC CAB.symm
   · exact nABC ABC
   · exact nABC ABC

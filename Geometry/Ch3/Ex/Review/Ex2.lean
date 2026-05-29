@@ -30,7 +30,7 @@ open Atlas
 
 
 atlas commentary := by
-  ref exercise 3.Review.2
+  via exercise 3.Review.2
   page 146
   preface "
     (a) Finish the proof of proposiiton 3.1 by showing that ray A B ∪ ray B A = line A B

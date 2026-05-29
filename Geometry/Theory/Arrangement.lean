@@ -26,7 +26,7 @@ theorem Arrangement.tri {pts : List Point} (arr : Arrangement pts)
   arr.ordered_triple ⟨i, hi⟩ ⟨j, hj⟩ ⟨k, hk⟩ hij hjk
 
 atlas commentary := by
-  ref lemma 1.0.21
+  via lemma 1.0.21
   name "Arrangement.of_3"
   preface "A single A-B-C is a 3-arrangement."
 
@@ -682,7 +682,7 @@ private lemma get_of_idx_eq {α} (l : List α) {i j : Nat} (hi : i < l.length) (
     (h : i = j) : l.get ⟨i, hi⟩ = l.get ⟨j, hj⟩ := by subst h; rfl
 
 atlas commentary := by
-  ref lemma 3.0.5
+  via lemma 3.0.5
   name "Arrangement.cons"
   preface "Given a prior arrangement B-C-... and an anchor A-B-C, the chain A-B-C-... is also an arrangement."
 
@@ -754,7 +754,7 @@ atlas lemma 3.0.5 "Arrangement.cons"
     exact h
 
 atlas commentary := by
-  ref alternate 3.3
+  via alternate 3.3
   name "If A-B-C and A-C-D, then A-B-C-D"
   preface ""
   notes "Greenberg relies on figures to disambiguate arrangements, we cannot do that. To accomodate this infacility, we
@@ -763,10 +763,10 @@ atlas commentary := by
 atlas alternate 3.3 "full chain arrangement from overlapping outer-pair triples"
   {A B C D : Point} (h₁ : A - B - C) (h₂ : A - C - D) : A - B - C - D := by
   have hBCD : B - C - D := via proposition 3.3.i ⟨h₁, h₂⟩
-  exact via lemma 3.0.5 h₁ (ref lemma 1.0.21 hBCD)
+  exact via lemma 3.0.5 h₁ (via lemma 1.0.21 hBCD)
 
 atlas commentary := by
-  ref lemma 3.0.6
+  via lemma 3.0.6
   name "Arrangement.head_swap"
   preface "Given Arr[B,C,…] and B-X-C, derive Arr[X,C,…]."
 
@@ -847,7 +847,7 @@ atlas lemma 3.0.6 "Arrangement.head_swap"
     exact h
 
 atlas commentary := by
-  ref lemma 3.0.7
+  via lemma 3.0.7
   name "Arrangement.insert_head"
   preface "Given Arr[B,C,…] and B-X-C, derive Arr[B,X,C,…]. Composes head_swap with cons."
 
@@ -858,7 +858,7 @@ atlas lemma 3.0.7 "Arrangement.insert_head"
   via lemma 3.0.5 bxc (via lemma 3.0.6 arr bxc)
 
 atlas commentary := by
-  ref lemma 3.0.8
+  via lemma 3.0.8
   name "If A-B-C and B-C-D, then A-B-C-D"
   preface ""
 
@@ -868,7 +868,7 @@ atlas lemma 3.0.8 "If A-B-C and B-C-D, then A-B-C-D"
   exact via alternate 3.3 h₁ hACD
 
 atlas commentary := by
-  ref lemma 3.0.9
+  via lemma 3.0.9
   name "If A-B-D and B-C-D, then A-B-C-D"
   preface ""
 
@@ -879,7 +879,7 @@ atlas lemma 3.0.9 "If A-B-D and B-C-D, then A-B-C-D"
   exact via lemma 3.0.8 hABC h₂
 
 atlas commentary := by
-  ref lemma 3.0.10
+  via lemma 3.0.10
   name "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P=B, or B-P-C"
   preface ""
   notes "Resolves the topological ambiguity between two points (B, P) that are both strictly between the same outer pair (A, C). The proof case-splits on `P = B`; in the inequality branch it applies axiom B-3 to the three distinct collinear points {A, P, B} and discharges the impossible P-A-B case via corollary 3.3.i + lemma 1.0.18, and the A-B-P case via proposition 3.3.i."
@@ -889,8 +889,8 @@ atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P
     (A - P - B) ∨ (P = B) ∨ (B - P - C) := by
   by_cases hPeqB : P = B
   · right; left; exact hPeqB
-  obtain ⟨distinctABC, colABC, _⟩ := ref axiom B.1 h₁
-  obtain ⟨distinctAPC, colAPC, _⟩ := ref axiom B.1 h₂
+  obtain ⟨distinctABC, colABC, _⟩ := via axiom B.1 h₁
+  obtain ⟨distinctAPC, colAPC, _⟩ := via axiom B.1 h₂
   have AneB : A ≠ B := by distinguish
   have AneP : A ≠ P := by distinguish
   have AneC : A ≠ C := by distinguish
@@ -900,7 +900,7 @@ atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P
         Finset.card_insert_of_notMem (by simp [hPeqB]),
         Finset.card_singleton]
   have hSameLine : colAPC.line = colABC.line := by
-    apply ref lemma 2.0.2 AneC
+    apply via lemma 2.0.2 AneC
     exact ⟨colAPC.mem A, colABC.mem A, colAPC.mem C, colABC.mem C⟩
   have colAPB : collinear A P B := by
     refine ⟨colABC.line, ?_⟩
@@ -910,13 +910,13 @@ atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P
     · rw [hqA]; exact colABC.mem A
     · rw [hqP, ← hSameLine]; exact colAPC.mem P
     · rw [hqB]; exact colABC.mem B
-  rcases ref axiom B.3 A P B ⟨distinctAPB, colAPB⟩ with
+  rcases via axiom B.3 A P B ⟨distinctAPB, colAPB⟩ with
     ⟨APB, _, _⟩ | ⟨_, PAB, _⟩ | ⟨_, _, ABP⟩
   · left; exact APB
   · exfalso
     have BAP : B - A - P := PAB.symm
     have BAC : B - A - C := via corollary 3.3.i ⟨BAP, h₂⟩
-    exact ref lemma 1.0.18 ⟨h₁, BAC⟩
+    exact via lemma 1.0.18 ⟨h₁, BAC⟩
   · right; right
     exact via proposition 3.3.i ⟨ABP, h₂⟩
 

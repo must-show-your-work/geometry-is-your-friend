@@ -14,7 +14,7 @@ open Atlas
 
 
 atlas commentary := by
-  ref proposition 2.2
+  via proposition 2.2
   page 71
   name "Three distinct lines exist that are not concurrent"
   preface "There exist three distinct lines that are not concurrent."
@@ -23,11 +23,11 @@ atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
   : ∃ L M N : Line, (L ≠ M ∧ M ≠ N ∧ L ≠ N) ∧ ¬Concurrent L M N := by
     idea "Use the 3 non-collinear points to build three lines, we can prove they're distinct with
     some RAA, and then use the lemma to do the rest."
-    obtain ⟨A, B, C, hDistinct, hNC⟩ := ref axiom I.3
+    obtain ⟨A, B, C, hDistinct, hNC⟩ := via axiom I.3
     rcases hDistinct with ⟨hAneB, hAneC, hBneC⟩
-    obtain ⟨AB, ⟨hAonAB, hBonAB⟩, hABUniq⟩ := ref axiom I.1 A B hAneB
-    obtain ⟨BC, ⟨hBonBC, hConBC⟩, hBCUniq⟩ := ref axiom I.1 B C hBneC
-    obtain ⟨AC, ⟨hAonAC, hConAC⟩, hACUniq⟩ := ref axiom I.1 A C hAneC
+    obtain ⟨AB, ⟨hAonAB, hBonAB⟩, hABUniq⟩ := via axiom I.1 A B hAneB
+    obtain ⟨BC, ⟨hBonBC, hConBC⟩, hBCUniq⟩ := via axiom I.1 B C hBneC
+    obtain ⟨AC, ⟨hAonAC, hConAC⟩, hACUniq⟩ := via axiom I.1 A C hAneC
     have hABneBC : AB ≠ BC := by
       by_contra! hABeqBC
       have hCoffBC := hNC AB hAonAB hBonAB
@@ -47,7 +47,7 @@ atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
     constructor; trivial
     by_contra! hNeg
     comment "Let's find the Point the Author talks about in the proposed lemma"
-    obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := ref lemma 1.0.9 ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
+    obtain ⟨P, ⟨hPonAB, hPonBC, hPonAC⟩, hPUniq⟩ := via lemma 1.0.9 ⟨hABneBC,hBCneAC,hABneAC⟩ hNeg
     comment "This lemma was not suggested by the author, but is handy. The proof is not long and simply establishes the
     'Parallel' fact for each pair of lines. We need the unique point and the negative condition to build these"
     have hABnotparBC : (AB ∦ BC) := by obvious

@@ -30,7 +30,7 @@ open Atlas
 
 
 atlas commentary := by
-  ref proposition 3.5
+  via proposition 3.5
   page 114
   aliases [
     exercise 3.Review.3.c

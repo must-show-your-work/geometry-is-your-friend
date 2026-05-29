@@ -19,7 +19,7 @@ open Atlas
 -- p. 69-70, Ed. The author provides these as very terse statements, I've tried to give informal
 -- respellings as documentation.
 atlas commentary := by
-  ref axiom I.1
+  via axiom I.1
   name "Two distinct points determine a unique line through them"
   preface "For any two distinct points P and Q, there exists a unique line L which has P and Q"
 
@@ -28,7 +28,7 @@ atlas axiom I.1 "Two distinct points determine a unique line through them"
 attribute [simp] «Two distinct points determine a unique line through them»
 
 atlas commentary := by
-  ref axiom I.2
+  via axiom I.2
   name "Every line contains at least two distinct points"
   preface "For any line, there are at least two distinct points on it"
 
@@ -37,7 +37,7 @@ atlas axiom I.2 "Every line contains at least two distinct points"
 attribute [simp] «Every line contains at least two distinct points»
 
 atlas commentary := by
-  ref axiom I.3
+  via axiom I.3
   name "There exist three points not all lying on a common line"
   preface "There exists three distinct points not on any single line (\"There exists three non-collinear points\", but without mentioning the undefined notion of collinearity)"
 

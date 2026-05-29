@@ -10,7 +10,7 @@ open Geometry.Theory
 open Atlas
 
 atlas commentary := by
-  ref alternate 2.1
+  via alternate 2.1
   page 71
   name "Distinct non-parallel lines share a unique point (direct proof)"
   preface "If `l` and `m` are distinct lines that are not parallel, then `l` and `m` have a unique point in common"
@@ -31,7 +31,7 @@ atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct pr
     intro Q
     by_contra! ⟨hQonLM, hNeg⟩
     idea "PQ = L, PQ = M, but L != M"
-    obtain ⟨PQ, _, hPQUniq⟩ := ref axiom I.1 P Q hNeg.symm
+    obtain ⟨PQ, _, hPQUniq⟩ := via axiom I.1 P Q hNeg.symm
     have hLisPQ := hPQUniq L ⟨hPonLM.left, hQonLM.left⟩
     have hMisPQ := hPQUniq M ⟨hPonLM.right, hQonLM.right⟩
     have hLeqM : (L = M) := by
@@ -39,7 +39,7 @@ atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct pr
     contradiction
 
 atlas commentary := by
-  ref proposition 2.1
+  via proposition 2.1
   name "Distinct non-parallel lines share a unique point"
   preface "A corrolary of the main theorem that is more useful since it uses the syntax directly."
 
