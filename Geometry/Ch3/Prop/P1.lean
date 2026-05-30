@@ -17,7 +17,7 @@ open Geometry.Theory
 open Atlas
 
 atlas commentary := by
-  ref proposition 3.1.i
+  via proposition 3.1.i
   page 109
   name "Two rays from common endpoints intersect in their segment"
   preface "For any two points A and B: (i) Ray A B ∩ Ray B A = Segment A B ..."
@@ -45,7 +45,7 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
         · rw [PeqC]; exact CinInt.left
       quoting ... "so exactly one of A - C - B, A - B - C, or C - A - B holds (Axiom B-3)." ...
       have ⟨ConAB, ConBA⟩ : C on ray A B ∧ C on ray B A := obvious
-      rcases ref axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, _, _⟩ | ⟨_, CAB, _⟩ | ⟨_, _ACB⟩
+      rcases via axiom B.3 A B C ⟨distinctABC, colABC⟩ with ⟨ABC, _, _⟩ | ⟨_, CAB, _⟩ | ⟨_, _ACB⟩
       · quoting (4) "If A - B - C holds, then C is not on the ray B A" ...
         have CoffBA : C off ray B A := by obvious
         contradiction
@@ -58,7 +58,7 @@ atlas proposition 3.1.i "Two rays from common endpoints intersect in their segme
 
 
 atlas commentary := by
-  ref proposition 3.1.ii
+  via proposition 3.1.ii
   page 109
   aliases [
     -- exercise 3.Review.2.a
@@ -73,8 +73,8 @@ atlas proposition 3.1.ii "Two rays from common endpoints union to their line"
   apply Line.eq_of_subset
   · intro P PinUnion
     rcases PinUnion with PinAB | PinBA
-    · exact ref lemma 1.0.8 PinAB
-    · apply ref lemma 1.0.8 at PinBA
+    · exact via lemma 1.0.8 PinAB
+    · apply via lemma 1.0.8 at PinBA
       obvious
   · intro P PinLine
     comment "Need to handle the equality cases first, we'll refer to these later in the proof"

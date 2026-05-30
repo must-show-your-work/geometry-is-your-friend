@@ -36,7 +36,7 @@ namespace Between.Consequences
 end Between.Consequences
 
 atlas commentary := by
-  ref axiom B.1
+  via axiom B.1
   page 108
   name "A-B-C implies distinctness, collinearity, and commutativity"
   preface "If A - B - C, then A, B, C are distinct points on the same line, and C - B - A."
@@ -53,7 +53,7 @@ attribute [simp, obvious] «A-B-C implies distinctness, collinearity, and commut
 
 
 atlas commentary := by
-  ref axiom B.2
+  via axiom B.2
   page 108
   name "Two distinct points admit a left, middle, and right witness on their line"
   preface "Given any two distinct points B and D, there exist points A, C, and E lying on →ₗBD such that
@@ -72,7 +72,7 @@ attribute [simp] «Two distinct points admit a left, middle, and right witness o
 -- moved to `Geometry/Theory/Interpendices/A.lean` (axiom-derivable).
 
 atlas commentary := by
-  ref axiom B.3
+  via axiom B.3
   page 108
   name "Three distinct collinear points have exactly one between-arrangement"
   preface "If A, B, and C are three distinct points lying on the same line, then
@@ -132,7 +132,7 @@ notation:20 L " guards " A " and " B => Guards A B L
   ¬(L guards A and B) ↔ (L splits A and B) := Iff.rfl
 
 atlas commentary := by
-  ref axiom B.4.i
+  via axiom B.4.i
   page 110
   name "Same-side is transitive across a common middle point"
   preface "Betweenness Axiom 4 (Plane Separation). For every line L and for any
@@ -148,7 +148,7 @@ atlas axiom B.4.i "Same-side is transitive across a common middle point"
 attribute [simp] «Same-side is transitive across a common middle point»
 
 atlas commentary := by
-  ref axiom B.4.ii
+  via axiom B.4.ii
   page 110
   name "Two opposite-side relations chain to a same-side relation"
   preface "... (ii) If A and B are on opposite sides of L and if B and C are opposite

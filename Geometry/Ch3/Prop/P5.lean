@@ -30,16 +30,13 @@ open Atlas
 
 
 atlas commentary := by
-  ref proposition 3.5
+  via proposition 3.5
   page 114
   aliases [
-    -- exercise 3.Review.3.c
+    exercise 3.Review.3.c
   ]
   name "Given A-B-C. Then AC = AB ∪ BC and B is the only point common to segments AB and BC."
   preface "Here are some more results on betweenness and separation that you will be asked to prove in the exercises"
-  notes "This theorem is essentially 'you can cut a segment into parts via betweenness.' I've aimed to just directly
-prove the theorem without completing the other exercises. The exercises in this book are very good and well worth the
-price of admission, so I don't want to spoil them all here."
 
 
 atlas proposition 3.5 "If A-B-C then AC = AB ∪ BC..."

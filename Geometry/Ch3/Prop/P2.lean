@@ -20,7 +20,7 @@ open Geometry.Ch3.Prop
 open Atlas
 
 atlas commentary := by
-  ref proposition 3.2
+  via proposition 3.2
   page 112
   name "Every line bounds exactly two disjoint half-planes"
   preface "Every line bounds exactly two half-planes, and these half-planes have no point in common."
@@ -34,12 +34,12 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
   quoting (1) "There is a point A not lying on l, (Proposition 2.3 [proposition 2.3])."
   intro L LeqLineAB AneB
   obtain ⟨A, AoffL⟩ := proposition 2.3 L
-  quoting (2) "There is a point O lying on l (Incidence Axiom 2 [ref axiom I.2])."
-  obtain ⟨O, _, _, OonL, _⟩ := ref axiom I.2 L
-  quoting (3) "There is a point B such that B * O * A (Betweenness Axiom 2 [ref axiom B.2])"
+  quoting (2) "There is a point O lying on l (Incidence Axiom 2 [via axiom I.2])."
+  obtain ⟨O, _, _, OonL, _⟩ := via axiom I.2 L
+  quoting (3) "There is a point B such that B * O * A (Betweenness Axiom 2 [via axiom B.2])"
   have AneO : A ≠ O := by -- author omits this step
     by_contra!; rw [this] at AoffL; obvious
-  have ⟨B, _, _, colBOA, distinctBOA, bBOA, _, _⟩ := ref axiom B.2 O A AneO.symm
+  have ⟨B, _, _, colBOA, distinctBOA, bBOA, _, _⟩ := via axiom B.2 O A AneO.symm
   have AneB : A ≠ B := by distinguish
   have LneAO : L ≠ segment A O := by
     by_contra! hNeg;
@@ -56,14 +56,14 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
     contradiction
   have BoffL : B off L := by
     idea "since A is off L, and O is on, the AO intersects L at O, extend AO, since AOB, then B is on this extension."
-    have ⟨distinctBOA, colBOA, _⟩ := ref axiom B.1 bBOA
+    have ⟨distinctBOA, colBOA, _⟩ := via axiom B.1 bBOA
     separate at distinctBOA
     have LintAOatO : L intersects segment A O at O := by
       unfold Intersects
       have OonAO : O on segment A O := by obvious
       have OonInt : O on L ∩ segment A O := by obvious
-      exact (ref lemma 2.0.17 O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
-    have h := ref lemma 2.0.18 AneO LintAOatO
+      exact (via lemma 2.0.17 O L (segment A O) ⟨LneAO, LnoparAO⟩).mp OonInt
+    have h := via lemma 2.0.18 AneO LintAOatO
     unfold Ray at h
     have BonExtAO : B on extension A O := ⟨bBOA.symm, AneB, BneO.symm⟩
     have BonRayAO : B on ray A O := by obvious
@@ -85,7 +85,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
   comment "Construct point C off L and distinct from A and B as follows.
 
   1. Take AB and find it's intersection by L, call it O (since that's where it is)
-  2. Examine segment A O with ref axiom B.2, we want C with A - C - O
+  2. Examine segment A O with via axiom B.2, we want C with A - C - O
   3. Use C."
   comment "Here are the sets we require"
   let Hl : Set Point := {P | L guards A and P}
@@ -106,7 +106,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
         intro LsplitsBC
         quoting ... "then C and A are on the same side of L (by the law of the excluded middle and Betweenness Axiom 4(ii))."
         by_contra LsplitsAC
-        have LguardsAB := ref axiom B.4.ii ⟨LsplitsAC, LsplitsBC.symm⟩
+        have LguardsAB := via axiom B.4.ii ⟨LsplitsAC, LsplitsBC.symm⟩
         contradiction
       by_cases suppose: L splits B and C
       · specialize AseparatefromB suppose
@@ -126,7 +126,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       · obtain ⟨BoffL, CoffL, hOpts⟩ := CinHr
         tauto
   quoting (6) "If C were on both sides (RAA Hypothesis), then A and B would be on the
-  same side (Axiom 4(i) [ref axiom B.4.i]), contradicting step 4; hence the two sides are
+  same side (Axiom 4(i) [via axiom B.4.i]), contradicting step 4; hence the two sides are
   disjoint."
   have HlintHrempty : Hl ∩ Hr = ∅ := by
     apply Subset.antisymm
@@ -136,7 +136,7 @@ atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
       have LguardsBandP : L guards B and P := PinHr
       have LguardsPandB : L guards P and B := LguardsBandP.symm
       have PoffL : P off L := by tauto
-      have LguardsAandB : L guards A and B := ref axiom B.4.i ⟨LguardsAandP, LguardsPandB⟩
+      have LguardsAandB : L guards A and B := via axiom B.4.i ⟨LguardsAandP, LguardsPandB⟩
       contradiction
     · intro P PinEmpty
       contradiction

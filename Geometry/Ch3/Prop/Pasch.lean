@@ -29,7 +29,7 @@ open Atlas
 
 
 atlas commentary := by
-  ref theorem 3.0
+  via theorem 3.0
   page 114
   aliases [
     Geometry.Theory.pasch,
@@ -74,9 +74,9 @@ atlas theorem 3.0 "Pasch's Theorem"
         · obvious
         · rw [PeqC, SegABeqSegBC]; obvious
       contradiction
-    clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (ref lemma 2.0.12)
-    clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (ref lemma 2.0.12)
-    clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (ref lemma 2.0.12)
+    clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (via lemma 2.0.12)
+    clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (via lemma 2.0.12)
+    clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (via lemma 2.0.12)
     quoting (1) "Either C lies on L or it does not; if it does, the theorem holds (law the excluded middle)"
     clearly C off L := by
       have ConAC : C on segment A C := obvious
@@ -97,7 +97,7 @@ atlas theorem 3.0 "Pasch's Theorem"
         have : A ∈ L ∩ segment A B := ⟨AonL, by obvious⟩
         rw [LintSegAB] at this
         have AeqX : A = X := this
-        have dAXB := (ref axiom B.1 AXB).distinct
+        have dAXB := (via axiom B.1 AXB).distinct
         separate at dAXB
         contradiction
     clearly B off L := by
@@ -109,7 +109,7 @@ atlas theorem 3.0 "Pasch's Theorem"
         have : B ∈ L ∩ segment A B := ⟨BonL, by obvious⟩
         rw [LintSegAB] at this
         have BeqX : X = B := this.symm
-        have dAXB := (ref axiom B.1 AXB).distinct
+        have dAXB := (via axiom B.1 AXB).distinct
         separate at dAXB
         contradiction
     quoting ... "and the segment A B does intersect L (hypothesis and Axiom B-1)"
@@ -123,24 +123,24 @@ atlas theorem 3.0 "Pasch's Theorem"
            on the same side of L as B (separation axiom)"
     have LguardsACorBC : (L guards A and C) ∨ (L guards B and C) := by
       by_contra! ⟨LsplitsAC, LsplitsBC⟩
-      exact absurd (ref axiom B.4.ii ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
+      exact absurd (via axiom B.4.ii ⟨LsplitsAB, LsplitsBC⟩) LsplitsAC
     rcases LguardsACorBC with LguardsAC | LguardsBC
     · quoting (5) "If C is on the same side of L as A, then C is on the opposite side from B, which means that L intersects BC
            and does not intersect AC" ...
-      have LsplitsBC : L splits B and C := ref corollary B.4.iii ⟨LsplitsAB.symm, LguardsAC⟩
+      have LsplitsBC : L splits B and C := via corollary B.4.iii ⟨LsplitsAB.symm, LguardsAC⟩
       have LintBC : L intersects segment B C := via lemma 3.7.3 LsplitsBC
-      have LguardsAC := ref axiom B.4.ii ⟨LsplitsAB, LsplitsBC⟩
+      have LguardsAC := via axiom B.4.ii ⟨LsplitsAB, LsplitsBC⟩
       constructor
       · right; exact LintBC
       · intro; push Not; contrapose!; intro;
-        exact ref corollary 3.7.3 LguardsAC
+        exact via corollary 3.7.3 LguardsAC
     · quoting ... "similarly, if C is on the same side of L as B, then L intersects AC and does not intersect BC (separation axiom)."
-      have LsplitsAC := ref corollary B.4.iii ⟨LsplitsAB, LguardsBC⟩
+      have LsplitsAC := via corollary B.4.iii ⟨LsplitsAB, LguardsBC⟩
       have LintAC := via lemma 3.7.3 LsplitsAC
       constructor
       · left; exact LintAC
       · intro; push Not; intro;
-        exact ref corollary 3.7.3 LguardsBC
+        exact via corollary 3.7.3 LguardsBC
     quoting (6) "The conclusion of Pasch's theorem holds (Logic Rule 11 -- proof by cases). ∎"
 
 

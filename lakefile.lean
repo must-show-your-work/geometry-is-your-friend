@@ -16,13 +16,11 @@ open Lake DSL
 require verso from git
   "https://github.com/leanprover/verso.git" @ "c004fc5a02584e08def4bfe5c0632d7e208efb58"
 
--- Atlas is now an external dep — path-based while extraction is in
--- progress. Standalone repo lives at ~/angband/human/curu/atlas/.
--- Once that repo's manifest is stable and committed, swap this for
--- a git+subDir require pointing at the angband monorepo
--- (~/angband-style: `from git "ssh://git.arda/.../angband.git" @ "main"
--- / "human/curu/atlas"`).
-require atlas from "../../angband/human/curu/atlas"
+-- Atlas is now an external dep — path-based while the must-show-your-work
+-- org doesn't yet have remotes. Sibling repo at ../atlas. Once the org
+-- has GitHub remotes, swap this for `from git "https://github.com/
+-- must-show-your-work/atlas.git" @ "main"`.
+require atlas from "../atlas"
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 

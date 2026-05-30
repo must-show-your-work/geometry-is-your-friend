@@ -315,7 +315,7 @@ def Intersects (L M : Line) (X : Point) : Prop := L ∩ M = ({X} : Line)
     below renders this as `L intersects M` in proof states.
 
     Going from this to a unique intersection point (`L intersects M at X`)
-    requires extra work — typically `ref lemma 3.0.1` for lines,
+    requires extra work — typically `via lemma 3.0.1` for lines,
     which uses `line_trichotomy` to rule out coincidence. -/
 def IntersectsSome (L M : Line) : Prop := ∃ P, P ∈ L ∧ P ∈ M
 

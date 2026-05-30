@@ -22,7 +22,7 @@ open Geometry.Ch3.Ex
 open Atlas
 
 atlas commentary := by
-  ref exercise 3.Betweenness.1.a
+  via exercise 3.Betweenness.1.a
   page 146
   name "Exercise 1(a): four points from chained betweenness are distinct"
   preface "Given A-B-C and A-C-D:
@@ -31,14 +31,14 @@ atlas commentary := by
 atlas exercise 3.Betweenness.1.a "Exercise 1(a): four points from chained betweenness are distinct"
   : A - B - C ∧ A - C - D -> distinct A B C D := by
   intro ⟨ABC, ACD⟩
-  have distinctABC := (ref axiom B.1 ABC).distinct
-  have distinctACD := (ref axiom B.1 ACD).distinct
+  have distinctABC := (via axiom B.1 ABC).distinct
+  have distinctACD := (via axiom B.1 ACD).distinct
   separate at distinctABC
   separate at distinctACD
   have BneD : B ≠ D := by
     by_contra! BeqD
     rw [<- BeqD] at ACD
-    exact ref lemma 1.0.19 ⟨ABC, ACD⟩
+    exact via lemma 1.0.19 ⟨ABC, ACD⟩
   refine ⟨?_⟩
   simp [Finset.card_insert_of_notMem, Finset.card_singleton,
         Finset.mem_insert, Finset.mem_singleton,
@@ -46,7 +46,7 @@ atlas exercise 3.Betweenness.1.a "Exercise 1(a): four points from chained betwee
 
 
 atlas commentary := by
-  ref exercise 3.Betweenness.1.b
+  via exercise 3.Betweenness.1.b
   page 146
   name "Exercise 1(b): four points from chained betweenness are collinear"
   preface "(b) Prove that A,B,C, and D are collinear"
@@ -57,9 +57,9 @@ atlas exercise 3.Betweenness.1.b "Exercise 1(b): four points from chained betwee
   -- We only end up needing A ≠ C, but easy to get the whole thing.
   have distinctABCD : distinct A B C D := via exercise 3.Betweenness.1.a ⟨ABC, ACD⟩
   have AneC : A ≠ C := by distinguish
-  have colABC := (ref axiom B.1 ABC).collinear
-  have colACD := (ref axiom B.1 ACD).collinear
-  have LeqM : colABC.line = colACD.line := ref lemma 2.0.2 AneC ⟨colABC.mem A, colACD.mem A, colABC.mem C, colACD.mem C⟩
+  have colABC := (via axiom B.1 ABC).collinear
+  have colACD := (via axiom B.1 ACD).collinear
+  have LeqM : colABC.line = colACD.line := via lemma 2.0.2 AneC ⟨colABC.mem A, colACD.mem A, colABC.mem C, colACD.mem C⟩
   use colABC.line
   intro P PisABCD
   simp only [Finset.mem_insert, Finset.mem_singleton] at PisABCD
@@ -76,21 +76,21 @@ atlas exercise 3.Betweenness.1.b "Exercise 1(b): four points from chained betwee
 /- (c) Prove the corollary to B-4 — covered by the `B.4.iii` corollary in its own file. -/
 
 atlas commentary := by
-  ref lemma 3.0.3
+  via lemma 3.0.3
   name "Distinct four points from shifted chained betweenness (A-B-C and B-C-D)"
   notes "These (Ex1 a' and b') are not in the exercise but are quite convenient elsewhere"
 
 atlas lemma 3.0.3 "Distinct four points from shifted chained betweenness (A-B-C and B-C-D)"
   : (A - B - C) ∧ (B - C - D) → distinct A B C D := by
   intro ⟨ABC, BCD⟩
-  have distinctABC := (ref axiom B.1 ABC).distinct
-  have distinctBCD := (ref axiom B.1 BCD).distinct
+  have distinctABC := (via axiom B.1 ABC).distinct
+  have distinctBCD := (via axiom B.1 BCD).distinct
   separate at distinctABC
   separate at distinctBCD
   have AneD : A ≠ D := by
     by_contra! AeqD
     rw [AeqD] at ABC
-    exact ref lemma 1.0.20 ⟨BCD, ABC⟩
+    exact via lemma 1.0.20 ⟨BCD, ABC⟩
   refine ⟨?_⟩
   simp [Finset.card_insert_of_notMem, Finset.card_singleton,
         Finset.mem_insert, Finset.mem_singleton,
@@ -101,11 +101,11 @@ atlas lemma 3.0.4 "Collinear four points from shifted chained betweenness (A-B-C
   : (A - B - C) ∧ (B - C - D) → collinear A B C D := by
   intro ⟨ABC, BCD⟩
   -- we only end up needing A ≠ C, but easy to get the whole thing.
-  have distinctABCD := ref lemma 3.0.3 ⟨ABC, BCD⟩
+  have distinctABCD := via lemma 3.0.3 ⟨ABC, BCD⟩
   have BneC : B ≠ C := by distinguish
-  have colABC := (ref axiom B.1 ABC).collinear
-  have colBCD := (ref axiom B.1 BCD).collinear
-  have LeqM : colABC.line = colBCD.line := ref lemma 2.0.2 BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
+  have colABC := (via axiom B.1 ABC).collinear
+  have colBCD := (via axiom B.1 BCD).collinear
+  have LeqM : colABC.line = colBCD.line := via lemma 2.0.2 BneC ⟨colABC.mem B, colBCD.mem B, colABC.mem C, colBCD.mem C⟩
   use colABC.line
   intro P PisABCD
   simp only [Finset.mem_insert, Finset.mem_singleton] at PisABCD
