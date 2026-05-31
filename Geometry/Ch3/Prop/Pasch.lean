@@ -45,16 +45,30 @@ another side."
   notes "The author doesn't give Pasch's a number, but also calls it a 'theorem', eschewing the possible alliteration.
   While this dodge is sad, it is the case, and theorems are fortunately numbered separately from propositions, solving our
   possible off-by-one situation. Perhaps our disappointment was worth it after all."
+
+  -- Ideal alternative, but sometimes the inference will be weird and I'll want to override.
   figure := by
-    file "./assets/pasch_fig1.svg"
-    title "Pasch's Theorem"
-    index 1
-    caption "A line L crosses segment AB at X and exits through BC."
+    infer from statement
+
+  -- Manual alternative
   figure := by
-    file "./assets/pasch_fig2.svg"
-    title "Alternative crossing"
-    index 2
-    caption "L crosses AB at X and exits through AC at Y."
+    exists A B C : Point -- introduce points unconditionally
+    exists L : Line
+    assert distinct A B C -- assert a constraint on prior objects
+    assert ¬(collinear A B C) -- can assert negative constraints
+    construct segment A B -- construct new objects from old
+    construct segment B C
+    construct segment A C
+    assert L instersects A B -- complicated assertions are fine
+    -- at this point the problem is a constraint problem, we would feed this to, e.g., geogebra in the html view and
+    -- create a geogebra canvas that could have things dragged around. Ideally we would identify which points are
+    -- presently unconstrained by giving them a different color or w/e
+    --
+    -- the idea is the IR is not concerned with maintaining the consistency of the diagram, if I specify two contradictory
+    -- constraints that's a warning, not an error. the system may produce garbage or nothing after that has occurred, but it
+    -- shouldn't block compilation.
+    
+    
 
 
 atlas theorem 3.0 "Pasch's Theorem"
@@ -64,8 +78,12 @@ atlas theorem 3.0 "Pasch's Theorem"
   (C off L -> ¬((L intersects segment A C) ∧ (L intersects segment B C))) := by
     comment "mise en place"
     separate at distinctABC
+    -- Here is a place where I might want to add a temporary constraint to the line; `assert segment A B = segment B C`
+    -- and show the degenerate diagram as a result
     clearly (segment A B : Line) ≠ (segment B C : Line) := by
       idea "if AB = BC, then ABC are collinear, which is a contradiction"
+      -- not sure on this syntax.
+      figure := auxillary (assert segment A B = segment B C)
       have colABC : collinear A B C := by
         use (segment A B : Line)
         intro P PisABorC

@@ -3,11 +3,11 @@
     "flake-compat": {
       "flake": false,
       "locked": {
-        "lastModified": 1747046372,
-        "narHash": "sha256-CIVLLkVgvHYbgI2UpXvIIBJ12HWgX+fjA8Xf8PUmqCY=",
+        "lastModified": 1767039857,
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
         "owner": "edolstra",
         "repo": "flake-compat",
-        "rev": "9100a0f413b0c601e0533d1d94ffd501ce2e7885",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
         "type": "github"
       },
       "original": {
@@ -128,11 +128,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1771938458,
-        "narHash": "sha256-yO2VQ/PUCb3A3wx0Q06AhXjhTzGECpLAtCPK2KA96po=",
+        "lastModified": 1780062012,
+        "narHash": "sha256-0vpCyIhcBe1bD3MyZd5DCsevmXkKFZd0HYaLCSU+su8=",
         "owner": "cachix",
         "repo": "nixpkgs-python",
-        "rev": "2571ebc7280fea24ae8827c33f0a644ae515efe2",
+        "rev": "5030393c8dfde39bddef22ef7e0415f687a96e8f",
         "type": "github"
       },
       "original": {
@@ -162,8 +162,8 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1780089030,
-        "narHash": "sha256-AguLJW6vkr8Bp5FhAzJX1qVBYtFldyuib72JRIBR45s=",
+        "lastModified": 1780192288,
+        "narHash": "sha256-4GXTwq/tS/bMQxurQSJxDBPj9cwT2UmfBM8AQcg6YSY=",
         "path": "/storage/code/must-show-your-work/shed",
         "type": "path"
       },
