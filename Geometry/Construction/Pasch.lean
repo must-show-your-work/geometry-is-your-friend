@@ -23,21 +23,25 @@ namespace Geometry.Construction.Examples
 open Figures
 
 /-- Pasch's theorem figure as a 2D scene. Hand-laid:
-- `A`, `B`, `C` form a triangle (north / east / south of canvas center).
-- `X` lies on segment `AB` (~40% from A toward B).
-- `L` passes through `X` at a shallow angle, exiting on both edges.
+- `A`, `B`, `C` form a clearly scalene triangle (side lengths
+  ~372 / 380 / 340) so the diagram doesn't accidentally suggest
+  isoceles/equilateral — Pasch holds for any triangle.
+- `BC` is horizontal — a stable visual baseline; good drafting practice.
+- `X` lies on segment `AB` (~35% from A toward B).
+- `L` passes through `X` at a downward-right slope; SVG renderer
+  extends to the canvas edges.
 
 The `Scene.constraints` array records the symbolic relationships
 (`between A X B`, `incident X L`, `distinct`, `noncollinear`) as
 opaque metadata, available to backends that consume it. -/
 def pasch : Scene Pos2 :=
-  let A : Pos2 := (240, 80)
-  let B : Pos2 := (400, 360)
-  let C : Pos2 := (80, 360)
-  -- X on segment AB at t = 0.4 (closer to A).
-  let X : Pos2 := ⟨A.x + 0.4 * (B.x - A.x), A.y + 0.4 * (B.y - A.y)⟩
-  -- L through X with a downward-right slope, extending to canvas edges.
-  let lDir : Pos2 := (200, 80)  -- direction vector
+  let A : Pos2 := (220, 60)
+  let B : Pos2 := (440, 360)
+  let C : Pos2 := (60, 360)
+  -- X on segment AB at t = 0.35.
+  let X : Pos2 := ⟨A.x + 0.35 * (B.x - A.x), A.y + 0.35 * (B.y - A.y)⟩
+  -- Two reference points on L through X; renderer extends to viewport.
+  let lDir : Pos2 := (200, 70)
   let L1 : Pos2 := ⟨X.x - lDir.x, X.y - lDir.y⟩
   let L2 : Pos2 := ⟨X.x + lDir.x, X.y + lDir.y⟩
   {
