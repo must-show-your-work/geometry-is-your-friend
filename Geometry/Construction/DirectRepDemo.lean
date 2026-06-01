@@ -1,18 +1,18 @@
 /-
 Geometry/Construction/DirectRepDemo.lean — End-to-end smoke test of
-the `figure := by direct_rep <term>` field added to atlas.
+the `figure := by direct_rep <term>` field on the new figures stack.
 
-Imports `Geometry.Construction.Pasch` (the hand-encoded Pasch IR),
-declares a stub atlas theorem to serve as the figure's host, and
-attaches the Pasch construction's `.toSvg` output to that theorem via
-the new `direct_rep` field. Exercises:
+Imports `Geometry.Construction.Pasch` (the hand-coordinated Pasch
+`Scene`), declares a stub atlas theorem to serve as the figure's host,
+and attaches the scene to that theorem via `direct_rep pasch`. atlas
+dispatches via `Figures.Renderable (Scene Pos2) String` and looks up
+the SVG backend instance automatically — no `.toSvg` call needed at
+the use site. Pipeline:
 
-  giyf IR  →  giyf .toSvg  →  atlas direct_rep field  →
-  atlas SvgParser.parse  →  atlas Figure widget
+  giyf Scene → atlas direct_rep (Renderable lookup) →
+  Figures.SVG.render → atlas.SvgParser.parse → figure widget
 
-Lake-build green here means the cross-repo wiring works. Once we have
-the actual DSL → IR parser, this file's role is just regression
-coverage for the bypass / debug path.
+Lake-build green here means the cross-repo wiring works.
 -/
 
 import Atlas
@@ -24,17 +24,16 @@ open Geometry.Construction.Examples
 atlas commentary := by
   via theorem 999.0
   name "direct_rep smoke test"
-  preface "Smoke test for `figure := by direct_rep <IR>` — hands the
-hand-encoded Pasch `Construction` to atlas's `direct_rep` field, which
-internally renders to SVG and attaches via the figure widget.
-Geometric placement is intentionally wrong (pure-naive layout); the
-point is to prove the pipeline."
+  preface "Smoke test for `figure := by direct_rep <Scene>` — hands the
+hand-coordinated Pasch `Scene` to atlas's `direct_rep` field, which
+dispatches polymorphically via `Figures.Renderable α String` to find
+the SVG backend instance and produce the figure's SVG body."
 
   figure := by
     direct_rep pasch
     title "Pasch (direct_rep)"
     index 1
-    caption "Pure-naive layout via direct_rep. Geometric placement is wrong (X isn't on AB, L doesn't pass through X) — constraint-aware layout is a follow-up. Renders correctly via libresvg now that SVG output is duplicate-attribute-free."
+    caption "Hand-coordinated Scene. X lies on segment AB, L passes through X — positions chosen by us, since the geometric DSL that would compute these from declarative constraints isn't built yet."
 
 /-- Stub theorem to host the commentary above. Tactic-mode proof (not
 just `:= trivial`) so atlas's `with_atlas_panels` wrapper fires and the

@@ -1,11 +1,18 @@
 /-
-Geometry/Construction/Pasch.lean — Worked example: Pasch's theorem
-(Ch3/Prop/Pasch.lean, atlas 3.0) encoded as a `Construction`.
+Geometry/Construction/Pasch.lean — Pasch's theorem (atlas 3.0, see
+Ch3/Prop/Pasch.lean) encoded as a `Figures.Scene`.
 
-Exists to exercise the IR shape. The eventual DSL → IR parser will
-produce values like this one out of `figure := by …` blocks; until
-then, this is a hand-encoded reference and a `#eval` round-trip
-sanity check.
+This is a HAND-COORDINATED scene: positions are chosen by us so that
+the geometric constraints (X between A and B; L incident with X)
+visibly hold. The eventual giyf geometric DSL will compile higher-level
+syntax (`exists A B C : Point; assert between A X B; …`) into a Scene
+like this one — running its own constraint solver to assign positions.
+Until then, this is the hand-built reference for the IR + SVG path.
+
+The `Scene.constraints` array carries the symbolic intent as opaque
+metadata, so a future GeoGebra backend can pick it up and wire
+interactivity (e.g. draggable X constrained to AB). Default SVG
+backend ignores `constraints` entirely.
 -/
 
 import Figures
@@ -15,67 +22,57 @@ namespace Geometry.Construction.Examples
 
 open Figures
 
-/-- Pasch's theorem figure.
+/-- Pasch's theorem figure as a 2D scene. Hand-laid:
+- `A`, `B`, `C` form a triangle (north / east / south of canvas center).
+- `X` lies on segment `AB` (~40% from A toward B).
+- `L` passes through `X` at a shallow angle, exiting on both edges.
 
-Base: distinct non-collinear points `A`, `B`, `C` plus a line `L` that
-meets segment `AB` at a point `X` strictly between `A` and `B`. (The
-theorem's conclusion — `L` also meets `AC` or `BC` — is not in the
-figure; it's what the proof establishes.)
+The `Scene.constraints` array records the symbolic relationships
+(`between A X B`, `incident X L`, `distinct`, `noncollinear`) as
+opaque metadata, available to backends that consume it. -/
+def pasch : Scene Pos2 :=
+  let A : Pos2 := (240, 80)
+  let B : Pos2 := (400, 360)
+  let C : Pos2 := (80, 360)
+  -- X on segment AB at t = 0.4 (closer to A).
+  let X : Pos2 := ⟨A.x + 0.4 * (B.x - A.x), A.y + 0.4 * (B.y - A.y)⟩
+  -- L through X with a downward-right slope, extending to canvas edges.
+  let lDir : Pos2 := (200, 80)  -- direction vector
+  let L1 : Pos2 := ⟨X.x - lDir.x, X.y - lDir.y⟩
+  let L2 : Pos2 := ⟨X.x + lDir.x, X.y + lDir.y⟩
+  {
+    shapes := #[
+      .point   "A" A,
+      .point   "B" B,
+      .point   "C" C,
+      .point   "X" X,
+      .segment "segAB" A B,
+      .segment "segBC" B C,
+      .segment "segAC" A C,
+      .line    "L" L1 L2 .bold,
+    ]
+    annotations := #[
+      .label "A" "A",
+      .label "B" "B",
+      .label "C" "C",
+      .label "X" "X",
+      .label "L" "L",
+    ]
+    constraints := #[
+      ⟨.app "distinct" [.name "A", .name "B", .name "C"],
+        "Three distinct vertices"⟩,
+      ⟨.app "¬" [.app "collinear" [.name "A", .name "B", .name "C"]],
+        "Vertices not collinear"⟩,
+      ⟨.app "between" [.name "A", .name "X", .name "B"],
+        "X lies strictly between A and B on segment AB"⟩,
+      ⟨.app "incident" [.name "X", .name "L"],
+        "X lies on line L"⟩,
+    ]
+  }
 
-Extension: the sub-proof of `(segment A B : Line) ≠ (segment B C : Line)`
-(pasch.lean:86) temporarily assumes `segment A B = segment B C` to derive
-a contradiction. That assumption appears here as a proof-time extension
-that the renderer would show as a degenerate config (C lands on AB). -/
-def pasch : Construction := {
-  base := [
-    -- Free points and the cutting line.
-    .exist "A" .point,
-    .exist "B" .point,
-    .exist "C" .point,
-    .exist "L" .line,
-    .exist "X" .point,
-
-    -- Triangle hypotheses.
-    .assert (.app "distinct" [.of "A", .of "B", .of "C"]),
-    .assert (.app1 "¬" (.app "collinear" [.of "A", .of "B", .of "C"])),
-
-    -- Sides — named so annotations / extensions can refer to them.
-    .construct "segAB" (.app "segment" [.of "A", .of "B"]),
-    .construct "segBC" (.app "segment" [.of "B", .of "C"]),
-    .construct "segAC" (.app "segment" [.of "A", .of "C"]),
-
-    -- X = L ∩ segAB, strictly between A and B.
-    .assert (.app "incident" [.of "X", .of "L"]),
-    .assert (.app "between" [.of "A", .of "X", .of "B"]),
-  ]
-  extensions := [
-    -- pasch.lean:86 — assume segAB = segBC to render the degenerate
-    -- configuration. The IR doesn't enforce that this contradicts
-    -- `¬(collinear A B C)` above; downstream is on the hook.
-    .assert (.app2 "="
-              (.app "segment" [.of "A", .of "B"])
-              (.app "segment" [.of "B", .of "C"])),
-  ]
-  annotations := [
-    .label "A" "A",
-    .label "B" "B",
-    .label "C" "C",
-    .label "X" "X",
-    .label "L" "L",
-    .highlight "L" .bold,
-  ]
-}
-
--- Round-trip the IR back to source DSL form. `IO.println` so newlines
--- in the output render as actual line breaks in the InfoView, rather
--- than `\n` literals from `String`'s default `repr`.
-#eval IO.println pasch.toSource
-
--- Naive-layout SVG render of the same IR. The diagram is geometrically
--- wrong (X won't actually be on segment AB, L won't actually pass
--- through X) but the pipeline shape is exercised. Constraint-aware
--- layout is a follow-up. Pipe to a file and open in a browser, or
--- drop into a `ProofWidgets.Html` parser for in-editor display.
-#eval IO.println pasch.toSvg
+-- SVG dump of the hand-laid scene. Cursor here to preview; pipe
+-- through `IO.println` so the SVG renders with real newlines in the
+-- InfoView.
+#eval IO.println (Renderable.render (out := String) pasch)
 
 end Geometry.Construction.Examples
