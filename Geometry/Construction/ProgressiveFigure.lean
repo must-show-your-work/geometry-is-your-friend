@@ -183,7 +183,7 @@ private def saveProgressiveFigures
         renderAuxHtml base { stmts := combinedStmts }
     Widget.savePanelWidgetInfo
       (hash HtmlDisplayPanel.javascript)
-      (return json% { html: $(← rpcEncode html) })
+      (return Json.mkObj [("html", Atlas.htmlToJson html)])
       stx
 
 initialize do

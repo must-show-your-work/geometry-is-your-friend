@@ -117,6 +117,7 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
       have AneX : A ≠ X := by by_contra! hNeg; rw [hNeg] at AoffEC; contradiction
       have BneX : B ≠ X := by by_contra! hNeg; rw [hNeg] at BoffEC; contradiction
       have distinctAXB : distinct A X B := by
+        fixme "This is evil"
         refine ⟨?_⟩
         rw [Finset.card_insert_of_notMem (by simp [AneX, AneB])]
         rw [Finset.card_insert_of_notMem (by simp [BneX.symm])]
