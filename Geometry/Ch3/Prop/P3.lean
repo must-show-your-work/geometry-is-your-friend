@@ -13,6 +13,11 @@ import Geometry.Theory.Distinct
 import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
+import Geometry.Construction.DSL
+import Geometry.Construction.Syntax
+import Geometry.Construction.Lowering
+import Geometry.Construction.AtlasField
+import Geometry.Construction.AtlasTactic
 import Atlas
 
 namespace Geometry.Ch3.Prop
@@ -31,6 +36,18 @@ atlas commentary := by
   name "Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D"
   preface "Given A - B - C and A - C - D, then B - C - D and A - B - D (see Figure 3.9)"
 
+  figure := by
+    construction {
+      exists A B C D : Point
+      assert distinct A B C D
+      construct mainLine := line_through A D
+      assert between A C D
+      assert between A B C
+    }
+    title "Prop 3.3.i — setup"
+    index 1
+    caption "A, B, C, D are collinear in order (A-B-C and A-C-D given). The proof picks an off-line point E and uses line EC; those appear as auxiliary constructions in the proof body."
+
 atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D"
   : (A - B - C) ∧ (A - C - D) -> B - C - D := by
   quoting (1) "A, B, C, and D are distinct, collinear points (see Exercise 1)."
@@ -42,6 +59,10 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
   have LeqAB : cL = (line A B : Line) := via lemma 2.0.2 AneB
     ⟨cL.mem A, obvious, cL.mem B, obvious⟩
   have ⟨E, EoffcL⟩ := proposition 2.3 cL
+  auxillary {
+    exists E : Point
+    construct rayEC := ray E C
+  }
   quoting (3) "Consider line EC. Since (by hypothesis) AD meets this line in point C," ...
   let EC := (line E C : Line)
   comment "Missing these simple conditions"

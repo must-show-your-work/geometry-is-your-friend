@@ -15,6 +15,11 @@ import Geometry.Theory.Distinct
 import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
+import Geometry.Construction.DSL
+import Geometry.Construction.Syntax
+import Geometry.Construction.Lowering
+import Geometry.Construction.AtlasField
+import Geometry.Construction.AtlasTactic
 import Atlas
 
 namespace Geometry.Ch3.Prop
@@ -34,6 +39,32 @@ atlas commentary := by
     Geometry.Theory.Line.separation
   ]
   preface "If C - A - B and l is the line through A, B, and C (Betweenness Axiom 1), then for every point P lying on l, P lies either on ray A B or on the opposite ray A C."
+
+  figure := by
+    construction {
+      exists A B C P : Point
+      assert distinct A B C P
+      construct rayAB := ray A B
+      construct rayAC := ray A C
+      assert between C A B
+      assert between A P B
+    }
+    title "Case: P on ray AB"
+    index 1
+    caption "Ray AB extends from A through B; ray AC is the opposite ray at vertex A. P lies between A and B — so P is on ray AB. The conclusion's first disjunct holds directly."
+
+  figure := by
+    construction {
+      exists A B C P : Point
+      assert distinct A B C P
+      construct rayAB := ray A B
+      construct rayAC := ray A C
+      assert between C A B
+      assert between C P A
+    }
+    title "Case: P on the opposite ray (ray AC)"
+    index 2
+    caption "P lies between C and A — so P is on ray AC, the opposite ray from ray AB at vertex A. This is the case the proof has to work for: assume P is not on ray AB, derive P-A-B, then use betweenness axiom B.3 to land on ray AC."
 
 atlas proposition 3.4 "Line separation by an interior point: points on the line lie on one of two opposite rays"
   {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by
@@ -60,6 +91,9 @@ atlas proposition 3.4 "Line separation by an interior point: points on the line 
   · quoting (2) "If P does lie on ray A B, we are done" ...
     left; trivial
   · quoting ... "so assume it doesn't; then P - A - B (Betweenness Axiom 3)"
+    auxillary {
+      construct rayPA := segment P A
+    }
     have PAB : P - A - B := by
       have h := via axiom B.3 P A B ⟨distinctABCP forgetting C, colABCP forgetting C⟩
       rcases h with ⟨PAB,_,_⟩ | ⟨_,APB,_⟩ | ⟨_, _, ABP⟩

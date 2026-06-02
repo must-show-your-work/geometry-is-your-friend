@@ -20,6 +20,7 @@ import Geometry.Construction.DSL
 import Geometry.Construction.Syntax
 import Geometry.Construction.Lowering
 import Geometry.Construction.AtlasField
+import Geometry.Construction.AtlasTactic
 import Atlas
 
 namespace Geometry.Ch3.Prop
@@ -81,8 +82,6 @@ atlas theorem 3.0 "Pasch's Theorem"
     -- and show the degenerate diagram as a result
     clearly (segment A B : Line) ≠ (segment B C : Line) := by
       idea "if AB = BC, then ABC are collinear, which is a contradiction"
-      -- not sure on this syntax.
-      -- figure := auxillary (assert segment A B = segment B C)
       have colABC : collinear A B C := by
         use (segment A B : Line)
         intro P PisABorC

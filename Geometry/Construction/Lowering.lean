@@ -99,22 +99,26 @@ private def addAnnotation (b : Bindings) (a : Annotation) : Bindings :=
 private def addConstraint (b : Bindings) (c : Constraint) : Bindings :=
   { b with constraints := b.constraints.push c }
 
-/-- Try to realize a `construct name := expr` as a shape. Returns the
-updated bindings on success; on unknown expression heads (or missing
-referenced positions) falls back to recording the construct as a
-constraint so nothing is silently dropped. -/
-private def applyConstruct (b : Bindings) (name : Name) : ConstraintExpr → Bindings
+/-- Try to realize a `construct name := expr` as a shape. The optional
+`style` overrides the shape's default style (used by `auxillary` to
+render addendum shapes dashed). -/
+private def applyConstruct (b : Bindings) (style : Style := .default)
+    (name : Name) : ConstraintExpr → Bindings
   | .app "line_through" [a, b'] =>
     match lookupArg b a, lookupArg b b' with
-    | some pa, some pb => addShape b (.line name pa pb)
+    | some pa, some pb => addShape b (.line name pa pb style)
     | _, _ => addConstraint b ⟨.app "line_through" [a, b'], s!"construct {name} (unresolved)"⟩
   | .app "segment" [a, b'] =>
     match lookupArg b a, lookupArg b b' with
-    | some pa, some pb => addShape b (.segment name pa pb)
+    | some pa, some pb => addShape b (.segment name pa pb style)
     | _, _ => addConstraint b ⟨.app "segment" [a, b'], s!"construct {name} (unresolved)"⟩
+  | .app "ray" [a, b'] =>
+    match lookupArg b a, lookupArg b b' with
+    | some pa, some pb => addShape b (.ray name pa pb style)
+    | _, _ => addConstraint b ⟨.app "ray" [a, b'], s!"construct {name} (unresolved)"⟩
   | .app "circle" [c, .num r] =>
     match lookupArg b c with
-    | some pc => addShape b (.circle name pc r)
+    | some pc => addShape b (.circle name pc r style)
     | none    => addConstraint b ⟨.app "circle" [c, .num r], s!"construct {name} (unresolved)"⟩
   | other =>
     addConstraint b ⟨other, s!"construct {name} (unknown shape)"⟩
@@ -234,6 +238,8 @@ private def axisCandidates (stmts : Array Stmt) : Array (Name × Name) :=
       if a < b then some (a, b) else some (b, a)
     | .construct _ (.app "line_through" [.name a, .name b]) =>
       if a < b then some (a, b) else some (b, a)
+    | .construct _ (.app "ray" [.name a, .name b]) =>
+      if a < b then some (a, b) else some (b, a)
     | _ => none
   fromConstructs.qsort (fun (a₁, b₁) (a₂, b₂) =>
     if a₁ != a₂ then a₁ < a₂ else b₁ < b₂)
@@ -246,6 +252,7 @@ private def shapeRotate (cx cy : Float) (cosθ sinθ : Float) : Shape Pos2 → S
   fun s => match s with
   | .point id p st       => .point id (rot p) st
   | .segment id a b st   => .segment id (rot a) (rot b) st
+  | .ray id a b st       => .ray id (rot a) (rot b) st
   | .line id a b st      => .line id (rot a) (rot b) st
   | .circle id c r st    => .circle id (rot c) r st
   | .text id p t         => .text id (rot p) t
@@ -281,6 +288,7 @@ private def shapeReflectY (yAxis : Float) : Shape Pos2 → Shape Pos2 :=
   fun s => match s with
   | .point id p st       => .point id (refl p) st
   | .segment id a b st   => .segment id (refl a) (refl b) st
+  | .ray id a b st       => .ray id (refl a) (refl b) st
   | .line id a b st      => .line id (refl a) (refl b) st
   | .circle id c r st    => .circle id (refl c) r st
   | .text id p t         => .text id (refl p) t
@@ -326,6 +334,7 @@ visually balanced. Constraint metadata is unaffected. -/
 private def shapeTranslate (Δ : Pos2) : Shape Pos2 → Shape Pos2
   | .point id p s        => .point id (p.x + Δ.x, p.y + Δ.y) s
   | .segment id a b s    => .segment id (a.x + Δ.x, a.y + Δ.y) (b.x + Δ.x, b.y + Δ.y) s
+  | .ray id a b s        => .ray id (a.x + Δ.x, a.y + Δ.y) (b.x + Δ.x, b.y + Δ.y) s
   | .line id a b s       => .line id (a.x + Δ.x, a.y + Δ.y) (b.x + Δ.x, b.y + Δ.y) s
   | .circle id c r s     => .circle id (c.x + Δ.x, c.y + Δ.y) r s
   | .text id p t         => .text id (p.x + Δ.x, p.y + Δ.y) t
@@ -373,6 +382,7 @@ private def shapeScale (cx cy s : Float) : Shape Pos2 → Shape Pos2 :=
   fun shape => match shape with
   | .point id p st       => .point id (sc p) st
   | .segment id a b st   => .segment id (sc a) (sc b) st
+  | .ray id a b st       => .ray id (sc a) (sc b) st
   | .line id a b st      => .line id (sc a) (sc b) st
   | .circle id c r st    => .circle id (sc c) (r * s) st
   | .text id p t         => .text id (sc p) t
@@ -405,6 +415,7 @@ private def fitToCanvas (shapes : Array (Shape Pos2)) (canvasW canvasH : Float) 
       shapes.map fun shape => match shape with
       | .point id p st       => .point id (transform p) st
       | .segment id a b st   => .segment id (transform a) (transform b) st
+      | .ray id a b st       => .ray id (transform a) (transform b) st
       | .line id a b st      => .line id (transform a) (transform b) st
       | .circle id c r st    => .circle id (transform c) (r * s) st
       | .text id p t         => .text id (transform p) t
@@ -437,7 +448,7 @@ def lower (c : Construction) (canvasW : Float := 1280) (canvasH : Float := 720) 
     | _ => acc
   let b₃ := emitDeclaredShapes b₂
   let b₄ := c.stmts.foldl (init := b₃) fun acc s => match s with
-    | .construct name expr => applyConstruct acc name expr
+    | .construct name expr => applyConstruct acc .default name expr
     | _ => acc
   let b₅ := applyPrincipalAxisRotation b₄ c.stmts cx cy
   let b₆ := applyApexUp b₅ c.stmts
@@ -446,6 +457,44 @@ def lower (c : Construction) (canvasW : Float := 1280) (canvasH : Float := 720) 
     shapes      := fitted
     annotations := b₆.annotations
     constraints := b₆.constraints
+  }
+
+
+/-- Lower a base construction plus an addendum, rendering addendum's
+constructed shapes with `.dashed` style (visual "construction line"
+convention — these are auxiliary, not part of the canonical figure).
+Addendum's `exists`/`assert` stmts process normally and can move
+positions / declare new points; only the `construct` lines get the
+dashed override. -/
+def lowerAuxiliary (base : Construction) (addendum : Construction)
+    (canvasW : Float := 1280) (canvasH : Float := 720) : Scene Pos2 :=
+  let cx := canvasW / 2
+  let cy := canvasH / 2
+  let r  := min cx cy * 0.75
+  let combinedStmts := base.stmts ++ addendum.stmts
+  let alphabetized := (collectPointNames combinedStmts).qsort (· < ·)
+  let b₀ : Bindings := {}
+  let b₁ := combinedStmts.foldl (init := b₀) fun acc s => match s with
+    | .«exists» names sort => applyExists acc alphabetized cx cy r names sort
+    | _ => acc
+  let b₂ := combinedStmts.foldl (init := b₁) fun acc s => match s with
+    | .assert claim desc => applyAssert acc claim desc
+    | _ => acc
+  let b₃ := emitDeclaredShapes b₂
+  let b₄ := base.stmts.foldl (init := b₃) fun acc s => match s with
+    | .construct name expr => applyConstruct acc .default name expr
+    | _ => acc
+  let b₅ := addendum.stmts.foldl (init := b₄) fun acc s => match s with
+    | .construct name expr => applyConstruct acc .dashed name expr
+    | _ => acc
+  let combined : Construction := { stmts := combinedStmts }
+  let b₆ := applyPrincipalAxisRotation b₅ combined.stmts cx cy
+  let b₇ := applyApexUp b₆ combined.stmts
+  let fitted := fitToCanvas b₇.shapes canvasW canvasH
+  {
+    shapes      := fitted
+    annotations := b₇.annotations
+    constraints := b₇.constraints
   }
 
 
