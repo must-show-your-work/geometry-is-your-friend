@@ -23,6 +23,7 @@ import Geometry.Construction.Lowering
 import Geometry.Construction.AtlasField
 import Geometry.Construction.ProgressiveFigure
 import Atlas
+import Mathlib.Tactic.Linter.UnusedTacticExtension
 
 namespace Geometry.Construction
 
@@ -46,3 +47,8 @@ def elabAuxillary : Tactic := fun stx => do
   | _ => throwUnsupportedSyntax
 
 end Geometry.Construction
+
+-- `auxillary` intentionally doesn't modify goal state — it just
+-- records an addendum for the progressive-figure hook. Tell Mathlib's
+-- `unusedTactic` linter (persistently, across importing files).
+#allow_unused_tactic! Geometry.Construction.auxillaryTac
