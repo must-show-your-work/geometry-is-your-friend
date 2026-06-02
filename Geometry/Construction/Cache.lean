@@ -31,8 +31,13 @@ namespace Geometry.Construction.Cache
 open Lean Figures Geometry.Construction.DSL
 
 /-- Bump whenever the solver algorithm changes so olean-resident
-entries written by an older algorithm get invalidated automatically. -/
-def solverVersion : Nat := 1
+entries written by an older algorithm get invalidated automatically.
+
+History:
+- v1: initial Verlet + projections + label sub-solver
+- v2: multi-incidence collinear projection; noncollinear soft force
+-/
+def solverVersion : Nat := 2
 
 structure Key where
   version : Nat

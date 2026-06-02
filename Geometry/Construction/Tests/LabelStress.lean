@@ -83,6 +83,22 @@ def crossC : Construction := construction {
   construct segCD := segment C D
 }
 
+/-- Triangle ABC with `¬ collinear A B C` and a Line L defined
+entirely via two `incident` asserts on B and C. Exercises both the
+multi-incidence path (L drawn through B and C, not by line_through)
+and the noncollinear soft force (a no-op here since springs already
+keep the triangle non-degenerate, but a regression on this fixture
+would catch a future change that breaks either feature). -/
+def newConstraintsC : Construction := construction {
+  exists A B C : Point
+  exists L : Line
+  assert ¬ collinear A B C
+  assert incident B L
+  assert incident C L
+  construct segAB := segment A B
+  construct segAC := segment A C
+}
+
 private def dist (p q : Pos2) : Float :=
   ((p.x - q.x)^2 + (p.y - q.y)^2).sqrt
 
@@ -124,7 +140,8 @@ private def minLabelSegClearance (scene : Scene Pos2) : Float := Id.run do
 
 def fixtures : List (String × Construction) :=
   [("collinear", collinearC), ("interior", interiorC),
-   ("cluster", clusterC), ("cross", crossC)]
+   ("cluster", clusterC), ("cross", crossC),
+   ("newConstraints", newConstraintsC)]
 
 /-- Below this many pixels of label-to-segment distance, a label
 visibly bleeds into the construction line. Glyphs are ~22px tall and
@@ -236,6 +253,24 @@ atlas commentary := by
     title "Subdivided triangle"
     index 1
     caption "B and D are interior points on sides AC and CE."
+
+atlas commentary := by
+  via theorem 99.5
+  name "Label stress — multi-incidence + noncollinear"
+  preface "Triangle ABC with `¬ collinear A B C` (soft inverse-area force, a no-op while springs already keep the triangle non-degenerate) and a Line L defined entirely by two `incident` asserts on B and C — no `line_through B C` construct. The multi-incidence path draws L through the first two anchors directly."
+  figure := by
+    construction {
+      exists A B C : Point
+      exists L : Line
+      assert ¬ collinear A B C
+      assert incident B L
+      assert incident C L
+      construct segAB := segment A B
+      construct segAC := segment A C
+    }
+    title "Multi-incidence + noncollinear"
+    index 1
+    caption "L is defined by two incidence asserts; triangle ABC has the soft noncollinear guard."
 
 atlas commentary := by
   via theorem 99.4

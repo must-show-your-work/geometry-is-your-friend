@@ -157,12 +157,13 @@ this pass is pure metadata now. -/
 private def applyAssert (b : Bindings) (claim : ConstraintExpr) (desc : String) : Bindings :=
   addConstraint b ⟨claim, desc⟩
 
-/-- Find the first point name P such that `incident P L` or `on P L`
-appears in the recorded constraints. Returns that point's position
-if both the assert and the point's position exist. Used to anchor
-an existential `Line` through some witness point. -/
-private def lineAnchor (b : Bindings) (lineName : Name) : Option Pos2 :=
-  b.constraints.findSome? fun c => match c.claim with
+/-- Every point name P such that `incident P L` / `on P L` appears
+in the recorded constraints, in source order. Used by
+`emitDeclaredShapes`: one anchor draws the line through the anchor +
+a default direction; two or more anchors draws the line through the
+first two anchors (uniquely determined). -/
+private def lineAnchors (b : Bindings) (lineName : Name) : Array Pos2 :=
+  b.constraints.filterMap fun c => match c.claim with
     | .app op [.name p, .name l] =>
       if (op == "incident" || op == "on") && l == lineName then
         lookupArg b (.name p)
@@ -183,10 +184,12 @@ private def lineDir (idx : Nat) : Pos2 :=
 /-- Phase 3: emit shapes for each `exists`-declared name now that
 positions are final.
 - `Point`: emit `.point` + auto-label.
-- `Line`: if some constraint anchors it (`incident P L` / `on P L`),
-  emit a `.line` through P with a per-line-index default direction so
-  multiple lines through the same anchor render at different slopes;
-  otherwise skip (no anchor → nothing to draw). -/
+- `Line`: anchored by `incident P L` / `on P L` asserts.
+  - 0 anchors → skip (nothing to draw).
+  - 1 anchor → line through anchor with the cycled default direction,
+    so multiple lines through the same anchor render at different slopes.
+  - 2+ anchors → line through the first two anchors (uniquely
+    determined by two points). The cycled direction is ignored. -/
 private def emitDeclaredShapes (b : Bindings) : Bindings :=
   let (final, _) := b.sorts.foldr (init := (b, 0)) fun (n, sort) (acc, lineIdx) =>
     match sort with
@@ -197,14 +200,20 @@ private def emitDeclaredShapes (b : Bindings) : Bindings :=
         (addAnnotation acc (.label n n), lineIdx)
       | none => (acc, lineIdx)
     | "Line" =>
-      match lineAnchor acc n with
-      | some anchor =>
+      let anchors := lineAnchors acc n
+      if anchors.size ≥ 2 then
+        let p₁ := anchors[0]!
+        let p₂ := anchors[1]!
+        let acc := addShape acc (.line n p₁ p₂ .bold)
+        (addAnnotation acc (.label n n), lineIdx + 1)
+      else if anchors.size == 1 then
+        let anchor := anchors[0]!
         let dir := lineDir lineIdx
         let p₁ : Pos2 := (anchor.x - dir.x, anchor.y - dir.y)
         let p₂ : Pos2 := (anchor.x + dir.x, anchor.y + dir.y)
         let acc := addShape acc (.line n p₁ p₂ .bold)
         (addAnnotation acc (.label n n), lineIdx + 1)
-      | none => (acc, lineIdx)
+      else (acc, lineIdx)
     | _ => (acc, lineIdx)
   final
 
@@ -351,6 +360,22 @@ private def collectBetweens (stmts : Array Stmt) (nameToIdx : Name → Option Na
       some (ia, ix, ib)
     | _ => none
 
+/-- Group `incident P L` / `on P L` asserts by the line name. Returns
+a list of (lineName, [pointNames-in-source-order]). -/
+private def incidenceGroups (stmts : Array Stmt) : List (Name × List Name) := Id.run do
+  let mut groups : List (Name × List Name) := []
+  for s in stmts do
+    match s with
+    | .assert (.app op [.name p, .name l]) _ =>
+      if op == "incident" || op == "on" then
+        groups := match groups.find? (·.1 == l) with
+          | some _ =>
+            groups.map fun (ln, ps) =>
+              if ln == l then (ln, ps ++ [p]) else (ln, ps)
+          | none => groups ++ [(l, [p])]
+    | _ => pure ()
+  return groups
+
 /-- Collect projections from `assert` stmts.
 
 - A `between A X B` whose middle particle X appears in only one
@@ -359,22 +384,21 @@ private def collectBetweens (stmts : Array Stmt) (nameToIdx : Name → Option Na
 - When two `between` asserts share the same middle X (e.g. `between
   A X B` and `between C X D`), they collapse into one
   `Projections.intersect2` that snaps X to the intersection of lines
-  AB and CD. Serial single-segment projections would oscillate when
-  the segments don't overlap; the intersection projection satisfies
-  both in one shot and lets the surrounding springs adjust segment
-  endpoints to actually meet there.
+  AB and CD.
 - `collinear A B C ...` snaps the rest onto the line through the
   first two.
+- Multi-incidence on the same Line (`incident P L`, `incident Q L`,
+  `incident R L`, ...) collapses to one collinear projection over the
+  incident points. The first two define the line; later ones get
+  snapped onto it.
 - Single-anchor `incident P L` doesn't yield a projection — the
-  line's geometry is defined by the first point and the cycled
-  default direction in `emitDeclaredShapes`.
+  line's geometry is defined by the one point and the cycled default
+  direction in `emitDeclaredShapes`.
 - Pure metadata asserts (`distinct`, `¬`, ...) produce no
   projection. -/
 private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option Nat) :
     Array Solver.Projection := Id.run do
   let betweens := collectBetweens stmts nameToIdx
-  -- Group betweens by their middle particle. Build a list of
-  -- (xIdx, [(a, b)]) pairs.
   let mut grouped : List (Nat × List (Nat × Nat)) := []
   for (a, x, b) in betweens do
     grouped := match grouped.find? (·.1 == x) with
@@ -387,9 +411,6 @@ private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option N
     | [(a, b)] =>
       projs := projs.push (Solver.Projections.between a x b)
     | (a1, b1) :: (a2, b2) :: _ =>
-      -- ≥2 betweens on the same particle: project to line intersection.
-      -- Extra betweens past the first two are ignored — handling k>2
-      -- needs a least-squares formulation we don't have yet.
       projs := projs.push (Solver.Projections.intersect2 a1 b1 a2 b2 x)
     | [] => pure ()
   for s in stmts do
@@ -401,6 +422,11 @@ private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option N
       if ids.length ≥ 2 then
         projs := projs.push (Solver.Projections.collinear ids)
     | _ => pure ()
+  for (_, points) in incidenceGroups stmts do
+    if points.length ≥ 3 then
+      let ids := points.filterMap nameToIdx
+      if ids.length ≥ 2 then
+        projs := projs.push (Solver.Projections.collinear ids)
   return projs
 
 /-- Build a `Solver.World` from the seeded `Bindings` plus the
@@ -503,6 +529,28 @@ private def buildWorld (b : Bindings) (stmts : Array Stmt) (seed : UInt64)
     | some (ia, ib) =>
       fs := fs.push (Solver.Forces.apexUp ia ib 0.5)
     | none => pure ()
+    -- `¬ collinear A B C` (parsed as `.app "¬" [.app "collinear" ...]`)
+    -- and `noncollinear A B C` both → soft inverse-area repulsion
+    -- keeping the triangle from degenerating to a line. Activates
+    -- only when |signed area| drops below `r * r * 0.02` (small
+    -- fraction of a typical figure's footprint).
+    let inner? : ConstraintExpr → Option (Name × Name × Name)
+      | .app "noncollinear" [.name a, .name b, .name c] => some (a, b, c)
+      | .app "¬" [.app "collinear" [.name a, .name b, .name c]] => some (a, b, c)
+      | _ => none
+    for s in stmts do
+      match s with
+      | .assert claim _ =>
+        match inner? claim with
+        | some (na, nb, nc) =>
+          match nameToIdx na, nameToIdx nb, nameToIdx nc with
+          | some ia, some ib, some ic =>
+            fs := fs.push
+              (Solver.Forces.noncollinear ia ib ic
+                (strength := 0.2) (threshold := r * r * 0.02))
+          | _, _, _ => pure ()
+        | none => pure ()
+      | _ => pure ()
     return fs
   { particles := particles, springs := springs,
     projections := projections, forces := forces }
