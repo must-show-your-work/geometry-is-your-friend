@@ -29,6 +29,8 @@ an annotation pass).
 
 import Figures
 import Figures.SVG
+import Figures.Vec2
+import Figures.Solver
 import Geometry.Construction.DSL
 
 namespace Geometry.Construction.Lowering
@@ -434,6 +436,77 @@ Four-phase walk:
 Final pass translates everything so the point centroid sits at the
 canvas center. -/
 
+/-! ## Force-directed solver pass
+
+Phase A wires the heuristic layout into the solver as a *warm start*:
+points seeded by `applyExists` are loaded into a `World`, springs are
+added for each edge-shaped construct (segment / line_through / ray),
+random rest-length jitter breaks accidental symmetries (e.g. exact
+equilateral triangles), and the solver runs to equilibrium. The
+resulting positions overwrite `Bindings.positions`. Asserts and
+shape emission downstream see the perturbed positions. -/
+
+/-- Deterministic [lo, hi] jitter from a (seed, index) pair. Used to
+randomize spring rest lengths and stiffnesses so output isn't
+accidentally symmetric. Same construction → same seed → same jitter
+→ identical positions across re-elabs. -/
+private def jitterAt (seed : UInt64) (i : UInt64) (lo hi : Float) : Float :=
+  let h := hash (seed, i)
+  let m := (h % 10000).toFloat / 10000.0
+  lo + m * (hi - lo)
+
+/-- Edge constructs in stmts (segment / line_through / ray) → list of
+endpoint-name pairs. Order preserved. -/
+private def edgeConstructs (stmts : Array Stmt) : Array (Name × Name) :=
+  stmts.filterMap fun
+    | .construct _ (.app "segment" [.name a, .name b])      => some (a, b)
+    | .construct _ (.app "line_through" [.name a, .name b]) => some (a, b)
+    | .construct _ (.app "ray" [.name a, .name b])          => some (a, b)
+    | _ => none
+
+/-- Build a `Solver.World` from the seeded `Bindings` plus the
+construction stmts. Each Point becomes a Particle keyed by its index
+in the particles array. Each edge construct adds a Spring; the rest
+length gets a jittered multiplier of `baseLen` so the equilibrium
+isn't accidentally regular. -/
+private def buildWorld (b : Bindings) (stmts : Array Stmt) (seed : UInt64)
+    (baseLen : Float) : Solver.World :=
+  let positionsArr := b.positions.toArray
+  let particles : Array Solver.Particle :=
+    positionsArr.mapIdx fun i np =>
+      { id := i, name := np.1, pos := np.2, prev := np.2 }
+  let nameToIdx (n : Name) : Option Nat :=
+    positionsArr.findIdx? (fun p => p.1 == n)
+  let edges := edgeConstructs stmts
+  let springs : Array Solver.Spring := edges.zipIdx.filterMap fun (e, idx) => do
+    let ia ← nameToIdx e.1
+    let ib ← nameToIdx e.2
+    some {
+      a := ia, b := ib,
+      -- Wider rest-length range [0.5, 1.5] × baseLen + jittered
+      -- stiffness so equilibria are visibly asymmetric (otherwise
+      -- 3-point figures still read as roughly isoceles).
+      rest := baseLen * jitterAt seed (idx.toUInt64) 0.5 1.5,
+      stiffness := jitterAt seed (idx.toUInt64 * 2 + 1) 0.7 1.3
+    }
+  { particles := particles, springs := springs }
+
+
+/-- Write solved particle positions back into `Bindings.positions`.
+Iterates particles in order; each particle's `name` is matched
+against the bindings list. -/
+private def mergeSolved (b : Bindings) (w : Solver.World) : Bindings :=
+  let updated := b.positions.map fun (n, oldPos) =>
+    match w.particles.find? (fun p => p.name == n) with
+    | some p => (n, p.pos)
+    | none   => (n, oldPos)
+  { b with positions := updated }
+
+/-- Seed for the construction's RNG. Hashes the printed form so any
+AST change perturbs the seed. -/
+private def constructionSeed (c : Construction) : UInt64 :=
+  hash (printConstruction c)
+
 def lower (c : Construction) (canvasW : Float := 1280) (canvasH : Float := 720) : Scene Pos2 :=
   let cx := canvasW / 2
   let cy := canvasH / 2
@@ -443,7 +516,14 @@ def lower (c : Construction) (canvasW : Float := 1280) (canvasH : Float := 720) 
   let b₁ := c.stmts.foldl (init := b₀) fun acc s => match s with
     | .«exists» names sort => applyExists acc alphabetized cx cy r names sort
     | _ => acc
-  let b₂ := c.stmts.foldl (init := b₁) fun acc s => match s with
+  -- Phase A solver pass: warm-started from b₁'s positions, springs
+  -- with jittered rest lengths perturb the layout off symmetric
+  -- equilibria. Hard constraints (Phase B) are not yet wired in.
+  let seed := constructionSeed c
+  let world := buildWorld b₁ c.stmts seed r
+  let solved := Solver.solve {} world
+  let b₁' := mergeSolved b₁ solved
+  let b₂ := c.stmts.foldl (init := b₁') fun acc s => match s with
     | .assert claim desc => applyAssert acc claim desc
     | _ => acc
   let b₃ := emitDeclaredShapes b₂
