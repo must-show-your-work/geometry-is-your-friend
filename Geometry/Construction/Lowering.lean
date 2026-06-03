@@ -1060,11 +1060,13 @@ direct file-open). -/
 instance : Renderable Construction String where
   render c := Renderable.render (lower c)
 
-/-- Render a `Construction` to SVG WITHOUT the inline `<style>` block.
-For host environments that supply their own stylesheet (e.g. the
-atlas viewer's editorial theme). The output still carries the
-`.txt`, `.lbl`, `.callout` classes so the host CSS can target them. -/
+/-- Render a `Construction` to SVG WITHOUT the inline `<style>` block
+and WITHOUT a background fill. For host environments that supply their
+own stylesheet + page background (e.g. the atlas viewer's editorial
+theme — paper-cream pane, not the figure's legal-pad yellow default).
+The output still carries the `.txt`, `.lbl`, `.callout` classes so
+the host CSS can target them. -/
 def renderBare (c : Construction) : String :=
-  Figures.SVG.render (lower c) { inlineStyles := false }
+  Figures.SVG.render (lower c) { inlineStyles := false, background := "none" }
 
 end Geometry.Construction

@@ -24,6 +24,16 @@ require atlas from "../atlas"
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 
+-- SubVerso is already in the manifest as a transitive (inherited)
+-- dep of verso, but `lean_exe "dumptactics"` imports `SubVerso.*`
+-- modules directly. Lake's lean_exe target only sees explicitly
+-- required deps, not inherited ones, so the import resolution
+-- fails ("missing subverso dependency"). Require it explicitly to
+-- bring its modules onto the exe's import path. Pin matches the
+-- rev in lake-manifest.json so the manifest stays consistent.
+require subverso from git
+  "https://github.com/leanprover/subverso" @ "main"
+
 meta if get_config? env = some "dev" then
 require «doc-gen4» from git
   "https://github.com/leanprover/doc-gen4" @ "main"

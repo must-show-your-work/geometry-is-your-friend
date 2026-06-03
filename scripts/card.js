@@ -119,12 +119,17 @@ const LEAN_TO_TEX_OPS = [
   ['⊢','\\vdash '],['⊥','\\bot '],['⊤','\\top '],['∎','\\blacksquare '],
 ];
 
-// Balanced parenthesised expression up to 4 levels, or a dotted ident.
+// Balanced parenthesised expression up to 4 levels, a bracket-balanced
+// list literal, or a token that runs to whitespace. The bare-token
+// alternative includes Lean idents plus the unicode operators earlier
+// rewrites emit (∅, ∪, ∩, ⊊, ⊆, ≠) so that chains like `Eq (L ∩ M) ∅`
+// see `∅` as a single token. The bracket alternative lets `List.cons C [\,]`
+// match by treating the nil placeholder as a single arg.
 const ARG_PAT = (() => {
   const grow = (inner) => String.raw`\([^()]*(?:${inner}[^()]*)*\)`;
   let p = String.raw`\([^()]*\)`;
   p = grow(p); p = grow(p); p = grow(p); p = grow(p);
-  return String.raw`(?:${p}|[\w.]+)`;
+  return String.raw`(?:${p}|\[[^\[\]]*\]|[\w.∅∪∩⊊⊆≠⊥⊤]+)`;
 })();
 
 function leanToLatex(raw) {
@@ -143,6 +148,20 @@ function leanToLatex(raw) {
   s = s.replace(/\{/g, '\\{').replace(/\}/g, '\\}');
 
   const rewrites = [
+    // Point-on-Line membership reads naturally as "P on L" / "P off L"
+    // in Greenberg's prose. Specific rule must precede the generic
+    // `instMembership*.mem → ∈` and the generic `Not (X) → ¬X` so
+    // those don't get a shot first. Covers PointLine, PointLineThrough,
+    // PointRay, PointSegment — anything whose container is a 1-D
+    // geometric subset.
+    //
+    // Sentinels use private-use Unicode codepoints — they have no
+    // letters, so the post-tokenize multi-letter wrapper leaves them
+    // alone. The geom block converts them to `\text{ on } / \text{ off }`.
+    [new RegExp(`\\bNot\\s*\\(\\s*instMembershipPoint\\w+\\.mem (${ARG_PAT}) (${ARG_PAT})\\s*\\)`, 'g'),
+     '$2  $1'],
+    [new RegExp(`\\binstMembershipPoint\\w+\\.mem (${ARG_PAT}) (${ARG_PAT})`, 'g'),
+     '$2  $1'],
     // `autoParam (X) <auto-fn-name>` is Lean's `(x : T := by tac)` desugar
     // — the second arg is a synthetic decl name like `Foo._auto_3` that
     // we never want to display. The auto-fn name may include
@@ -152,19 +171,58 @@ function leanToLatex(raw) {
     // `Set.instMembership.mem`, `instMembershipPointLine.mem`, etc. all
     // mean "first arg contains second" — Lean's `Membership α β` instance
     // has `mem : β → α → Prop` so the FQN-first form is `mem container elt`.
-    [new RegExp(`\\binst\\w*[Mm]embership\\w*\\.mem (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$2 ∈ $1'],
-    [new RegExp(`Set\\.instMembership\\.mem (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$2 ∈ $1'],
-    // Same generalization for HasSubset: `instHasSubsetLine.Subset A B` → `A ⊆ B`.
-    [new RegExp(`\\binst\\w*HasSubset\\w*\\.Subset (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 ⊆ $2'],
-    [new RegExp(`Set\\.instHasSubset\\.Subset (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 ⊆ $2'],
+    // The leading `(?:[\w.]+\.)?` consumes the type-prefix (e.g.
+    // `Set.`) so it doesn't survive past the collapse.
+    [new RegExp(`(?:[\\w.]+\\.)?inst\\w*[Mm]embership\\w*\\.mem (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$2 ∈ $1'],
+    // Subset variants — `Set.instHasSubset`, `instHasSubsetLine`, …
+    [new RegExp(`(?:[\\w.]+\\.)?inst\\w*HasSubset\\w*\\.Subset (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 ⊆ $2'],
+    // Strict subset (⊊)
+    [new RegExp(`(?:[\\w.]+\\.)?inst\\w*HasSSubset\\w*\\.SSubset (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 ⊊ $2'],
+    // Set ∪ / ∩ / ∅ — handle both the dotted-prefix and bare forms so
+    // `Set.instInter.inter A B`, `instInterLine.inter A B`, etc. all
+    // collapse to the operator notation.
+    [new RegExp(`(?:[\\w.]+\\.)?inst\\w*Union\\w*\\.union (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 ∪ $2'],
+    [new RegExp(`(?:[\\w.]+\\.)?inst\\w*Inter\\w*\\.inter (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 ∩ $2'],
+    [/(?:[\w.]+\.)?inst\w*EmptyCollection\w*\.emptyCollection/g, '∅'],
+    // Splits / Guards: Greenberg's geometry uses these as ternary
+    // relations. `Splits L A B` reads "L splits A and B"; `Guards`
+    // takes the line in the THIRD slot (point, point, line). Both
+    // typeset like the SameSide-derived rules; sentinel codepoints
+    // (private-use) survive tokenize and get expanded in the geom
+    // block.
+    [new RegExp(`\\bSplits (${ARG_PAT}) (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1  $2, $3'],
+    [new RegExp(`\\bGuards (${ARG_PAT}) (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$3  $1, $2'],
+    // List cons — `List.cons A xs` is `A :: xs`. Recursive rule chain
+    // lets `List.cons A (List.cons B (List.cons C rest))` reduce to
+    // `A :: B :: C :: rest`. Will compose into a list literal in a
+    // future pass if needed.
+    [new RegExp(`(?:[\\w.]+\\.)?List\\.cons (${ARG_PAT}) (${ARG_PAT})`, 'g'), '$1 :: $2'],
+    // Strip List.nil down to []
+    [/(?:[\w.]+\.)?List\.nil\b/g, '[\\,]'],
+    // `instSingletonPointLine.singleton X` → `{X}`.
+    // Excludes `Finset.instSingleton.singleton X` via negative lookbehind:
+    // the Finset literal goes through the `⦃ … ⦄` placeholder chain
+    // below so multi-element forms (`insert A ⦃B, C⦄`) compose.
+    [new RegExp(`(?<!Finset\\.)\\binst\\w*Singleton\\w*\\.singleton (${ARG_PAT})`, 'g'), '\\{$1\\}'],
+    // Universe-variable noise. Lean prints `u_1` etc. for synthesised
+    // universe params; in our domain we're always in `Type 0` so it's
+    // never informative. Hide.
+    [/\bu_\d+\b/g, ''],
     // `{ toSet := X.carrier }` is the Line→Set coercion (or similar
     // setoid wrapper) Lean emits when comparing a Line to a Set. The
     // underlying X is the only thing the reader cares about; strip
     // the wrapper.
-    // Preserve parens around the unwrapped expr so subsequent rules
-    // that take ARG_PAT (paren-balanced) treat the result as one arg.
-    [/\\\{\s*toSet\s*:=\s*\(([^()]+)\)\.carrier\s*\\\}/g, '($1)'],
-    [/\\\{\s*toSet\s*:=\s*([^\s\\]+)\.carrier\s*\\\}/g, '($1)'],
+    // Drop the wrapper — the inner X often becomes a parenthesised
+    // expression of its own once subsequent rules (e.g. `Segment.between
+    // A B` → `(Segment A B)`) fire, so adding our own parens here
+    // causes a double-wrap that defeats post-tokenize ARG_PAT match.
+    [/\\\{\s*toSet\s*:=\s*\(([^()]+)\)\.carrier\s*\\\}/g, '$1'],
+    [/\\\{\s*toSet\s*:=\s*([^\s\\]+)\.carrier\s*\\\}/g, '$1'],
+    // `.carrier` accessor on a bare/parenthesised expr (not inside a
+    // `{toSet := ...}` wrapper — that's handled by the rules above).
+    // Must come AFTER toSet so the wrapper's `.carrier` anchor is
+    // still present for that rule to recognise.
+    [/(\)|\b[\w]+)\.carrier\b/g, '$1'],
     // `Segment.between A B`, `Ray.from_ A B`, `LineThrough.through A B`
     // are the constructor forms. Reduce each to its bare-name shape so
     // the post-tokenize geom rules collapse it to `\overline{AB}`,
@@ -212,8 +270,11 @@ function leanToLatex(raw) {
   }
   s = out.join('');
 
-  // Geometry-specific aliases (run after tokenization).
-  const TOK = String.raw`(?:\\mathrm\{[^}]+\}|[A-Za-z]|\([^()]+\))`;
+  // Geometry-specific aliases (run after tokenization). TOK must match
+  // *anything* that an earlier rule could have emitted, so chains like
+  // `Intersects L \overline{AB} X` collapse all the way through. Order
+  // matters: longer alternatives first.
+  const TOK = String.raw`(?:\\(?:overleftrightarrow|overrightarrow|overline)\{[^{}]*\}|\\mathrm\{[^}]+\}|[A-Za-z]|\([^()]+\))`;
   const geom = [
     [new RegExp(`\\\\mathrm\\{LineThrough\\}\\s+(${TOK})\\s+(${TOK})`, 'g'),
      '\\overleftrightarrow{$1$2}'],
@@ -238,12 +299,35 @@ function leanToLatex(raw) {
     // must come before the bare `Distinct → \text{distinct}\,` below.
     [new RegExp(`\\\\mathrm\\{Distinct\\}\\s+(${TOK}|\\\\\\{[^\\\\]*\\\\\\})\\s+\\d+`, 'g'),
      '\\text{distinct}\\,$1'],
+    // Convert the on/off/splits/guards sentinels emitted by the
+    // pre-tokenize relation rules into proper `\text{ … }` macros.
+    // Has to be in the geom block (post-tokenize) so `text` itself
+    // doesn't get re-wrapped in `\mathrm{}`.
+    [//g, '\\text{ on }'],
+    [//g, '\\text{ off }'],
+    [//g, '\\text{ splits } '],
+    [//g, '\\text{ guards } '],
     [/\\mathrm\{Distinct\}/g,   '\\text{distinct}\\,'],
     [/\\mathrm\{Collinear\}/g,  '\\text{collinear}\\,'],
     [/\\mathrm\{Concurrent\}/g, '\\text{concurrent}\\,'],
     [/\\mathrm\{Extension\}/g,  '\\text{ext}\\,'],
   ];
   for (const [re, repl] of geom) s = s.replace(re, repl);
+
+  // Greenberg prose treats `distinct {A,B,C}` / `collinear {A,B,C}`
+  // as `distinct A B C` / `collinear A B C` — the brace set notation
+  // is a Lean detail. Replace commas with thin spaces. `\neg(collinear …)`
+  // folds further to `noncollinear …` since that's how the prose reads.
+  const dropBraces = (args) =>
+    args.split(',').map(t => t.trim()).filter(Boolean).join('\\,');
+  // `¬` (unicode) still in string at this point — the LEAN_TO_TEX_OPS
+  // unicode-to-`\neg` map runs at the very end of leanToLatex.
+  s = s.replace(/¬\s*\(\s*\\text\{collinear\}\\,\s*\\\{([^{}]+)\\\}\s*\)/g,
+                (_, a) => `\\text{noncollinear}\\,${dropBraces(a)}`);
+  s = s.replace(/\\text\{distinct\}\\,\s*\\\{([^{}]+)\\\}/g,
+                (_, a) => `\\text{distinct}\\,${dropBraces(a)}`);
+  s = s.replace(/\\text\{collinear\}\\,\s*\\\{([^{}]+)\\\}/g,
+                (_, a) => `\\text{collinear}\\,${dropBraces(a)}`);
 
   // Strip redundant parens around geometry overlines. Looped because
   // the rewrite pass can produce nested wrappers like `((\overline{AB}))`
@@ -278,9 +362,197 @@ function texToKatexHtml(tex, { displayMode = false } = {}) {
   }
 }
 
+// Restructure the binder section of a `\forall …, body` so the
+// result reads close to what a mathematician would write:
+//
+//   - Type-binders (`{A : Point}`, `{B : Point}`, `{L : Line}`) drop
+//     the braces and merge consecutive ones of the same type into
+//     `∀ A B : Point, L : Line`.
+//   - Prop-binders (`{distinctABC : distinct A B C}`, `{h : A on L}`)
+//     drop the auto-generated name entirely and move into the body
+//     as `→`-hypotheses. The name was Lean machinery; the assertion
+//     is what the reader cares about.
+//
+// Walks the binder section by depth-tracked scanning (treats `\{`,
+// `\(`, `\)`, `\}` as bracket changes since brace-escape ran earlier).
+// If we can't find the top-level comma separating binders from body
+// (or there's no `\forall` to begin with), returns input unchanged.
+function restructureBinders(tex) {
+  const FOR = '\\forall';
+  if (!tex.startsWith(FOR)) return tex;
+  let i = FOR.length;
+  while (i < tex.length && /\s/.test(tex[i])) i++;
+  const binderStart = i;
+  let depth = 0;
+  let commaIdx = -1;
+  for (let j = binderStart; j < tex.length; j++) {
+    const c = tex[j];
+    if (c === '\\') {
+      const next = tex[j+1];
+      if (next === '{' || next === '(') { depth++; j++; continue; }
+      if (next === '}' || next === ')') { depth--; j++; continue; }
+      // Otherwise it's a macro like `\mathrm`, `\text`, etc. — skip
+      // the alphabetic macro name so its letters don't get scanned.
+      let k = j + 1;
+      while (k < tex.length && /[A-Za-z]/.test(tex[k])) k++;
+      j = k - 1;
+      continue;
+    }
+    if (c === '{' || c === '(') depth++;
+    else if (c === '}' || c === ')') depth--;
+    else if (c === ',' && depth === 0) { commaIdx = j; break; }
+  }
+  if (commaIdx === -1) return tex;
+  const binderSection = tex.substring(binderStart, commaIdx);
+  const body = tex.substring(commaIdx + 1).trimStart();
+
+  // Parse the binder section into individual `\{…\}` / `\(…\)` groups.
+  const binders = [];
+  let pos = 0;
+  while (pos < binderSection.length) {
+    while (pos < binderSection.length && /\s/.test(binderSection[pos])) pos++;
+    if (pos >= binderSection.length) break;
+    const open = binderSection.substr(pos, 2);
+    let close;
+    if (open === '\\{') close = '\\}';
+    else if (open === '\\(') close = '\\)';
+    else return tex;            // unexpected — bail and keep the original
+    let bDepth = 1;
+    let k = pos + 2;
+    while (k < binderSection.length && bDepth > 0) {
+      const two = binderSection.substr(k, 2);
+      if (two === open)  { bDepth++; k += 2; }
+      else if (two === close) { bDepth--; k += 2; }
+      else k++;
+    }
+    binders.push(binderSection.substring(pos + 2, k - 2));
+    pos = k;
+  }
+
+  // Each binder is `<vars> : <type>` — find the first ` : ` at depth 0.
+  const parsed = [];
+  for (const raw of binders) {
+    let d = 0;
+    let cut = -1;
+    for (let j = 0; j < raw.length - 2; j++) {
+      const c = raw[j];
+      if (c === '\\') {
+        const n = raw[j+1];
+        if (n === '{' || n === '(') { d++; j++; continue; }
+        if (n === '}' || n === ')') { d--; j++; continue; }
+        let k = j + 1;
+        while (k < raw.length && /[A-Za-z]/.test(raw[k])) k++;
+        j = k - 1;
+        continue;
+      }
+      if (c === '{' || c === '(') d++;
+      else if (c === '}' || c === ')') d--;
+      else if (d === 0 && raw.substr(j, 3) === ' : ') { cut = j; break; }
+    }
+    if (cut === -1) { parsed.push({ vars: raw.trim(), type: '' }); continue; }
+    parsed.push({
+      vars: raw.substring(0, cut).trim(),
+      type: raw.substring(cut + 3).trim(),
+    });
+  }
+
+  // Classify. A "type-binder" looks like `{A B : Point}` — type is a
+  // single capitalised \mathrm{} identifier. Everything else is a
+  // proposition (membership claim, equality, betweenness, etc.).
+  const isType = (t) => /^\\mathrm\{[A-Z]\w*\}$/.test(t);
+
+  // Walk binders, grouping consecutive type-binders sharing a type.
+  const groups = [];
+  for (const p of parsed) {
+    if (isType(p.type)) {
+      const last = groups[groups.length - 1];
+      if (last && last.kind === 'type' && last.type === p.type) {
+        last.vars += '\\,' + p.vars;
+      } else {
+        groups.push({ kind: 'type', vars: p.vars, type: p.type });
+      }
+    } else {
+      groups.push({ kind: 'prop', prop: p.type });
+    }
+  }
+
+  const typeBinders = groups.filter(g => g.kind === 'type');
+  const propBinders = groups.filter(g => g.kind === 'prop');
+
+  let out = '';
+  if (typeBinders.length > 0) {
+    out += '\\forall ' + typeBinders.map(g => `${g.vars} : ${g.type}`).join(', ') + ', ';
+  }
+  if (propBinders.length > 0) {
+    out += propBinders.map(g => g.prop).join(' \\to ') + ' \\to ';
+  }
+  out += body;
+  return out;
+}
+
+// Find indices of `\to` tokens that sit at the top level of `tex`
+// (not inside any `(...)` or `{...}`). Returns sorted positions of
+// the leading backslash. Used by `breakAtTopLevelArrows` to insert
+// line breaks between hypotheses so the statement breathes.
+function topLevelArrowPositions(tex) {
+  const out = [];
+  let depth = 0;
+  for (let i = 0; i < tex.length - 2; i++) {
+    const c = tex[i];
+    if (c === '\\') {
+      // Skip macro names so we don't count their letters as depth-changers.
+      // `\to`, `\foo`, `\bar` — advance past `\` + ident chars.
+      if (depth === 0 && tex.substr(i, 3) === '\\to' && /\W|$/.test(tex[i+3] || '')) {
+        out.push(i);
+      }
+      // Skip the macro name to avoid mis-counting.
+      let j = i + 1;
+      while (j < tex.length && /[A-Za-z]/.test(tex[j])) j++;
+      i = j - 1;
+      continue;
+    }
+    if (c === '(' || c === '{') depth++;
+    else if (c === ')' || c === '}') depth--;
+  }
+  return out;
+}
+
+// Insert breaks at top-level `\to`s so the statement reads
+// vertically: each hypothesis on its own line, with extra breathing
+// room before the final arrow (the conclusion). Every row starts
+// with `&` so the `aligned` environment left-aligns the whole stack
+// at a single column.
+function breakAtTopLevelArrows(tex) {
+  const positions = topLevelArrowPositions(tex);
+  if (positions.length === 0) return tex;
+  const pieces = [];
+  let cursor = 0;
+  for (let i = 0; i < positions.length; i++) {
+    const pos = positions[i];
+    const isLast = i === positions.length - 1;
+    pieces.push(tex.substring(cursor, pos).trimEnd());
+    // `\\\\` = LaTeX line break. `[10pt]` widens the gap before the
+    // conclusion arrow so hypotheses and conclusion read as distinct
+    // blocks. `&\to` / `&\implies` make every row align at the
+    // arrow column.
+    pieces.push(isLast ? ' \\\\[10pt]\n  &\\implies\\ ' : ' \\\\\n  &\\to\\ ');
+    cursor = pos + 3;            // skip "\to"
+    while (cursor < tex.length && /\s/.test(tex[cursor])) cursor++;
+  }
+  pieces.push(tex.substring(cursor));
+  // Leading `&` on the first row anchors it to the same column as the
+  // continuation rows, so the binder header and the arrows left-align.
+  return `\\begin{aligned}\n  &${pieces.join('')}\n\\end{aligned}`;
+}
+
 function renderTypeHtml(rawType, opts = {}) {
   if (!rawType) return '';
-  return texToKatexHtml(leanToLatex(rawType), opts);
+  let tex = leanToLatex(rawType);
+  tex = restructureBinders(tex);     // drop Lean binder names + combine same-type
+  tex = breakAtTopLevelArrows(tex);  // multi-line aligned with conclusion set-off
+  // Force display mode — the multi-line `aligned` only typesets right
+  // in display style.
+  return texToKatexHtml(tex, { ...opts, displayMode: true });
 }
 
 // ---------- Markers + side-by-side source ----------

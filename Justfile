@@ -9,7 +9,17 @@
 # killed by the kernel before it can hang the machine. Per-module
 # mtime cache means second runs only re-do touched files.
 graph:
+    #!/usr/bin/env bash
+    # Shebang recipe so subshell-level `exec > >(tee …)` redirection
+    # carries across every command instead of being reset between
+    # lines (just's default is one shell per recipe line).
+    set -euo pipefail
     rm -f blueprint/obvious_uses.jsonl
+    # Tee the whole pipeline (stdout + stderr) into blueprint/graph.log
+    # so panic traces / build errors are still around to `grep` after
+    # the fact. Each run overwrites the previous log; copy aside
+    # beforehand if you need history.
+    exec > >(tee blueprint/graph.log) 2>&1
     # Force a clean rebuild with `GIYF_DUMP_DEPS=1` so every `obvious`
     # invocation appends its `(module, line, stage, closer)` record to
     # blueprint/obvious_uses.jsonl. Lake's `.olean` cache wouldn't
@@ -19,13 +29,11 @@ graph:
     GIYF_DUMP_DEPS=1 lake build
     # Use `lean --run` rather than `lake exe` — the latter native-compiles
     # via clang and on NixOS hits a missing `-lc++` / `-lgmp` / `-luv`
-    # cascade unless the dev shell exports `LIBRARY_PATH` correctly
-    # (flake.nix has the proper setup as of the recent linker fix, but
-    # `lean --run` sidesteps the compile entirely so it works regardless).
+    # cascade unless the dev shell exports `LIBRARY_PATH` correctly.
     lake env lean --run scripts/DumpDecls.lean
     lake env lean --run scripts/DumpImports.lean
     lake env lean --run scripts/DumpFigures.lean
-    -python scripts/run_dumptactics.py
+    python scripts/run_dumptactics.py || true
     python scripts/ingest.py
     python scripts/export_graph.py
 
