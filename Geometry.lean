@@ -19,6 +19,8 @@ import Geometry.Ch3.Prop.B4iii -- A corrolary of B4, nothing without proof.
 import Geometry.Ch3.Prop.P2
 import Geometry.Ch3.Prop.P3
 import Geometry.Ch3.Prop.P4
+import Geometry.Ch3.Prop.P5
+import Geometry.Ch3.Prop.Pasch
 -- Exercises
 import Geometry.Ch3.Ex.Betweenness.Ex1
 import Geometry.Ch3.Ex.Review.Ex2

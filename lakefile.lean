@@ -43,7 +43,10 @@ abbrev baseOpts : Array LeanOption := #[
   ⟨`weak.linter.mathlibStandardSet, true⟩,
   ⟨`maxSynthPendingDepth, false⟩,
   ⟨`weak.linter.style.longLine, false⟩,
-  -- (`weak.linter.style.emptyLine, false),
+  -- Whitespace between commands (esp. inside `atlas commentary := by …`
+  -- blocks) is useful for readability; the Mathlib lint that bans it
+  -- is mostly annoying for our style.
+  ⟨`weak.linter.style.emptyLine, false⟩,
   ⟨`weak.linter.style.multiGoal, false⟩, -- FIXME: I don't know why this fires
   -- `linter.style.header` covers Mathlib's three header checks: copyright
   -- format, module-docstring-first, and a re-parse of the imports area.
