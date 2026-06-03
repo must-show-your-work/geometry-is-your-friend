@@ -62,6 +62,14 @@ initialize ext : SimplePersistentEnvExtension Entry (Array Entry) ←
     addImportedFn := fun arrs => arrs.foldl (· ++ ·) #[]
     addEntryFn    := fun arr entry => arr.push entry
     toArrayFn     := List.toArray
+    -- `.sync` mirrors atlasExt's reasoning: the construction-cache
+    -- ext is written from inside `construction { … }` tactic bodies
+    -- during atlas-decl elaboration. Lean 4.30+ elaborates each
+    -- atlas-tagged theorem in its own async task; without this
+    -- override, the default `.mainOnly` mode panics on the addEntry
+    -- ("extension is marked as `mainOnly` but used in async context
+    -- 'Geometry.Ch3.Prop.…'").
+    asyncMode     := .sync
   }
 
 /-- Compute the cache key for a construction. -/
