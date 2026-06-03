@@ -22,10 +22,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./vendor/katex/katex.min.css?v=local-10">
 <script src="./vendor/katex/katex.min.js?v=local-10"></script>
-<script src="./card.js?v=13"></script>
+<script src="./card.js?v=21"></script>
 
 <style>
 :root {
+  /* Light mode (default) — aged-paper editorial palette. */
   --paper:        #f4ecd8;
   --paper-soft:   #ede2c5;
   --paper-deep:   #e0d2ad;
@@ -36,6 +37,21 @@
   --accent:       #983327;
   --accent-soft:  #c87a6a;
   --teal:         #2c4f50;
+  --teal-soft:    #5b8688;
+}
+body.dark-mode {
+  /* Warm dark — keeps the editorial tone instead of going neutral grey.
+     Cream-ink on deep-brown paper, accent shifted lighter for contrast. */
+  --paper:        #1f1a14;
+  --paper-soft:   #2a221a;
+  --paper-deep:   #3a2f24;
+  --ink:          #e8d8b8;
+  --ink-soft:     #d0b896;
+  --ink-muted:    #a08560;
+  --ink-ghost:    #6b5840;
+  --accent:       #d27a6a;
+  --accent-soft:  #c87a6a;
+  --teal:         #7ba0a2;
   --teal-soft:    #5b8688;
 }
 * { box-sizing: border-box; }
@@ -79,6 +95,14 @@ html, body {
 }
 .export-wireframe:hover { color: var(--accent); border-color: var(--ink-ghost); }
 .export-wireframe:disabled { color: var(--ink-ghost); cursor: default; }
+.mode-toggle {
+  margin-top: 6px;
+  padding: 5px 10px; background: var(--paper); border: 1px solid var(--paper-deep);
+  border-radius: 3px; color: var(--ink-muted); cursor: pointer;
+  font: 11px/1.4 "JetBrains Mono", monospace; letter-spacing: 0.04em;
+  width: 100%; text-align: left;
+}
+.mode-toggle:hover { color: var(--accent); border-color: var(--ink-ghost); }
 .toc-list { overflow-y: auto; padding: 8px 0 60px; }
 .toc-group { padding: 14px 22px 6px; }
 .toc-group-label {
@@ -218,7 +242,30 @@ html, body {
   min-height: 60px; color: var(--ink-ghost); font-style: italic; font-size: 13px;
   padding: 10px 0;
 }
-.card-figure svg { max-width: 100%; height: auto; }
+.card-figure svg { max-width: 100%; height: auto; color: var(--ink); }
+/* Figures drawn by `renderBare` (the atlas-bare SVG path) reach for
+   `currentColor` on all strokes / fills, so the figure inverts with
+   the host page mode. Text colors track `--ink` / `--ink-muted`
+   directly so figures match the surrounding prose. The CSS classes
+   match Figures/SVG.lean's class names. */
+.card-figure svg .txt,
+.card-figure svg .lbl {
+  font-family: "DejaVu Serif", "Fraunces", serif;
+  font-size: 22px;
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 4px;
+  paint-order: stroke;
+}
+.card-figure svg .lbl { font-style: italic; }
+.card-figure svg .callout {
+  font-family: "DejaVu Sans", "Inter", sans-serif;
+  font-size: 18px;
+  fill: var(--ink-muted);
+  stroke: var(--paper);
+  stroke-width: 4px;
+  paint-order: stroke;
+}
 
 .card-meta {
   grid-area: footer;
@@ -342,47 +389,61 @@ body.mode-production .bn-line:hover { background: transparent; }
 */
 .proof-grid {
   display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr);
+  /* Middle column sizes to its content (no horizontal scroll on
+     source lines); side columns flex around it with a hard minimum
+     so they don't collapse to 0. */
+  grid-template-columns: minmax(8em, 1fr) auto minmax(8em, 1fr);
+  grid-auto-rows: auto;
   border: 1px solid var(--paper-deep);
   border-radius: 3px; background: var(--paper-soft);
   overflow: hidden;
 }
-.proof-row {
-  display: contents;     /* row stays as a grid track for alignment */
-}
+/* Each marker cell explicitly sets `grid-row: <start> / <end>` so it
+   spans from its anchor down to the next marker in the same column
+   (or the end). Within that span, text flows freely; vertical
+   centering is anchored at the top via `align-self: start`. */
+/* Each cell type pins to a specific grid column. Without these,
+   `grid-auto-flow: row` packs all cells into column 1 in DOM order
+   and the three columns visually collapse. */
+.proof-col-quoting    { grid-column: 1; }
+.proof-col-source     { grid-column: 2; }
+.proof-col-commentary { grid-column: 3; }
+
 .proof-col-quoting,
-.proof-col-source,
-.proof-col-commentary {
+.proof-col-commentary,
+.proof-col-source {
   min-width: 0;
   padding: 2px 10px;
-  border-top: 1px dotted rgba(101, 123, 131, 0.10);
+  align-self: start;
 }
-.proof-row:first-child .proof-col-quoting,
-.proof-row:first-child .proof-col-source,
-.proof-row:first-child .proof-col-commentary {
-  border-top: none;
+.proof-col-quoting,
+.proof-col-commentary {
+  font-size: 13px; line-height: 1.5;
+  color: var(--ink-soft);
+  /* `break-word` only breaks INSIDE a word as a last resort, so the
+     step / page / chip tokens stay atomic. */
+  overflow-wrap: break-word;
 }
 .proof-col-quoting {
   background: var(--paper-soft);
   border-right: 1px solid var(--paper-deep);
-  font-style: italic; color: var(--ink-soft);
-  font-size: 13.5px; line-height: 1.5;
-}
-.proof-col-source {
-  background: var(--paper);
-  padding: 0 12px;
-  font-family: "JetBrains Mono", monospace;
-}
-.proof-col-source .bn-code {
-  margin: 0; padding: 1px 0;
-  background: transparent; color: var(--ink);
-  font: 400 12px/1.55 "JetBrains Mono", monospace;
-  white-space: pre; overflow-x: auto;
+  font-style: italic;
 }
 .proof-col-commentary {
   background: var(--paper-soft);
   border-left: 1px solid var(--paper-deep);
-  font-size: 12.5px; color: var(--ink-soft);
+}
+.proof-col-source {
+  background: var(--paper);
+  padding: 1px 12px;
+  font-family: "JetBrains Mono", monospace;
+  white-space: nowrap;
+}
+.proof-col-source .bn-code {
+  margin: 0; padding: 0;
+  background: transparent; color: var(--ink);
+  font: 400 12px/1.55 "JetBrains Mono", monospace;
+  white-space: pre-wrap;
 }
 .proof-col-commentary .bn-marker { margin: 1px 0; }
 .bn-empty {
@@ -438,9 +499,12 @@ body.mode-production .bn-line:hover { background: transparent; }
   white-space: pre; overflow-x: auto;
 }
 .bn-marker { display: flex; align-items: baseline; gap: 0.45em; }
-.bn-marker-quoting .bn-text { font-style: italic; color: #073642; }
-.bn-marker-comment { color: #586e75; }
-.bn-marker-comment .bn-text { color: #586e75; font-size: 0.86em; }
+.bn-marker-quoting .bn-text { font-style: italic; color: var(--ink-soft); }
+.bn-marker-comment { color: var(--ink-muted); }
+/* Match the parent column's `font-size: 13px` so quoting and comment
+   text run at the same scale — `0.86em` made comments visibly
+   smaller than quotes on the LHS. */
+.bn-marker-comment .bn-text { color: var(--ink-muted); }
 .bn-marker-pagebreak {
   display: flex; align-items: center; gap: 0.6em;
   color: var(--ink-ghost); font-style: italic; font-size: 11px;
@@ -453,6 +517,9 @@ body.mode-production .bn-line:hover { background: transparent; }
   padding: 1px 6px; border-radius: 2px;
   letter-spacing: 0.04em;
   background: rgba(200, 122, 106, 0.18); color: var(--accent);
+  /* Stay an atomic unit even when the surrounding column has to
+     wrap text. Prevents `(4)` from splitting across lines. */
+  display: inline-block; white-space: nowrap;
 }
 .bn-page { background: rgba(44, 79, 80, 0.15); color: var(--teal); }
 .bn-step-cont { background: rgba(184, 166, 133, 0.25); color: var(--ink-muted); }
@@ -466,6 +533,20 @@ body.mode-production .bn-line:hover { background: transparent; }
 .bn-chip-todo       { background: rgba(147, 161, 161, 0.18); color: #586e75; }
 .bn-chip-fixme      { background: rgba(220,  50,  47, 0.22); color: #93222b; }
 .bn-chip-detail     { background: rgba(108, 113, 196, 0.12); color: #6c71c4; font-style: italic; }
+
+/* Dark-mode chip foregrounds. The rgba *backgrounds* carry semantic
+   color tinting (yellow=idea, red=fixme, etc.) and still read on a
+   dark page; the saturated dark foregrounds however go invisible
+   against the warm-dark paper, so swap to lighter variants. */
+body.dark-mode .bn-chip-idea       { color: #e2b75c; }
+body.dark-mode .bn-chip-intuition  { color: #9da4d8; }
+body.dark-mode .bn-chip-motivation { color: #b8d066; }
+body.dark-mode .bn-chip-caution    { color: #e89865; }
+body.dark-mode .bn-chip-aside      { color: #b3c2c2; }
+body.dark-mode .bn-chip-cf         { color: #6fb5e0; }
+body.dark-mode .bn-chip-todo       { color: #b3c2c2; }
+body.dark-mode .bn-chip-fixme      { color: #f08a85; }
+body.dark-mode .bn-chip-detail     { color: #a3a8d8; }
 
 /* Lean source token colors (used by highlightLean) */
 .lean-kw    { color: var(--accent); font-weight: 500; }
@@ -502,8 +583,8 @@ body.mode-production .bn-line:hover { background: transparent; }
 <div class="app">
   <aside class="toc-pane">
     <header class="toc-head">
-      <h1 class="toc-title">Theorem Atlas</h1>
-      <div class="toc-subtitle">Greenberg · Geometry</div>
+      <h1 class="toc-title" id="projTitle">Theorem Atlas</h1>
+      <div class="toc-subtitle" id="projSubtitle">loading…</div>
       <div class="toc-filters">
         <input class="toc-search" id="search" type="search" placeholder="Filter by kind / number / title…">
         <select class="toc-group-by" id="groupBy">
@@ -514,6 +595,10 @@ body.mode-production .bn-line:hover { background: transparent; }
       <button class="export-wireframe" id="exportWireframe"
               title="Export the current card layout as an SVG wireframe">
         ⇣ wireframe
+      </button>
+      <button class="mode-toggle" id="modeToggle"
+              title="Toggle light / dark mode (Shift+D)">
+        ◐ dark
       </button>
     </header>
     <div class="toc-list" id="tocList"></div>
@@ -530,6 +615,7 @@ body.mode-production .bn-line:hover { background: transparent; }
 const GRAPH_URL = '../blueprint/graph.json';
 const MARKERS_URL = '../blueprint/markers.json';
 const COMMENTARY_URL = '../blueprint/commentary.json';
+const PROJECT_URL = '../blueprint/project.json';
 
 const A = window.AtlasCard;
 let DECLS = [];           // node.data, atlas-tagged only
@@ -627,11 +713,26 @@ function declSlug(d) {
 }
 
 async function loadAll() {
-  const [graphR, markersR, commentaryR] = await Promise.all([
+  const [graphR, markersR, commentaryR, projectR] = await Promise.all([
     fetch(GRAPH_URL, { cache: 'no-store' }),
     fetch(MARKERS_URL, { cache: 'no-store' }),
     fetch(COMMENTARY_URL, { cache: 'no-store' }),
+    fetch(PROJECT_URL, { cache: 'no-store' }).catch(() => null),
   ]);
+  // Project title / subtitle — driven by a per-project sidecar so
+  // every consumer (giyf, EWM, etc.) gets its own branding without
+  // viewer-side hardcoding. Optional: falls back to generic labels.
+  if (projectR && projectR.ok) {
+    try {
+      const proj = await projectR.json();
+      if (proj.title)    document.getElementById('projTitle').textContent = proj.title;
+      if (proj.subtitle) document.getElementById('projSubtitle').textContent = proj.subtitle;
+      else               document.getElementById('projSubtitle').textContent = '';
+      if (proj.title)    document.title = proj.title + ' · Atlas';
+    } catch { /* tolerate */ }
+  } else {
+    document.getElementById('projSubtitle').textContent = '';
+  }
   if (!graphR.ok) throw new Error(`HTTP ${graphR.status} loading ${GRAPH_URL}`);
   const g = await graphR.json();
   DECLS = g.nodes.map(n => n.data).filter(d => d.atlas_kind);
@@ -706,10 +807,19 @@ function cmpKind(a, b) {
   return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
 }
 
+// Suppressed decls (commentary block carries `suppress`) hide from the
+// TOC list and the graph index but stay reachable by direct URL hash
+// or via a ref-chip from a non-suppressed decl that cites them.
+function isSuppressed(d) {
+  const cb = (window.commentaryByDecl && window.commentaryByDecl[d.id]) || null;
+  return !!(cb && cb.suppress);
+}
+
 function groupAndRender() {
   const groupBy = document.getElementById('groupBy').value;
   const q = document.getElementById('search').value.trim().toLowerCase();
   const filtered = DECLS.filter(d => {
+    if (isSuppressed(d)) return false;
     if (!q) return true;
     const hay = [d.atlas_kind, d.atlas_number, d.atlas_title, d.label].filter(Boolean).join(' ').toLowerCase();
     return hay.includes(q);
@@ -753,9 +863,22 @@ function renderRefChip(targetId) {
   </span>`;
 }
 
+// Lexisort references by (kind, number) so the chips read in a
+// stable, scan-friendly order regardless of edge ingestion order
+// from `graph.json`.
+function sortRefs(ids) {
+  return ids.slice().sort((a, b) => {
+    const da = BY_ID.get(a), db = BY_ID.get(b);
+    const ka = (da && da.atlas_kind) || ''; const kb = (db && db.atlas_kind) || '';
+    if (ka !== kb) return ka.localeCompare(kb);
+    const na = (da && da.atlas_number) || ''; const nb = (db && db.atlas_number) || '';
+    return cmpNumber(na, nb);
+  });
+}
+
 function renderRefsSection(d) {
-  const outs = OUT_EDGES.get(d.id) || [];
-  const ins  = IN_EDGES.get(d.id)  || [];
+  const outs = sortRefs(OUT_EDGES.get(d.id) || []);
+  const ins  = sortRefs(IN_EDGES.get(d.id)  || []);
   if (outs.length === 0 && ins.length === 0) return '';
   return `
     <section class="card-section" data-section="references">
@@ -818,7 +941,9 @@ async function removeLineFlag(declId, line) {
 }
 
 function applyLineFlagState() {
-  for (const el of document.querySelectorAll('.bn-line[data-line]')) {
+  // Source lines AND marker blocks both carry `data-line`; both
+  // visually highlight when their underlying line is flagged.
+  for (const el of document.querySelectorAll('.bn-line[data-line], .bn-marker[data-line]')) {
     const n = parseInt(el.dataset.line, 10);
     el.classList.toggle('flagged', isLineFlagged(n));
   }
@@ -898,7 +1023,11 @@ function flaggableSection(name, label, body) {
 //     …) whose parsed text already shows in the LHS/RHS proof
 //     columns. Multi-line string literals tracked via the same
 //     state machine.
-const MARKER_KW = /^\s*(quoting|comment|idea|intuition|motivation|caution|aside|cf|todo|fixme|detail|page_break)\b/;
+// Optional `· ` bullet prefix — case-branch markers like
+// `· quoting (5) "…"` are common inside `rcases`/`obtain` arms;
+// without this prefix tolerance, the elider missed them and the
+// string literal leaked into the source column.
+const MARKER_KW = /^\s*(?:·\s+)?(quoting|comment|idea|intuition|motivation|caution|aside|cf|todo|fixme|detail|page_break)\b/;
 function computeMarkerLines(source, baseLine) {
   const elided = new Set();
   const lines = source.split('\n');
@@ -1007,18 +1136,39 @@ function renderProofTriColumn(d) {
   while (kept.length && kept[0].isBlank) kept.shift();
   while (kept.length && kept[kept.length-1].isBlank) kept.pop();
 
-  const rows = kept.map(({ abs, line }) => {
-    const left  = (leftByLine[abs]  || []).map(A.renderMarkerLeft).join('');
-    const right = (rightByLine[abs] || []).map(A.renderMarkerLeft).join('');
+  // Build the source-column cells first — one per kept line. Each
+  // gets an explicit `grid-row` so we can place markers separately.
+  const sourceCells = kept.map(({ abs, line }, i) => {
     const codeInner = A.highlightLean(line) || '&nbsp;';
-    const codeLine = `<span class="bn-line" data-line="${abs}">${codeInner}</span>`;
-    return `<div class="proof-row">
-      <div class="proof-col-quoting">${left}</div>
-      <div class="proof-col-source"><pre class="bn-code">${codeLine}</pre></div>
-      <div class="proof-col-commentary">${right}</div>
-    </div>`;
-  }).join('');
-  return `<div class="proof-grid">${rows}</div>`;
+    const gridRow = i + 1;
+    return `<div class="proof-col-source" style="grid-row:${gridRow}">`
+         + `<pre class="bn-code"><span class="bn-line" data-line="${abs}">${codeInner}</span></pre>`
+         + `</div>`;
+  });
+
+  // For LHS/RHS markers: compute each marker's start row (index in
+  // `kept` whose `abs` matches the anchor line) and end row (start
+  // row of the next marker in the same column, or rows+1 for the
+  // tail). Result: each marker cell spans from its anchor down to
+  // the row just before the next marker, letting long quotes/comments
+  // flow freely into otherwise-empty cells below.
+  const rowOfAbs = new Map(kept.map(({ abs }, i) => [abs, i + 1]));
+  function placeMarkers(byLine, colClass) {
+    // Markers in source order
+    const anchors = Object.keys(byLine).map(Number).sort((a, b) => a - b);
+    return anchors.map((anchor, i) => {
+      const startRow = rowOfAbs.get(anchor);
+      if (!startRow) return '';
+      const nextAnchor = anchors[i + 1];
+      const endRow = nextAnchor ? rowOfAbs.get(nextAnchor) : kept.length + 1;
+      const inner = byLine[anchor].map(A.renderMarkerLeft).join('');
+      return `<div class="${colClass}" style="grid-row:${startRow}/${endRow}">${inner}</div>`;
+    }).join('');
+  }
+  const leftCells  = placeMarkers(leftByLine,  'proof-col-quoting');
+  const rightCells = placeMarkers(rightByLine, 'proof-col-commentary');
+
+  return `<div class="proof-grid">${sourceCells.join('')}${leftCells}${rightCells}</div>`;
 }
 
 function renderCard(d) {
@@ -1205,9 +1355,13 @@ document.getElementById('cardPane').addEventListener('click', async ev => {
     flag.textContent = on ? 'flagged' : 'flag';
     return;
   }
-  // Source line click → toggle flag (shift-click ranges from last
-  // clicked line to current). Has to come AFTER more specific buttons.
-  const line = ev.target.closest('.bn-line[data-line]');
+  // Source line OR marker block click → toggle flag (shift-click
+  // ranges from last clicked line to current). Has to come AFTER
+  // more specific buttons. Markers carry the same `data-line`
+  // attribute as source lines, so the same handler covers both —
+  // a `quoting` block flag and a flag on its source line are the
+  // same flag.
+  const line = ev.target.closest('.bn-line[data-line], .bn-marker[data-line]');
   if (line) {
     const slug = decodeURIComponent(location.hash.slice(1));
     const d = BY_SLUG.get(slug);
@@ -1311,6 +1465,34 @@ function exportWireframe() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 document.getElementById('exportWireframe').addEventListener('click', exportWireframe);
+document.getElementById('modeToggle').addEventListener('click', toggleMode);
+
+// ---------- Dark / light mode ----------
+// Pure-client preference, persisted to localStorage. Works in both
+// debug (Flask) and production (static) modes — no API dependency.
+// Toggle via the header button or Shift+D.
+const MODE_KEY = 'atlas.mode';
+function applyMode(mode) {
+  document.body.classList.toggle('dark-mode', mode === 'dark');
+  const btn = document.getElementById('modeToggle');
+  if (btn) btn.textContent = mode === 'dark' ? '◑ light' : '◐ dark';
+}
+function loadMode() {
+  try { return localStorage.getItem(MODE_KEY) || 'light'; }
+  catch { return 'light'; }
+}
+function toggleMode() {
+  const next = loadMode() === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem(MODE_KEY, next); } catch {}
+  applyMode(next);
+}
+window.addEventListener('keydown', ev => {
+  if (ev.shiftKey && (ev.key === 'D' || ev.key === 'd') &&
+      !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) {
+    ev.preventDefault();
+    toggleMode();
+  }
+});
 
 // Detect whether the Flask annotation API is reachable. If not, we're
 // being served as a static bundle (production / GH Pages / embedded
@@ -1330,6 +1512,7 @@ async function detectMode() {
 
 (async function main() {
   try {
+    applyMode(loadMode());     // apply light/dark before first paint
     const mode = await detectMode();
     await loadAll();
     if (mode === 'debug') {

@@ -259,7 +259,8 @@ def commentaryBlockJson (declByKindNum : String → List Name) (cb : Atlas.Comme
     s!"\"aliases\":{aliasesJson}",
     s!"\"preface\":{optStr cb.bookPreface?}",
     s!"\"notes\":{optStr cb.authorNotes?}",
-    s!"\"tags\":{tagsJson}"
+    s!"\"tags\":{tagsJson}",
+    s!"\"suppress\":{if cb.suppressed then "true" else "false"}"
   ]
   "{" ++ String.intercalate "," fields.toList ++ "}"
 

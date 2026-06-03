@@ -34,6 +34,11 @@ open Lean Elab Tactic Meta ProofWidgets Server
 structure AuxillaryAddendum where
   line : Nat
   addendum : DSL.Construction
+  -- Optional descriptive caption from `auxillary "..." { ... }`.
+  -- Surfaces as accessibility narration in the figure widget and as
+  -- a small caption next to the rendered SVG. Future Type→DSL
+  -- extraction (Joe 2026-06-02) can also consume this.
+  description : Option String := none
   deriving Inhabited
 
 initialize auxillaryAddendaExt :
@@ -43,9 +48,10 @@ initialize auxillaryAddendaExt :
   Atlas.registerArrayExt `Geometry.Construction.auxillaryAddendaExt
 
 /-- Push an auxillary addendum into the per-decl tracking extension. -/
-def pushAddendum (declName : Name) (line : Nat) (addendum : DSL.Construction) :
+def pushAddendum (declName : Name) (line : Nat) (addendum : DSL.Construction)
+    (description : Option String := none) :
     TermElabM Unit := do
-  modifyEnv (auxillaryAddendaExt.addEntry · (declName, { line, addendum }))
+  modifyEnv (auxillaryAddendaExt.addEntry · (declName, { line, addendum, description }))
 
 /-- All addenda recorded for this decl, in source-push order. -/
 private def addendaFor (env : Environment) (declName : Name) :
@@ -202,13 +208,26 @@ private def saveProgressiveFigures
     -- or before this step.
     let activeAddenda := addenda.filter fun a =>
       inScope scopes fileMap a.line line
-    let html ←
+    let figHtml ←
       if activeAddenda.isEmpty then
         renderConstructionHtml base
       else
         let combinedStmts := activeAddenda.foldl
           (fun acc a => acc ++ a.addendum.stmts) #[]
         renderAuxHtml base { stmts := combinedStmts }
+    -- Concatenate descriptions from the active addenda — each
+    -- `auxillary "desc" { … }` contributes a small italic caption
+    -- under the figure. Empty list ⇒ no captions, no extra DOM.
+    let captions : Array String :=
+      activeAddenda.filterMap (·.description)
+    let html : Html := if captions.isEmpty then figHtml else
+      Html.element "div"
+        #[("style", Json.str "text-align: center;")]
+        (#[figHtml] ++ captions.map (fun c =>
+          Html.element "div"
+            #[("style", Json.str
+                "font-style: italic; color: var(--ink-muted, #586e75); margin-top: 0.25em; font-size: 0.85em;")]
+            #[Html.text c]))
     Widget.savePanelWidgetInfo
       (hash HtmlDisplayPanel.javascript)
       (return Json.mkObj [("html", Atlas.htmlToJson html)])

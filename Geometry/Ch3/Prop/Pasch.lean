@@ -78,10 +78,11 @@ atlas theorem 3.0 "Pasch's Theorem"
   (C off L -> ¬((L intersects segment A C) ∧ (L intersects segment B C))) := by
     comment "mise en place"
     separate at distinctABC
-    -- Here is a place where I might want to add a temporary constraint to the line; `assert segment A B = segment B C`
-    -- and show the degenerate diagram as a result
     clearly (segment A B : Line) ≠ (segment B C : Line) := by
       idea "if AB = BC, then ABC are collinear, which is a contradiction"
+      auxillary {
+        -- assert AB = BC
+      }
       have colABC : collinear A B C := by
         use (segment A B : Line)
         intro P PisABorC
