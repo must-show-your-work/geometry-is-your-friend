@@ -36,8 +36,16 @@ entries written by an older algorithm get invalidated automatically.
 History:
 - v1: initial Verlet + projections + label sub-solver
 - v2: multi-incidence collinear projection; noncollinear soft force
+- v3: `focus N` DSL keyword overrides axis pair selection
+- v4: `hidden N+` keyword + `autoAnchorLines` synthesizes hidden line anchors
+- v5: `lineRepulsion` force + `halfPlane` projection driven by `same_side`/`opp_side`
+- v6: focused-line axis anchors split from user incidents; `between` + `incident`
+  on focused L collapses to `intersect2` over the axis pair; `halfPlane`
+  requires `margin` clearance instead of just "correct sign"
+- v7: projection order reversed — halfPlane runs before intersect2, so `between`
+  + `incident` correctly snaps to AB ∩ L using halfPlane-corrected positions.
 -/
-def solverVersion : Nat := 2
+def solverVersion : Nat := 7
 
 structure Key where
   version : Nat

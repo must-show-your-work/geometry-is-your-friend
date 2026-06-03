@@ -17,6 +17,7 @@ import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Interpendices.C
 import Geometry.Theory.Forgetting
+import Geometry.Construction.AtlasField
 import Atlas
 
 namespace Geometry.Ch3.Ex
@@ -54,6 +55,14 @@ improper subset here is also odd, AB ⊂ AC clearly; but the author uses `⊆`. 
   Finally, I've broken the first statement into individual sub exercises. Atlas gangs all these together as a theorem
 complex, so it is easiest to just break down by conclusion.
   "
+
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
 
 atlas exercise 3.Review.3.a.i "If A-B-C, then AB ⊆ AC"
   {A B C : Point} (ABC : A - B - C := by assumption) :

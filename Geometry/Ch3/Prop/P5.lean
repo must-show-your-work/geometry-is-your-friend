@@ -17,6 +17,7 @@ import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Interpendices.C
 import Geometry.Theory.Forgetting
+import Geometry.Construction.AtlasField
 import Atlas
 
 namespace Geometry.Ch3.Prop
@@ -37,6 +38,18 @@ atlas commentary := by
   ]
   name "Given A-B-C. Then AC = AB ∪ BC and B is the only point common to segments AB and BC."
   preface "Here are some more results on betweenness and separation that you will be asked to prove in the exercises"
+
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAB := segment A B
+      construct segBC := segment B C
+    }
+    title "Proposition 3.5"
+    index 1
+    caption "With B between A and C, segment AC is the union of AB and BC; the intersection is the single point B."
 
 
 atlas proposition 3.5 "If A-B-C then AC = AB ∪ BC..."

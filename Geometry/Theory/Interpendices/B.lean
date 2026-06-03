@@ -8,6 +8,7 @@ import Geometry.Theory.Interpendices.A
 import Geometry.Tactics
 
 import Geometry.Ch2.Prop
+import Geometry.Construction.AtlasField
 import Atlas
 
 namespace Geometry.Theory
@@ -28,6 +29,14 @@ atlas commentary := by
   aliases [
     Geometry.Theory.Line.trichotomy
   ]
+
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
 
 atlas lemma 2.0.1 "Two lines either share no points share one point or are equal"
   : ∀ L M : Line, (L ∩ M = ∅) ∨ (∃! X, L ∩ M = {X}) ∨ L = M := by
@@ -51,6 +60,15 @@ atlas commentary := by
   via lemma 2.0.2
   name "Two distinct points on two lines force the lines to coincide"
   preface "If two distinct points are found on two lines, those lines are equal."
+
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+    }
 
 atlas lemma 2.0.2 "Two distinct points on two lines force the lines to coincide"
   {L M : Line} {A B : Point} : A ≠ B -> ((A on L) ∧ (A on M) ∧ (B on L) ∧ (B on M) -> L = M) := by
@@ -93,6 +111,16 @@ atlas commentary := by
   name "Segment A B is a subset of line A B"
   preface "A segment is a subset of the line A B"
 
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+      construct segAB := segment A B
+    }
+
 atlas lemma 2.0.4 "Segment A B is a subset of line A B"
   : (segment A B : Line) ⊆ (line A B : Line) := by
   have h₁ : (segment A B : Line) ⊆ (ray A B : Line) := obvious
@@ -105,6 +133,16 @@ atlas commentary := by
   via lemma 2.0.5
   name "Line Points are Collinear"
   preface "All points on a line are collinear"
+
+  figure := by
+    construction {
+      exists A B P : Point
+      exists L : Line
+      assert distinct A B P
+      assert incident A L
+      assert incident B L
+      assert incident P L
+    }
 
 atlas lemma 2.0.5 "Line Points are Collinear"
   {AneB : A ≠ B} : P on line A B -> collinear A B P := by
@@ -131,6 +169,14 @@ atlas commentary := by
   name "Every point on extension A B is collinear with A and B"
   preface "All points on a extension are collinear"
 
+  figure := by
+    construction {
+      exists A B P : Point
+      assert distinct A B P
+      assert between A B P
+      construct segAP := segment A P
+    }
+
 atlas lemma 2.0.6 "Every point on extension A B is collinear with A and B"
   {A B : Point} : P on extension A B -> collinear A B P := by
   intro PonExtAB
@@ -141,6 +187,14 @@ atlas commentary := by
   via lemma 2.0.7
   name "Every point on segment A B is collinear with A and B"
   preface "All points on a segment are collinear"
+
+  figure := by
+    construction {
+      exists A B P : Point
+      assert distinct A B P
+      assert between A P B
+      construct segAB := segment A B
+    }
 
 atlas lemma 2.0.7 "Every point on segment A B is collinear with A and B"
   {AneB : A ≠ B} : P on segment A B -> collinear A B P := by
@@ -153,6 +207,14 @@ atlas commentary := by
   via lemma 2.0.8
   name "Ray Points are Collinear"
   preface "All points on a ray are collinear"
+
+  figure := by
+    construction {
+      exists A B P : Point
+      assert distinct A B P
+      assert between A B P
+      construct rayAB := ray A B
+    }
 
 atlas lemma 2.0.8 "Ray Points are Collinear"
   {AneB : A ≠ B} : P on ray A B -> collinear A B P := by
@@ -181,6 +243,16 @@ atlas commentary := by
   via lemma 2.0.10
   name "A ray A B is never equal to any line L"
   preface "A line is 'bigger' than a ray in the same way that a line is bigger than a segment"
+
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+      construct rayAB := ray A B
+    }
 
 atlas lemma 2.0.10 "A ray A B is never equal to any line L"
   { L : Line } {A B : Point}  (AneB : A ≠ B := by assumption) : ray A B ≠ L := by
@@ -211,6 +283,13 @@ atlas commentary := by
   name "Segment Commutativity"
   preface "It helps to be able to commute these around, when we get to congruence this will make part of it trivial"
 
+  figure := by
+    construction {
+      exists A B : Point
+      assert distinct A B
+      construct segAB := segment A B
+    }
+
 atlas lemma 2.0.11 "Segment Commutativity"
   : (segment A B : Line) = segment B A := by
   suffices subset : ∀ A B : Point, (segment A B : Line) ⊆ segment B A by
@@ -226,6 +305,16 @@ atlas commentary := by
   via lemma 2.0.12
   name "A segment A B is never equal to any line L"
   preface "A line is 'bigger' than a segment, in the same way that a line is bigger than a ray (2.0.10)"
+
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+      construct segAB := segment A B
+    }
 
 atlas lemma 2.0.12 "A segment A B is never equal to any line L"
   { L : Line } {A B : Point}  (AneB : A ≠ B := by assumption) : segment A B ≠ L := by
@@ -262,6 +351,14 @@ atlas commentary := by
   name "Segment A B and the related extension A B have empty intersection"
   preface "No points are contained on the intersection of a segment and it's related extension"
 
+  figure := by
+    construction {
+      exists A B X : Point
+      assert distinct A B X
+      assert between A B X
+      construct segAB := segment A B
+    }
+
 atlas lemma 2.0.13 "Segment A B and the related extension A B have empty intersection"
   : (segment A B : Line) ∩ extension A B = ∅ := by
   apply Line.ext_set
@@ -285,6 +382,14 @@ atlas commentary := by
   name "A point on a segment lies off the related extension"
   preface "Points on a segment are not included in the related extension"
 
+  figure := by
+    construction {
+      exists A B X : Point
+      assert distinct A B X
+      assert between A X B
+      construct segAB := segment A B
+    }
+
 atlas lemma 2.0.14 "A point on a segment lies off the related extension"
   : X on segment A B -> X off extension A B := by
   intro XonAB
@@ -300,6 +405,14 @@ atlas commentary := by
   name "A point on an extension lies off the related segment"
   preface "Points on an extension are off the related segment"
 
+  figure := by
+    construction {
+      exists A B X : Point
+      assert distinct A B X
+      assert between A B X
+      construct segAB := segment A B
+    }
+
 atlas lemma 2.0.15 "A point on an extension lies off the related segment"
   : X on extension A B -> X off segment A B := by
   intro XonAB
@@ -314,6 +427,14 @@ atlas commentary := by
   via lemma 2.0.16
   name "Two points in the intersection of distinct nonparallel lines coincide"
   preface "If L and M are distinct, nonparallel lines, and X and Y are found in their intersection, X and Y are equal"
+
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
 
 atlas lemma 2.0.16 "Two points in the intersection of distinct nonparallel lines coincide"
   : ∀ L M : Line, L ≠ M -> (L ∦ M) -> X ∈ L ∩ M ∧ Y ∈ L ∩ M -> X = Y := by
@@ -331,6 +452,14 @@ atlas commentary := by
   via lemma 2.0.17
   name "Membership in the intersection of distinct nonparallel lines is the pointed intersection"
   preface "Intersections of distinct, nonparallel lines contain exactly one point"
+
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
 
 atlas lemma 2.0.17 "Membership in the intersection of distinct nonparallel lines is the pointed intersection"
   : ∀ P : Point, ∀ L M : Line, L ≠ M ∧ (L ∦ M) -> (P ∈ L ∩ M ↔ L intersects M at P) := by
@@ -354,6 +483,15 @@ atlas commentary := by
   via lemma 2.0.18
   name "A line intersecting a segment intersects its containing ray at the same point"
   preface "If a line intersects a segment, then it intersects the ray containing that segment"
+
+  figure := by
+    construction {
+      exists A B X : Point
+      exists L : Line
+      assert between A X B
+      assert incident X L
+      construct rayAB := ray A B
+    }
 
 atlas lemma 2.0.18 "A line intersecting a segment intersects its containing ray at the same point"
   : (A ≠ B) -> (L intersects segment A B at X) -> (L intersects ray A B at X) := by
@@ -394,6 +532,14 @@ atlas commentary := by
   name "If two lines have a pointed intersection they are not parallel"
   preface "If L intersects M anywhere, then L cannot be parallel to M"
 
+  figure := by
+    construction {
+      exists P : Point
+      exists L M : Line
+      assert incident P L
+      assert incident P M
+    }
+
 atlas lemma 2.0.19 "If two lines have a pointed intersection they are not parallel"
   : (L intersects M at P) -> (L ∦ M) := by
   intro LintMatP
@@ -409,6 +555,15 @@ atlas commentary := by
   via lemma 2.0.20
   name "A line intersecting a ray intersects its containing line at the same point"
   preface "If a line intersects a ray, then it intersects the line containing the ray"
+
+  figure := by
+    construction {
+      exists A B X : Point
+      exists L : Line
+      assert between A B X
+      assert incident X L
+      construct rayAB := ray A B
+    }
 
 atlas lemma 2.0.20 "A line intersecting a ray intersects its containing line at the same point"
   {AneB : A ≠ B} : (L intersects ray A B at X) -> (L intersects line A B at X) := by
@@ -470,6 +625,15 @@ atlas commentary := by
   name "A line intersecting a segment intersects its containing line at the same point"
   preface "If a line intersects a segment, then it intersects the line containing the segment"
 
+  figure := by
+    construction {
+      exists A B X : Point
+      exists L : Line
+      assert between A X B
+      assert incident X L
+      construct segAB := segment A B
+    }
+
 atlas lemma 2.0.21 "A line intersecting a segment intersects its containing line at the same point"
   {AneB : A ≠ B} : (L intersects segment A B at X) -> (L intersects line A B at X) := by
   intro LintSeg
@@ -483,6 +647,15 @@ atlas commentary := by
   via lemma 2.0.22
   name "If A-X-B and L meets the segment at X then L splits A and B"
   preface "If A - X - B, and L intersects a segment A B at X, then L splits A and B"
+
+  figure := by
+    construction {
+      exists A X B : Point
+      exists L : Line
+      assert between A X B
+      assert incident X L
+      construct segAB := segment A B
+    }
 
 atlas lemma 2.0.22 "If A-X-B and L meets the segment at X then L splits A and B"
   {L : Line} {A X B : Point} (AXB : A - X - B) :
@@ -503,6 +676,15 @@ atlas commentary := by
   name "Drop the strict-betweenness premise from 2.0.22 by case analysis"
   preface "If L intersects segment A B at X (no a priori betweenness assumption on X), then L splits A and B. Generalizes lemma 2.0.22 by handling the endpoint cases (X = A or X = B) via case analysis on the segment trichotomy. Shares number 2.0.22 with the parent lemma — call sites must use `via lemma 2.0.22 …` (type-dispatched across paired decls) rather than `via lemma 2.0.22 …` (single-match)."
 
+  figure := by
+    construction {
+      exists A X B : Point
+      exists L : Line
+      assert between A X B
+      assert incident X L
+      construct segAB := segment A B
+    }
+
 atlas corollary 2.0.22 "If L intersects segment A B at X, then L splits A and B"
   {L : Line} {A B X : Point} :
   (L intersects (segment A B) at X) -> (L splits A and B) := by
@@ -521,6 +703,16 @@ atlas commentary := by
   name "A point different from the meet of two lines lies off at least one of them"
   preface "If L intersect M at X, and A is not X, then either A is off L or M or both."
 
+  figure := by
+    construction {
+      exists X A : Point
+      exists L M : Line
+      assert distinct X A
+      assert incident X L
+      assert incident X M
+      assert incident A L
+    }
+
 atlas lemma 2.0.23 "A point different from the meet of two lines lies off at least one of them"
   {L M : Line} {A X : Point} : A ≠ X -> (L intersects M at X) -> (A off L) ∨ (A off M) := by
   intro AneX LintMatX
@@ -537,6 +729,18 @@ atlas commentary := by
   preface "Let L and M be lines, with A and B on L. If L intersects M at some X not A or B; and
   if M splits A and B, then A - X - B"
   notes "This extracts the common argument at the end of p3.3 and it's corollaries."
+
+  figure := by
+    construction {
+      exists A X B : Point
+      exists L M : Line
+      assert between A X B
+      assert incident A L
+      assert incident X L
+      assert incident B L
+      assert incident X M
+      construct segAB := segment A B
+    }
 
 atlas lemma 2.0.24 "Crossing point of L through M between A and B forces A-X-B when M splits A B"
   (AneX : A ≠ X) (BneX : B ≠ X) :
@@ -572,6 +776,15 @@ atlas commentary := by
   2. L and EX are not parallel
   3. L intersects EX at X"
 
+  figure := by
+    construction {
+      exists E X : Point
+      exists L : Line
+      assert distinct E X
+      assert incident X L
+      construct lineEX := line_through E X
+    }
+
 atlas lemma 2.0.25 "Through X on L and E off L: L and line E X are distinct, nonparallel, meet at X"
   {L : Line} {X E : Point} (XonL : X on L) (EoffL : E off L)
     : (L ≠ (line E X)) ∧ (L ∦ (line E X)) ∧ (L intersects (line E X) at X) := by
@@ -595,6 +808,18 @@ atlas commentary := by
   name "A line crossing L at Z (not between A and B on L) guards A and B"
   preface "If A, B, and Z are on L, a line M passes through L at Z, and Z is not between A and B, then M guards A and B."
 
+  figure := by
+    construction {
+      exists A B Z : Point
+      exists L M : Line
+      assert distinct A B Z
+      assert between A B Z
+      assert incident A L
+      assert incident B L
+      assert incident Z L
+      assert incident Z M
+    }
+
 atlas lemma 2.0.26 "A line crossing L at Z (not between A and B on L) guards A and B"
   {L M : Line} {Z A B : Point}
     (AneZ : A ≠ Z) (BneZ : B ≠ Z)
@@ -612,6 +837,14 @@ atlas commentary := by
   preface "If X - Y - Z, then X lies off segment Y Z."
   notes "The inner segment is the closed segment from Y to Z; X being off it means X ≠ Y, X ≠ Z, and ¬(Y - X - Z). The first two come from B-1 distinctness on the Between hypothesis; the third comes from lemma 1.0.18 (Y - X - Z and X - Y - Z cannot coexist)."
 
+  figure := by
+    construction {
+      exists X Y Z : Point
+      assert distinct X Y Z
+      assert between X Y Z
+      construct segYZ := segment Y Z
+    }
+
 atlas lemma 2.0.27 "The left outer point of a Between triple lies off the inner segment"
   {X Y Z : Point} (h : X - Y - Z) : X off segment Y Z := by
   intro hMem
@@ -628,6 +861,14 @@ atlas commentary := by
   name "The right outer point of a Between triple lies off the inner segment"
   preface "If X - Y - Z, then Z lies off segment X Y."
   notes "Symmetric variant of lemma 2.0.27 — same shape, the Y-Z-X betweenness contradiction here is via lemma 1.0.19 (X-Y-Z and X-Z-Y cannot coexist). Shares number 2.0.27 with the parent; use `via lemma 2.0.27 …` for type-directed dispatch."
+
+  figure := by
+    construction {
+      exists X Y Z : Point
+      assert distinct X Y Z
+      assert between X Y Z
+      construct segXY := segment X Y
+    }
 
 atlas corollary 2.0.27 "The right outer point of a Between triple lies off the inner segment"
   {X Y Z : Point} (h : X - Y - Z) : Z off segment X Y := by
@@ -650,6 +891,14 @@ at `A` specifically (`L intersects M at A`) or the two coincide."
 rules out the empty branch, leaving either the unique-point branch (which
 must be `A`) or the coincident branch."
 
+  figure := by
+    construction {
+      exists A : Point
+      exists L M : Line
+      assert incident A L
+      assert incident A M
+    }
+
 atlas lemma 3.0.1 "Bare intersection plus a shared point implies pointed intersection or coincidence"
   {L M : Line} {A : Point} :
     L intersects M -> A on L ∧ A on M -> L intersects M at A ∨ L = M := by
@@ -670,6 +919,15 @@ atlas commentary := by
   via lemma 3.0.2
   name "A line intersects itself (bare intersection of L with L)"
   preface "A line trivially intersects itself everywhere."
+
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+    }
 
 atlas lemma 3.0.2 "A line intersects itself (bare intersection of L with L)"
   : L intersects L := by

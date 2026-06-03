@@ -182,23 +182,27 @@ private def lineDir (idx : Nat) : Pos2 :=
   | _ => (30, 140)
 
 /-- Phase 3: emit shapes for each `exists`-declared name now that
-positions are final.
-- `Point`: emit `.point` + auto-label.
+positions are final. `hidden` carries the names marked `hidden N+`
+(or auto-synthesized as line anchors); those points participate in
+the solver but get no shape and no label.
+
+- `Point`: emit `.point` + auto-label, unless the name is hidden.
 - `Line`: anchored by `incident P L` / `on P L` asserts.
-  - 0 anchors → skip (nothing to draw).
-  - 1 anchor → line through anchor with the cycled default direction,
-    so multiple lines through the same anchor render at different slopes.
-  - 2+ anchors → line through the first two anchors (uniquely
-    determined by two points). The cycled direction is ignored. -/
-private def emitDeclaredShapes (b : Bindings) : Bindings :=
+  - 0 anchors → skip (after `autoAnchorLines`, this is unreachable).
+  - 1 anchor → line through anchor with the cycled default direction.
+  - 2+ anchors → line through the first two anchors. -/
+private def emitDeclaredShapes (b : Bindings) (hidden : List Name := []) : Bindings :=
+  let isHidden (n : Name) : Bool := hidden.contains n
   let (final, _) := b.sorts.foldr (init := (b, 0)) fun (n, sort) (acc, lineIdx) =>
     match sort with
     | "Point" =>
-      match lookupArg acc (.name n) with
-      | some pos =>
-        let acc := addShape acc (.point n pos)
-        (addAnnotation acc (.label n n), lineIdx)
-      | none => (acc, lineIdx)
+      if isHidden n then (acc, lineIdx)
+      else
+        match lookupArg acc (.name n) with
+        | some pos =>
+          let acc := addShape acc (.point n pos)
+          (addAnnotation acc (.label n n), lineIdx)
+        | none => (acc, lineIdx)
     | "Line" =>
       let anchors := lineAnchors acc n
       if anchors.size ≥ 2 then
@@ -225,7 +229,117 @@ the alphabetically-earliest pair of points that anchor a segment / line
 / ray construct — for Pasch (segments AB, BC, AC) this is (A, B); for
 TwoPointsLine (line PQ) it is (P, Q). Both endpoints are pinned at
 their warm-start positions so the resulting figure reads "A on the
-left, B on the right, AB horizontal" without a post-pass rotation. -/
+left, B on the right, AB horizontal" without a post-pass rotation.
+
+A `focus N` statement overrides the auto-pick: `N` may name a
+segment / line_through / ray construct (in which case its endpoints
+become the axis) or an existential Line (in which case the first two
+`incident` anchors become the axis; if only one anchor exists, that
+single point is pinned at the canvas center and the line is drawn
+horizontally through it). -/
+
+/-- The focused element's name, if any `focus N` statement appears.
+The last `focus` wins. -/
+private def focusName (stmts : Array Stmt) : Option Name :=
+  stmts.foldl (init := none) fun acc s => match s with
+    | .assert (.app "focus" [.name n]) _ => some n
+    | _ => acc
+
+/-- All point names marked as `hidden P1 P2 ...`. Hidden points still
+participate in the solver (they're real particles that anchor lines,
+hold layout, etc.) but emission skips them: no `.point` shape, no
+auto-label. -/
+private def hiddenNames (stmts : Array Stmt) : List Name :=
+  stmts.foldl (init := []) fun acc s => match s with
+    | .assert (.app "hidden" args) _ =>
+      acc ++ args.filterMap (fun e => match e with | .name n => some n | _ => none)
+    | _ => acc
+
+/-- Propagate `same_side P Q L` / `opp_side P Q L` asserts (restricted
+to the focused line `L`) into a side assignment per point: `+1.0` /
+`-1.0` for the two half-planes. The first point mentioned anywhere
+in a side assert gets `+1.0`; subsequent points inherit via same/opp
+links. Conflicting paths are not detected (last write wins). -/
+private def sideAssignments (stmts : Array Stmt) (focusedLine : Name) :
+    List (Name × Float) := Id.run do
+  let asserts : List (Bool × Name × Name) := stmts.toList.filterMap fun s =>
+    match s with
+    | .assert (.app "same_side" [.name p, .name q, .name l]) _ =>
+      if l == focusedLine then some (true, p, q) else none
+    | .assert (.app "opp_side" [.name p, .name q, .name l]) _ =>
+      if l == focusedLine then some (false, p, q) else none
+    | _ => none
+  let mut assigns : List (Name × Float) := []
+  -- Propagation pass; iterate until fixpoint or single-pass is enough
+  -- for chained equations (B.4.ii has just two asserts).
+  for _ in [0 : 4] do
+    for (isSame, p, q) in asserts do
+      let pSide? := (assigns.find? (·.1 == p)).map (·.2)
+      let qSide? := (assigns.find? (·.1 == q)).map (·.2)
+      match pSide?, qSide? with
+      | none, none =>
+        let qSide := if isSame then 1.0 else -1.0
+        assigns := assigns ++ [(p, 1.0), (q, qSide)]
+      | some pSide, none =>
+        let qSide := if isSame then pSide else -pSide
+        assigns := assigns ++ [(q, qSide)]
+      | none, some qSide =>
+        let pSide := if isSame then qSide else -qSide
+        assigns := assigns ++ [(p, pSide)]
+      | some _, some _ => pure ()
+  return assigns
+
+/-- Pre-lowering rewrite: every existential Line must end up with at
+least two `incident` anchors so it has a determinate position and
+direction.
+
+Two strategies in play:
+- **Unfocused lines**: user-supplied incidents fill anchor slots
+  first; remaining slots get synthesized hidden anchor points named
+  `~h_<L>_<k>` appended at the end of stmts. The line is drawn
+  through whichever two anchors come first (in source order).
+- **Focused lines**: always synthesize two dedicated axis anchors
+  named `~axL_<L>_<k>`, with their `incident` asserts inserted at the
+  START of stmts so `lineAnchors` returns them first and the line is
+  drawn through THEM (horizontal). User-named incidents on the
+  focused line stay as regular incidents — they aren't pinned, and
+  they get an `incidentOnLine` projection onto the axis anchors so
+  they sit on the rendered line while still moving to satisfy other
+  constraints (e.g. `between A X B` for X).
+
+The `~` prefix on anchor names is past `z` in ASCII so these don't
+collide with any user identifier in the alphabetized layout pool. -/
+private def autoAnchorLines (stmts : Array Stmt) : Array Stmt := Id.run do
+  let lineNames : Array Name := stmts.foldl (init := #[]) fun acc s => match s with
+    | .«exists» names "Line" => acc ++ names
+    | _ => acc
+  let focused := focusName stmts
+  -- Build prepended stmts (focused-line axis anchors that need to
+  -- come BEFORE user incidents) and appended stmts (unfocused-line
+  -- fill anchors that can come after).
+  let mut prepended : Array Stmt := #[]
+  let mut appended  : Array Stmt := #[]
+  for L in lineNames do
+    if focused == some L then
+      for k in [0 : 2] do
+        let anchorName : Name := s!"~axL_{L}_{k}"
+        prepended := prepended
+          |>.push (.«exists» #[anchorName] "Point")
+          |>.push (.assert (.app "hidden" [.name anchorName]) "")
+          |>.push (.assert (.app "incident" [.name anchorName, .name L]) "")
+    else
+      let existing : Nat := stmts.foldl (init := 0) fun acc s => match s with
+        | .assert (.app op [.name _, .name l]) _ =>
+          if (op == "incident" || op == "on") && l == L then acc + 1 else acc
+        | _ => acc
+      let needed : Nat := if existing ≥ 2 then 0 else 2 - existing
+      for k in [0 : needed] do
+        let anchorName : Name := s!"~h_{L}_{k}"
+        appended := appended
+          |>.push (.«exists» #[anchorName] "Point")
+          |>.push (.assert (.app "hidden" [.name anchorName]) "")
+          |>.push (.assert (.app "incident" [.name anchorName, .name L]) "")
+  return prepended ++ stmts ++ appended
 
 /-- Collect (name, name) pairs of points that anchor a segment or
 line. Each pair is sorted internally so (A, B) and (B, A) collide. -/
@@ -251,10 +365,18 @@ rotation + centering, compute the bounding box of all shape positions
 and scale uniformly around the canvas center so the figure fills most
 of the available space (with a margin for labels). -/
 
+/-- Positions that should influence the fit-to-canvas bounding box.
+Includes every `.point` (the user-visible anchors) AND the reference
+endpoints of every `.line` (so a focused horizon line gets its own
+margin in the bbox, instead of bbox-collapsing onto whichever visible
+point happens to be closest to it). Segments and rays aren't included
+because their endpoints ARE visible points which are already
+counted. -/
 private def pointPositions (shapes : Array (Shape Pos2)) : Array Pos2 :=
-  shapes.filterMap fun
-    | .point _ p _ => some p
-    | _ => none
+  shapes.foldl (init := #[]) fun acc s => match s with
+    | .point _ p _    => acc.push p
+    | .line _ a b _   => acc.push a |>.push b
+    | _ => acc
 
 private def boundingBox (positions : Array Pos2) : Option (Pos2 × Pos2) :=
   if positions.isEmpty then none
@@ -385,34 +507,59 @@ private def incidenceGroups (stmts : Array Stmt) : List (Name × List Name) := I
   A X B` and `between C X D`), they collapse into one
   `Projections.intersect2` that snaps X to the intersection of lines
   AB and CD.
+- A `between A X B` whose middle X is also an `incident X L` on the
+  focused line collapses into an `intersect2(A, B, ax0, ax1, X)`
+  where `(ax0, ax1)` are the focused line's axis anchors. This
+  snaps X exactly to segment AB ∩ L in one step instead of
+  oscillating between two single-axis projections.
 - `collinear A B C ...` snaps the rest onto the line through the
   first two.
 - Multi-incidence on the same Line (`incident P L`, `incident Q L`,
-  `incident R L`, ...) collapses to one collinear projection over the
-  incident points. The first two define the line; later ones get
-  snapped onto it.
-- Single-anchor `incident P L` doesn't yield a projection — the
-  line's geometry is defined by the one point and the cycled default
-  direction in `emitDeclaredShapes`.
+  `incident R L`, ...) collapses to one collinear projection over
+  the incident points.
 - Pure metadata asserts (`distinct`, `¬`, ...) produce no
   projection. -/
-private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option Nat) :
+private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option Nat)
+    (focused? : Option Name := none) :
     Array Solver.Projection := Id.run do
   let betweens := collectBetweens stmts nameToIdx
+  -- Per-particle list of `between` (a, b) outer pairs.
   let mut grouped : List (Nat × List (Nat × Nat)) := []
   for (a, x, b) in betweens do
     grouped := match grouped.find? (·.1 == x) with
       | some _ =>
         grouped.map fun (xi, abs) => if xi == x then (xi, (a, b) :: abs) else (xi, abs)
       | none => (x, [(a, b)]) :: grouped
+  -- Focused-line axis anchor indices (if any) — used to collapse the
+  -- `between` ∧ `incident-on-focused-L` case into one intersect2.
+  let focusedAxisAnchors? : Option (Nat × Nat) := do
+    let focused ← focused?
+    let ax0 ← nameToIdx s!"~axL_{focused}_0"
+    let ax1 ← nameToIdx s!"~axL_{focused}_1"
+    some (ax0, ax1)
+  -- Names of particles incident on the focused line (used for the
+  -- between + incident → intersect2 fusion).
+  let onFocused : List Nat :=
+    match focused? with
+    | none => []
+    | some focusedL =>
+      stmts.toList.filterMap fun s => match s with
+        | .assert (.app op [.name p, .name l]) _ =>
+          if (op == "incident" || op == "on") && l == focusedL then
+            nameToIdx p
+          else none
+        | _ => none
   let mut projs : Array Solver.Projection := #[]
   for (x, abs) in grouped do
-    match abs with
-    | [(a, b)] =>
+    match abs, onFocused.contains x, focusedAxisAnchors? with
+    | [(a, b)], true, some (ax0, ax1) =>
+      -- Single between + on focused line: intersect with the line.
+      projs := projs.push (Solver.Projections.intersect2 a b ax0 ax1 x)
+    | [(a, b)], _, _ =>
       projs := projs.push (Solver.Projections.between a x b)
-    | (a1, b1) :: (a2, b2) :: _ =>
+    | (a1, b1) :: (a2, b2) :: _, _, _ =>
       projs := projs.push (Solver.Projections.intersect2 a1 b1 a2 b2 x)
-    | [] => pure ()
+    | [], _, _ => pure ()
   for s in stmts do
     match s with
     | .assert (.app "collinear" args) _ =>
@@ -422,11 +569,38 @@ private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option N
       if ids.length ≥ 2 then
         projs := projs.push (Solver.Projections.collinear ids)
     | _ => pure ()
-  for (_, points) in incidenceGroups stmts do
-    if points.length ≥ 3 then
+  -- Multi-incidence collinear: only emit for lines NOT focused (the
+  -- focused case is handled per-particle via intersect2 above, which
+  -- is stronger than collinear).
+  for (lineName, points) in incidenceGroups stmts do
+    if focused? != some lineName && points.length ≥ 3 then
       let ids := points.filterMap nameToIdx
       if ids.length ≥ 2 then
         projs := projs.push (Solver.Projections.collinear ids)
+  -- For the focused line specifically: emit a `collinear` over its
+  -- incidents that DON'T have a between (i.e., aren't covered by
+  -- the intersect2 fusion above). This catches user-named incidents
+  -- that need to land on L but have no other constraint.
+  match focused? with
+  | none => pure ()
+  | some focusedL =>
+    let allIncidents := stmts.toList.filterMap fun s => match s with
+      | .assert (.app op [.name p, .name l]) _ =>
+        if (op == "incident" || op == "on") && l == focusedL then some p else none
+      | _ => none
+    let hasBetween (p : Name) : Bool :=
+      betweens.any fun (_, x, _) => match nameToIdx p with
+        | some pid => pid == x
+        | none => false
+    let extras := allIncidents.filter (fun p => !hasBetween p)
+    -- Build a collinear projection over [axis_0, axis_1, extras...].
+    let allIds := allIncidents.filterMap nameToIdx
+    let extraIds := extras.filterMap nameToIdx
+    if extraIds.length ≥ 1 && allIds.length ≥ 2 then
+      -- Use the first two anchors (axis ones, by `autoAnchorLines`'s
+      -- prepending) to define the line, project extras onto it.
+      let ids := [allIds[0]!, allIds[1]!] ++ extraIds
+      projs := projs.push (Solver.Projections.collinear ids)
   return projs
 
 /-- Build a `Solver.World` from the seeded `Bindings` plus the
@@ -460,15 +634,58 @@ private def buildWorld (b : Bindings) (stmts : Array Stmt) (seed : UInt64)
       let c := xs.foldl (init := 0) fun acc y => if y == x then acc + 1 else acc
       if c ≥ 2 then return true
     return false
+  -- Resolve `focus N` if any. `autoAnchorLines` guarantees every Line
+  -- ends up with ≥ 2 incidences, so focused lines always have two
+  -- anchors to pin (user-named ones take priority over synthesized
+  -- hidden ones; later anchor slots fill with synthesized hidden ones).
+  let focused? := focusName stmts
+  let focusedAxis? : Option (Nat × Nat) :=
+    match focused? with
+    | none => none
+    | some focused =>
+      let constructEnd? : Option (Name × Name) := stmts.findSome? fun
+        | .construct nm (.app op [.name a, .name b]) =>
+          if nm == focused && (op == "segment" || op == "ray" || op == "line_through")
+            then some (a, b) else none
+        | _ => none
+      match constructEnd? with
+      | some (a, b) => do
+        let ia ← nameToIdx a
+        let ib ← nameToIdx b
+        some (ia, ib)
+      | none =>
+        let isLine := stmts.any fun
+          | .«exists» names sort => sort == "Line" && names.contains focused
+          | _ => false
+        if isLine then
+          let anchors : Array Name := stmts.filterMap fun
+            | .assert (.app op [.name p, .name l]) _ =>
+              if (op == "incident" || op == "on") && l == focused then some p else none
+            | _ => none
+          if h : anchors.size ≥ 2 then do
+            let ia ← nameToIdx anchors[0]!
+            let ib ← nameToIdx anchors[1]!
+            some (ia, ib)
+          else none
+        else none
   let axisIds? : Option (Nat × Nat) :=
     if hasMultiBetween then none
-    else do
-      let pair ← (axisCandidates stmts)[0]?
-      let ia ← nameToIdx pair.1
-      let ib ← nameToIdx pair.2
-      some (ia, ib)
-  let axisLeft  : Pos2 := (cx - r * 0.866, cy + r * 0.5)
-  let axisRight : Pos2 := (cx + r * 0.866, cy + r * 0.5)
+    else match focusedAxis? with
+      | some pair => some pair
+      | none => do
+        let pair ← (axisCandidates stmts)[0]?
+        let ia ← nameToIdx pair.1
+        let ib ← nameToIdx pair.2
+        some (ia, ib)
+  -- Axis y differs by mode:
+  -- • Construct-derived axis (e.g. segment AB) sits where the figure
+  --   "rests" — cy + r·0.5 leaves the apex room above.
+  -- • Focused external axis (a Line that's literally the horizon) sits
+  --   further down (cy + r·0.85) so visible points clearly clear it
+  --   post-fit-to-canvas, instead of bbox-collapsing onto the line.
+  let axisY : Float := if focused?.isSome then cy + r * 0.85 else cy + r * 0.5
+  let axisLeft   : Pos2 := (cx - r * 0.866, axisY)
+  let axisRight  : Pos2 := (cx + r * 0.866, axisY)
   let particles : Array Solver.Particle :=
     positionsArr.mapIdx fun i np =>
       match axisIds? with
@@ -513,7 +730,28 @@ private def buildWorld (b : Bindings) (stmts : Array Stmt) (seed : UInt64)
       idx := idx + 4
     return ss
   let springs := constructSprings ++ betweenSprings
-  let projections := buildProjections stmts nameToIdx
+  let baseProjections := buildProjections stmts nameToIdx focused?
+  -- Half-plane projections from `same_side` / `opp_side` asserts on
+  -- the focused line. The side margin is `r * 0.3` — far enough off
+  -- the line that the projected point lands well clear of the
+  -- horizon after fit-to-canvas.
+  let halfPlaneProjections : Array Solver.Projection := Id.run do
+    let mut ps : Array Solver.Projection := #[]
+    match focused?, axisIds? with
+    | some focusedL, some (ia, ib) =>
+      for (n, side) in sideAssignments stmts focusedL do
+        match nameToIdx n with
+        | some pid =>
+          ps := ps.push (Solver.Projections.halfPlane ia ib pid side (r * 0.3))
+        | none => pure ()
+    | _, _ => pure ()
+    return ps
+  -- Half-plane projections run FIRST so they correct A and B to their
+  -- side-of-line positions before intersect2 uses them to compute X /
+  -- Y. Otherwise, integration drift between projections leaves
+  -- intersect2 working from positions that halfPlane then corrects,
+  -- leaving X stranded at a stale intersection.
+  let projections := halfPlaneProjections ++ baseProjections
   -- Soft preferences. The axis pair (alphabetically earliest segment-
   -- like construct) drives horizon + apex-up forces. `pairRepulsion`
   -- prevents collapse; `boundsCage` keeps the figure inside the
@@ -527,7 +765,35 @@ private def buildWorld (b : Bindings) (stmts : Array Stmt) (seed : UInt64)
     -- any below-axis points toward the upper half.
     match axisIds? with
     | some (ia, ib) =>
-      fs := fs.push (Solver.Forces.apexUp ia ib 0.5)
+      -- When the focused axis is an external line (with hidden anchors)
+      -- we need a stronger lift to keep the visible points clearly
+      -- above the horizon; the construct-derived axis pair already
+      -- sits at the visible figure's "base" so a weaker push suffices.
+      let strength : Float := if focused?.isSome then 2.0 else 0.5
+      fs := fs.push (Solver.Forces.apexUp ia ib strength)
+      -- For a focused external line, also add a soft perpendicular
+      -- repulsion so non-incident points get pushed off the line.
+      -- The skip list = user-named incident anchors of the focused
+      -- line (those genuinely belong on it). Hidden synthesized
+      -- anchors are pinned so the integrator already won't move
+      -- them; including the pinned ia/ib in the force's intrinsic
+      -- skip set (the function already skips them) is enough.
+      match focused? with
+      | some focusedL =>
+        let skipIds : List Solver.ParticleId := Id.run do
+          let mut acc : List Solver.ParticleId := []
+          for s in stmts do
+            match s with
+            | .assert (.app op [.name p, .name l]) _ =>
+              if (op == "incident" || op == "on") && l == focusedL then
+                match nameToIdx p with
+                | some pid => acc := pid :: acc
+                | none => pure ()
+            | _ => pure ()
+          return acc
+        fs := fs.push (Solver.Forces.lineRepulsion ia ib
+          (cutoff := r * 0.4) (strength := 0.6) (skip := skipIds))
+      | none => pure ()
     | none => pure ()
     -- `¬ collinear A B C` (parsed as `.app "¬" [.app "collinear" ...]`)
     -- and `noncollinear A B C` both → soft inverse-area repulsion
@@ -680,13 +946,16 @@ def solvePositions (c : Construction) (canvasW : Float := 1280)
   let cx := canvasW / 2
   let cy := canvasH / 2
   let r  := min cx cy * 0.75
-  let alphabetized := (collectPointNames c.stmts).qsort (· < ·)
+  -- Same preprocessing as `lower` so the cache key sees the same set
+  -- of particles (including hidden line-anchor helpers).
+  let stmts := autoAnchorLines c.stmts
+  let alphabetized := (collectPointNames stmts).qsort (· < ·)
   let b₀ : Bindings := {}
-  let b₁ := c.stmts.foldl (init := b₀) fun acc s => match s with
+  let b₁ := stmts.foldl (init := b₀) fun acc s => match s with
     | .«exists» names sort => applyExists acc alphabetized cx cy r names sort
     | _ => acc
   let seed := constructionSeed c
-  let world := buildWorld b₁ c.stmts seed cx cy r
+  let world := buildWorld b₁ stmts seed cx cy r
   let solved := Solver.solve {} world
   solved.particles.map fun p => (p.name, p.pos)
 
@@ -695,23 +964,28 @@ def lower (c : Construction) (canvasW : Float := 1280) (canvasH : Float := 720)
   let cx := canvasW / 2
   let cy := canvasH / 2
   let r  := min cx cy * 0.75
-  let alphabetized := (collectPointNames c.stmts).qsort (· < ·)
+  -- Preprocess: every existential Line gets enough hidden anchor
+  -- points to total ≥ 2 incidences so the line has a determinate
+  -- position+direction. User-supplied incidents take the named
+  -- anchor slots; the rest become hidden helpers.
+  let stmts := autoAnchorLines c.stmts
+  let alphabetized := (collectPointNames stmts).qsort (· < ·)
   let b₀ : Bindings := {}
-  let b₁ := c.stmts.foldl (init := b₀) fun acc s => match s with
+  let b₁ := stmts.foldl (init := b₀) fun acc s => match s with
     | .«exists» names sort => applyExists acc alphabetized cx cy r names sort
     | _ => acc
   let b₁' := match cachedPositions with
     | some positions => applyCachedPositions b₁ positions
     | none =>
       let seed := constructionSeed c
-      let world := buildWorld b₁ c.stmts seed cx cy r
+      let world := buildWorld b₁ stmts seed cx cy r
       let solved := Solver.solve {} world
       mergeSolved b₁ solved
-  let b₂ := c.stmts.foldl (init := b₁') fun acc s => match s with
+  let b₂ := stmts.foldl (init := b₁') fun acc s => match s with
     | .assert claim desc => applyAssert acc claim desc
     | _ => acc
-  let b₃ := emitDeclaredShapes b₂
-  let b₄ := c.stmts.foldl (init := b₃) fun acc s => match s with
+  let b₃ := emitDeclaredShapes b₂ (hiddenNames stmts)
+  let b₄ := stmts.foldl (init := b₃) fun acc s => match s with
     | .construct name expr => applyConstruct acc .default name expr
     | _ => acc
   let fitted := fitToCanvas b₄.shapes canvasW canvasH
@@ -735,7 +1009,7 @@ def lowerAuxiliary (base : Construction) (addendum : Construction)
   let cx := canvasW / 2
   let cy := canvasH / 2
   let r  := min cx cy * 0.75
-  let combinedStmts := base.stmts ++ addendum.stmts
+  let combinedStmts := autoAnchorLines (base.stmts ++ addendum.stmts)
   let combined : Construction := { stmts := combinedStmts }
   let alphabetized := (collectPointNames combinedStmts).qsort (· < ·)
   let b₀ : Bindings := {}
@@ -752,7 +1026,7 @@ def lowerAuxiliary (base : Construction) (addendum : Construction)
   let b₂ := combinedStmts.foldl (init := b₁') fun acc s => match s with
     | .assert claim desc => applyAssert acc claim desc
     | _ => acc
-  let b₃ := emitDeclaredShapes b₂
+  let b₃ := emitDeclaredShapes b₂ (hiddenNames combinedStmts)
   let b₄ := base.stmts.foldl (init := b₃) fun acc s => match s with
     | .construct name expr => applyConstruct acc .default name expr
     | _ => acc

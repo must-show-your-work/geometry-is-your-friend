@@ -5,6 +5,7 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Geometry.Theory.Axioms
 import Geometry.Tactics
+import Geometry.Construction.AtlasField
 import Atlas
 
 /-!
@@ -60,6 +61,17 @@ atlas commentary := by
   name "Density axiom witness: a point left of two distinct points"
   preface "Construct a point 'to the left' of points BD on the induced line B D"
 
+  figure := by
+    construction {
+      exists A B D : Point
+      assert distinct A B D
+      assert between A B D
+      construct segAD := segment A D
+    }
+    title "Lemma 1.0.1"
+    index 1
+    caption "A sits to the left of B and D on segment AD."
+
 atlas lemma 1.0.1 "Density axiom witness: a point left of two distinct points"
   : ∀ B D : Point, B ≠ D -> ∃ A : Point, collinear A B D ∧ distinct A B D ∧ (A - B - D) := by
       intro B D BneD
@@ -72,6 +84,17 @@ atlas commentary := by
   via lemma 1.0.2
   name "Density axiom witness: a point between two distinct points"
   preface "Construct a point 'in between' points BD on the induced line B D"
+
+  figure := by
+    construction {
+      exists B C D : Point
+      assert distinct B C D
+      assert between B C D
+      construct segBD := segment B D
+    }
+    title "Lemma 1.0.2"
+    index 1
+    caption "C sits strictly between B and D on segment BD."
 
 atlas lemma 1.0.2 "Density axiom witness: a point between two distinct points"
   : ∀ B D : Point, B ≠ D -> ∃ C : Point, collinear B C D ∧ distinct B C D ∧ (B - C - D) := by
@@ -86,6 +109,17 @@ atlas commentary := by
   name "Density axiom witness: a point right of two distinct points"
   preface "Construct a point 'to the right' points BD on the induced line B D"
 
+  figure := by
+    construction {
+      exists B D E : Point
+      assert distinct B D E
+      assert between B D E
+      construct segBE := segment B E
+    }
+    title "Lemma 1.0.3"
+    index 1
+    caption "E sits to the right of B and D on segment BE."
+
 atlas lemma 1.0.3 "Density axiom witness: a point right of two distinct points"
   : ∀ B D : Point, B ≠ D -> ∃ E : Point, collinear B D E ∧ distinct B D E ∧ (B - D - E) := by
       intro B D BneD
@@ -99,6 +133,15 @@ atlas commentary := by
   via lemma 1.0.4
   name "For every Point there exists at least one distinct Point"
   preface "For every Point, there is at least one point that isn't that point."
+
+  figure := by
+    construction {
+      exists P Q : Point
+      assert distinct P Q
+    }
+    title "Lemma 1.0.4"
+    index 1
+    caption "Given any P, the axioms guarantee at least one distinct Q."
 
 atlas lemma 1.0.4 "For every Point there exists at least one distinct Point"
   : ∀ P : Point, ∃ Q : Point, P ≠ Q := by
@@ -141,6 +184,18 @@ atlas commentary := by
   via lemma 1.0.5
   name "Any two distinct points are collinear"
   preface "There is a line between any two points, so by definition any two points are collinear"
+
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+    }
+    title "Lemma 1.0.5"
+    index 1
+    caption "Any two distinct points lie on a common line."
 
 atlas lemma 1.0.5 "Any two distinct points are collinear"
   : A ≠ B -> collinear A B := by
@@ -191,6 +246,18 @@ atlas commentary := by
   name "A ray A B is a subset of the line A B"
   preface "A ray A B is a subset of the line A B"
 
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert incident A L
+      assert incident B L
+      construct rayAB := ray A B
+    }
+    title "Lemma 1.0.8"
+    index 1
+    caption "Ray AB lies inside line AB; the line extends past B in both directions."
+
 atlas lemma 1.0.8 "A ray A B is a subset of the line A B"
   : (ray A B : Set Point) ⊆ (line A B : Set Point) := by
   intro P PonRay
@@ -208,6 +275,18 @@ atlas commentary := by
   name "Three pairwise-distinct concurrent lines meet at a unique point"
   preface "Author suggests a lemma, \"... to prove it, I could first prove a lemma that if three lines
 are concurrent, the point at which they meet is unique.\""
+
+  figure := by
+    construction {
+      exists P : Point
+      exists L M N : Line
+      assert incident P L
+      assert incident P M
+      assert incident P N
+    }
+    title "Lemma 1.0.9"
+    index 1
+    caption "Three concurrent lines L, M, N share the unique point P."
 
 atlas lemma 1.0.9 "Three pairwise-distinct concurrent lines meet at a unique point"
   : L ≠ M ∧ M ≠ N ∧ L ≠ N ->
@@ -269,6 +348,16 @@ atlas commentary := by
   name "Two lines are distinct iff some point lies on exactly one"
   preface "Two lines are distinct iff they have at least one point not in common"
 
+  figure := by
+    construction {
+      exists P : Point
+      exists L M : Line
+      assert incident P L
+    }
+    title "Lemma 1.0.11"
+    index 1
+    caption "P lies on L but not on M, witnessing their distinctness."
+
 atlas lemma 1.0.11 "Two lines are distinct iff some point lies on exactly one"
   : ∀ L M : Line,
     L ≠ M ↔ ∃ P, ((P on L) ∧ (P off M)) ∨ ((P off L) ∧ (P on M)) := by
@@ -291,6 +380,17 @@ atlas commentary := by
   preface "If two lines intersect, their intersection is unique."
   tags ["obvious.intersects"]
 
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
+    title "Lemma 1.0.12"
+    index 1
+    caption "Lines L and M meet at the unique point X."
+
 atlas lemma 1.0.12 "Two pointed intersections of the same line pair share their point"
   : (L intersects M at X) ∧ (L intersects M at Y) -> X = Y := by
   unfold Intersects
@@ -304,6 +404,17 @@ atlas commentary := by
   name "Pointed intersection is symmetric in its line arguments"
   preface "L intersects M is the same as M intersects L."
   tags ["obvious.intersects"]
+
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
+    title "Lemma 1.0.13"
+    index 1
+    caption "The relation `L intersects M at X` is symmetric in L and M."
 
 atlas lemma 1.0.13 "Pointed intersection is symmetric in its line arguments"
   : (L intersects M at X) ↔ (M intersects L at X) := by
@@ -326,6 +437,17 @@ atlas commentary := by
   preface "If L intersects M at X, then X is on L"
   tags ["obvious.intersects"]
 
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
+    title "Lemma 1.0.14"
+    index 1
+    caption "X is the witness of `L intersects M`; it lies on L (and on M)."
+
 atlas lemma 1.0.14 "A pointed intersection's witness point lies on the left line"
   : (L intersects M at X) -> (X on L) := by
   unfold Intersects
@@ -340,6 +462,17 @@ atlas commentary := by
   preface "If L intersects M at X, then X is on M"
   tags ["obvious.intersects"]
 
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
+    title "Lemma 1.0.15"
+    index 1
+    caption "Mirror of 1.0.14: X lies on the right line M as well."
+
 atlas lemma 1.0.15 "A pointed intersection's witness point lies on the right line"
   : (L intersects M at X) -> (X on M) := by
   unfold Intersects
@@ -353,6 +486,17 @@ atlas commentary := by
   name "A pointed intersection's witness point lies on both lines"
   preface "If L intersects M at X, then X is on L and M"
 
+  figure := by
+    construction {
+      exists X : Point
+      exists L M : Line
+      assert incident X L
+      assert incident X M
+    }
+    title "Lemma 1.0.16"
+    index 1
+    caption "X is on both L and M — the conjunction of 1.0.14 and 1.0.15."
+
 atlas lemma 1.0.16 "A pointed intersection's witness point lies on both lines"
   : (L intersects M at X) -> (X on L) ∧ (X on M) := by intro inter; exact ⟨via lemma 1.0.14 inter, via lemma 1.0.15 inter⟩
 
@@ -361,6 +505,19 @@ atlas commentary := by
   via lemma 1.0.17
   name "On distinct lines crossing at X every other point on L is off M"
   preface "If L intersects M at X, then forall P not equal to X, if P on L, then P off M."
+
+  figure := by
+    construction {
+      exists X P : Point
+      exists L M : Line
+      assert distinct X P
+      assert incident X L
+      assert incident X M
+      assert incident P L
+    }
+    title "Lemma 1.0.17"
+    index 1
+    caption "L meets M only at X; any other P on L (here distinct from X) must lie off M."
 
 atlas lemma 1.0.17 "On distinct lines crossing at X every other point on L is off M"
   : (L ≠ M) ∧ (L intersects M at X) -> (∀ P : Point, (P ≠ X) ∧ (P on L) -> (P off M)) := by
@@ -381,6 +538,17 @@ atlas commentary := by
   preface "With respect to a fixed point, every pair of points can be said to either be 'to the left' or 'to the right' of
 one another"
 
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
+    title "Lemma 1.0.18"
+    index 1
+    caption "Only one arrangement A-B-C holds; B-A-C is ruled out by B.3."
+
 atlas lemma 1.0.18 "Betweenness contradiction: A-B-C cannot coexist with B-A-C"
   : A - B - C ∧ B - A - C -> False := by
   intro ⟨ABC, _⟩
@@ -395,6 +563,17 @@ atlas commentary := by
   preface "With respect to a fixed point, every pair of points can be said to either be 'to the left' or 'to the right' of
 one another"
 
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
+    title "Lemma 1.0.19"
+    index 1
+    caption "Only one arrangement A-B-C holds; A-C-B is ruled out by B.3."
+
 atlas lemma 1.0.19 "Betweenness contradiction: A-B-C cannot coexist with A-C-B"
   : A - B - C ∧ A - C - B -> False := by
   intro ⟨ABC, _⟩
@@ -407,6 +586,17 @@ atlas commentary := by
   via lemma 1.0.20
   name "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
   preface "With respect to a pair of fixed points, another point is either 'to the left' or 'to the right' of the pair"
+
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
+    title "Lemma 1.0.20"
+    index 1
+    caption "Only one arrangement A-B-C holds; C-A-B is ruled out by B.3."
 
 atlas lemma 1.0.20 "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
   : A - B - C ∧ C - A - B -> False := by

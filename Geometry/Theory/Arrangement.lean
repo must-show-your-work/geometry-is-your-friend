@@ -4,6 +4,7 @@ import Geometry.Tactics
 
 import Geometry.Ch3.Prop.P3
 import Geometry.Ch3.Ex.Betweenness.Ex1
+import Geometry.Construction.AtlasField
 
 import Atlas
 
@@ -27,8 +28,16 @@ theorem Arrangement.tri {pts : List Point} (arr : Arrangement pts)
 
 atlas commentary := by
   via lemma 1.0.21
-  name "Arrangement.of_3"
+  name "Arrangement.of_3 — a single A-B-C is a 3-arrangement"
   preface "A single A-B-C is a 3-arrangement."
+
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
 
 atlas lemma 1.0.21 "Arrangement.of_3"
   {A B C : Point} (h : A - B - C) : Arrangement [A, B, C] := by
@@ -683,8 +692,17 @@ private lemma get_of_idx_eq {α} (l : List α) {i j : Nat} (hi : i < l.length) (
 
 atlas commentary := by
   via lemma 3.0.5
-  name "Arrangement.cons"
+  name "Arrangement.cons — extend a chain by an anchor on the left"
   preface "Given a prior arrangement B-C-... and an anchor A-B-C, the chain A-B-C-... is also an arrangement."
+
+  figure := by
+    construction {
+      exists A B C D : Point
+      assert distinct A B C D
+      assert between A B C
+      assert between B C D
+      construct segAD := segment A D
+    }
 
 atlas lemma 3.0.5 "Arrangement.cons"
   {A B C : Point} {rest : List Point}
@@ -760,6 +778,15 @@ atlas commentary := by
   notes "Greenberg relies on figures to disambiguate arrangements, we cannot do that. To accomodate this infacility, we
   have `Arrangements`, which allow for deducing every included ordered triple in the list of points they arrange."
 
+  figure := by
+    construction {
+      exists A B C D : Point
+      assert distinct A B C D
+      assert between A B C
+      assert between A C D
+      construct segAD := segment A D
+    }
+
 atlas alternate 3.3 "full chain arrangement from overlapping outer-pair triples"
   {A B C D : Point} (h₁ : A - B - C) (h₂ : A - C - D) : A - B - C - D := by
   have hBCD : B - C - D := via proposition 3.3.i ⟨h₁, h₂⟩
@@ -767,8 +794,17 @@ atlas alternate 3.3 "full chain arrangement from overlapping outer-pair triples"
 
 atlas commentary := by
   via lemma 3.0.6
-  name "Arrangement.head_swap"
+  name "Arrangement.head_swap — replace leading B with X when B-X-C"
   preface "Given Arr[B,C,…] and B-X-C, derive Arr[X,C,…]."
+
+  figure := by
+    construction {
+      exists B X C D : Point
+      assert distinct B X C D
+      assert between B X C
+      assert between X C D
+      construct segBD := segment B D
+    }
 
 atlas lemma 3.0.6 "Arrangement.head_swap"
   {B C X : Point} {suf : List Point}
@@ -848,8 +884,17 @@ atlas lemma 3.0.6 "Arrangement.head_swap"
 
 atlas commentary := by
   via lemma 3.0.7
-  name "Arrangement.insert_head"
+  name "Arrangement.insert_head — splice X between leading B and C"
   preface "Given Arr[B,C,…] and B-X-C, derive Arr[B,X,C,…]. Composes head_swap with cons."
+
+  figure := by
+    construction {
+      exists B X C D : Point
+      assert distinct B X C D
+      assert between B X C
+      assert between X C D
+      construct segBD := segment B D
+    }
 
 atlas lemma 3.0.7 "Arrangement.insert_head"
   {B C X : Point} {suf : List Point}
@@ -862,6 +907,15 @@ atlas commentary := by
   name "If A-B-C and B-C-D, then A-B-C-D"
   preface ""
 
+  figure := by
+    construction {
+      exists A B C D : Point
+      assert distinct A B C D
+      assert between A B C
+      assert between B C D
+      construct segAD := segment A D
+    }
+
 atlas lemma 3.0.8 "If A-B-C and B-C-D, then A-B-C-D"
   {A B C D : Point} (h₁ : A - B - C) (h₂ : B - C - D) : A - B - C - D := by
   have hACD : A - C - D := via corollary 3.3.ii ⟨h₁, h₂⟩
@@ -871,6 +925,15 @@ atlas commentary := by
   via lemma 3.0.9
   name "If A-B-D and B-C-D, then A-B-C-D"
   preface ""
+
+  figure := by
+    construction {
+      exists A B C D : Point
+      assert distinct A B C D
+      assert between A B D
+      assert between B C D
+      construct segAD := segment A D
+    }
 
 atlas lemma 3.0.9 "If A-B-D and B-C-D, then A-B-C-D"
   {A B C D : Point} (h₁ : A - B - D) (h₂ : B - C - D) : A - B - C - D := by
@@ -883,6 +946,15 @@ atlas commentary := by
   name "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P=B, or B-P-C"
   preface ""
   notes "Resolves the topological ambiguity between two points (B, P) that are both strictly between the same outer pair (A, C). The proof case-splits on `P = B`; in the inequality branch it applies axiom B-3 to the three distinct collinear points {A, P, B} and discharges the impossible P-A-B case via corollary 3.3.i + lemma 1.0.18, and the A-B-P case via proposition 3.3.i."
+
+  figure := by
+    construction {
+      exists A P B C : Point
+      assert distinct A P B C
+      assert between A P B
+      assert between A B C
+      construct segAC := segment A C
+    }
 
 atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P=B, or B-P-C"
   {A B C P : Point} (h₁ : A - B - C) (h₂ : A - P - C) :

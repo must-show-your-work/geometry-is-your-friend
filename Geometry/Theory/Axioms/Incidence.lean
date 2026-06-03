@@ -1,5 +1,6 @@
 import Geometry.Theory.Primitives
 import Geometry.Theory.Collinear
+import Geometry.Construction.AtlasField
 import Atlas
 
 /-!
@@ -23,6 +24,17 @@ atlas commentary := by
   name "Two distinct points determine a unique line through them"
   preface "For any two distinct points P and Q, there exists a unique line L which has P and Q"
 
+  figure := by
+    construction {
+      exists P Q : Point
+      exists L : Line
+      assert incident P L
+      assert incident Q L
+    }
+    title "Axiom I.1"
+    index 1
+    caption "Line L is the unique line through the distinct points P and Q."
+
 atlas axiom I.1 "Two distinct points determine a unique line through them"
   : ∀ P Q : Point, P ≠ Q -> ∃! L : Line, (P on L) ∧ (Q on L)
 attribute [simp] «Two distinct points determine a unique line through them»
@@ -32,6 +44,18 @@ atlas commentary := by
   name "Every line contains at least two distinct points"
   preface "For any line, there are at least two distinct points on it"
 
+  figure := by
+    construction {
+      exists A B : Point
+      exists L : Line
+      assert distinct A B
+      assert incident A L
+      assert incident B L
+    }
+    title "Axiom I.2"
+    index 1
+    caption "Line L carries at least two distinct points A and B."
+
 atlas axiom I.2 "Every line contains at least two distinct points"
   : ∀ L : Line, ∃ A B : Point, A ≠ B ∧ (A on L) ∧ (B on L)
 attribute [simp] «Every line contains at least two distinct points»
@@ -40,6 +64,16 @@ atlas commentary := by
   via axiom I.3
   name "There exist three points not all lying on a common line"
   preface "There exists three distinct points not on any single line (\"There exists three non-collinear points\", but without mentioning the undefined notion of collinearity)"
+
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert ¬ collinear A B C
+    }
+    title "Axiom I.3"
+    index 1
+    caption "Three points A, B, C with no single line through all three."
 
 atlas axiom I.3 "There exist three points not all lying on a common line"
   : ∃ A B C : Point, (A ≠ B ∧ A ≠ C ∧ B ≠ C) ∧ (∀ (L : Line), (A on L) → (B on L) → (C off L))

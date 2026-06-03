@@ -45,6 +45,16 @@ syntax "exists " ident+ " : " ident                      : constructionStmt
 syntax "assert " rawIdent constrArg*                     : constructionStmt
 syntax "assert " "¬" rawIdent constrArg*                 : constructionStmt
 syntax "construct " ident " := " rawIdent constrArg*     : constructionStmt
+-- `focus <name>` makes the named element (a segment / ray / line_through
+-- construct, or an existential Line) the canonical horizontal axis of
+-- the figure. Without `focus`, the alphabetically-earliest segment-like
+-- construct is chosen as the axis. Sugar over `assert focus <name>`.
+syntax "focus " ident                                    : constructionStmt
+-- `hidden <name>+` marks one or more existing points as layout-only:
+-- they still participate in the solver (and anchor lines, etc.) but
+-- are not emitted as visible `.point` shapes and get no auto-label.
+-- Sugar over `assert hidden <name> ...`.
+syntax "hidden " ident+                                  : constructionStmt
 
 syntax (name := constructionBlock) "construction" "{" constructionStmt* "}" : term
 
@@ -86,6 +96,16 @@ private def stmtToTerm (s : TSyntax `constructionStmt) : MacroM (TSyntax `term) 
     let headStr := Syntax.mkStrLit head.getId.toString
     let argsList ← argsListExpr args
     `(Geometry.Construction.DSL.Stmt.construct $nameStr (Figures.ConstraintExpr.app $headStr $argsList))
+  | `(constructionStmt| focus $name:ident) => do
+    let nameStr := Syntax.mkStrLit name.getId.toString
+    `(Geometry.Construction.DSL.Stmt.assert
+        (Figures.ConstraintExpr.app "focus" [Figures.ConstraintExpr.name $nameStr]))
+  | `(constructionStmt| hidden $names:ident*) => do
+    let nameExprs ← names.mapM (fun n => do
+      let lit := Syntax.mkStrLit n.getId.toString
+      `(Figures.ConstraintExpr.name $lit))
+    `(Geometry.Construction.DSL.Stmt.assert
+        (Figures.ConstraintExpr.app "hidden" [$nameExprs,*]))
   | _ => Macro.throwUnsupported
 
 macro_rules

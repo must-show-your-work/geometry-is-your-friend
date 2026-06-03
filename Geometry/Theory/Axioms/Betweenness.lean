@@ -3,6 +3,7 @@ import Geometry.Theory.Collinear
 import Geometry.Theory.Constructors
 import Geometry.Theory.Distinct
 import Geometry.Tactics.Obvious
+import Geometry.Construction.AtlasField
 import Atlas
 
 /-!
@@ -41,6 +42,17 @@ atlas commentary := by
   name "A-B-C implies distinctness, collinearity, and commutativity"
   preface "If A - B - C, then A, B, C are distinct points on the same line, and C - B - A."
 
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
+    title "Axiom B.1"
+    index 1
+    caption "B lies strictly between A and C on segment AC."
+
 atlas axiom B.1 "A-B-C implies distinctness, collinearity, and commutativity"
   {A B C : Point} : A - B - C -> Between.Consequences A B C
 attribute [simp, obvious] «A-B-C implies distinctness, collinearity, and commutativity»
@@ -62,6 +74,19 @@ A * B * D, B * C * D, and B * D * E."
 something like the density of rationals -- for any two distinct points on a
 line, there is always a point between them."
 
+  figure := by
+    construction {
+      exists A B C D E : Point
+      assert distinct A B C D E
+      assert between A B D
+      assert between B C D
+      assert between B D E
+      construct segAE := segment A E
+    }
+    title "Axiom B.2"
+    index 1
+    caption "Around B and D on line AE: A is to the left of B, C between B and D, E to the right of D."
+
 atlas axiom B.2 "Two distinct points admit a left, middle, and right witness on their line"
   : ∀ B D : Point, B ≠ D ->
   ∃ A C E : Point, collinear A B C D E ∧ distinct A B C D E ∧ (A - B - D) ∧ (B - C - D) ∧ (B - D - E)
@@ -77,6 +102,18 @@ atlas commentary := by
   name "Three distinct collinear points have exactly one between-arrangement"
   preface "If A, B, and C are three distinct points lying on the same line, then
  one and only one of the points is between the other two."
+
+  figure := by
+    construction {
+      exists A B C : Point
+      assert distinct A B C
+      assert collinear A B C
+      assert between A B C
+      construct segAC := segment A C
+    }
+    title "Axiom B.3"
+    index 1
+    caption "The canonical arrangement A-B-C; the axiom rules out the other two orderings."
 
 atlas axiom B.3 "Three distinct collinear points have exactly one between-arrangement"
   : ∀ A B C : Point, distinct A B C ∧ collinear A B C ->
@@ -139,6 +176,19 @@ atlas commentary := by
 three points A, B, and C not on L: (i) If A and B are on the same side of L and
 if B and C are on the same side of L, the A and C are on the same side of L..."
 
+  figure := by
+    construction {
+      exists A B C : Point
+      exists L : Line
+      assert ¬ collinear A B C
+      focus L
+      construct segAB := segment A B
+      construct segAC := segment A C
+    }
+    title "Axiom B.4 (i)"
+    index 1
+    caption "Line L is the horizon; A, B, C all sit above it on the same side. Same-side is transitive across B."
+
 atlas axiom B.4.i "Same-side is transitive across a common middle point"
   {A B C : Point} {L : Line}
   (AoffL : A off L := by assumption)
@@ -153,6 +203,24 @@ atlas commentary := by
   name "Two opposite-side relations chain to a same-side relation"
   preface "... (ii) If A and B are on opposite sides of L and if B and C are opposite
 sides of L, then A and C are on the same side of L."
+
+  figure := by
+    construction {
+      exists A B C X Y : Point
+      exists L : Line
+      assert between A X B
+      assert between B Y C
+      assert incident X L
+      assert incident Y L
+      focus L
+      assert opp_side A B L
+      assert opp_side B C L
+      construct segAB := segment A B
+      construct segBC := segment B C
+    }
+    title "Axiom B.4 (ii)"
+    index 1
+    caption "L crosses segments AB at X and BC at Y; A and C end up on the same side of L (B is alone on the other)."
 
 atlas axiom B.4.ii "Two opposite-side relations chain to a same-side relation"
   {A B C : Point} {L : Line}
