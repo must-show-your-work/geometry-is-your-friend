@@ -28,18 +28,22 @@ atlas commentary := by
   notes "B4 is the plane-separation axiom, 3.2 here is on the path toward proving the more useful line-separation property later in 3.4.
 I've chosen to notate the halfplanes in the theorem as 'Hl' and 'Hr' for 'left' and 'right' half-plane, respectively."
 
-  figure := by
-    construction {
-      exists A B P Q : Point
-      exists L : Line
-      assert distinct A B
-      assert ¬ collinear A P Q
-      assert incident A L
-      assert incident B L
-    }
-    title "Proposition 3.2"
-    index 1
-    caption "Line L (through A and B) bounds two disjoint half-planes; P and Q sit on opposite sides."
+  -- Figure flagged for revision (2026-06-03). The current draft doesn't
+  -- convey "two disjoint half-planes bounded by L"; revisit when the
+  -- solver can draw region fills or when we have a chosen layout for
+  -- showing P / Q on opposite sides without ambiguity.
+  -- figure := by
+  --   construction {
+  --     exists A B P Q : Point
+  --     exists L : Line
+  --     assert distinct A B
+  --     assert ¬ collinear A P Q
+  --     assert incident A L
+  --     assert incident B L
+  --   }
+  --   title "Proposition 3.2"
+  --   index 1
+  --   caption "Line L (through A and B) bounds two disjoint half-planes; P and Q sit on opposite sides."
 
 atlas proposition 3.2 "Every line bounds exactly two disjoint half-planes"
   : ∀ L : Line, L = line A B -> A ≠ B -> ∃ Hl Hr : Set Point,

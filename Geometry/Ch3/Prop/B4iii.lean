@@ -37,6 +37,7 @@ FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument.
       assert distinct A B C
       assert between A X B
       assert incident X L
+      focus L
       construct segAB := segment A B
       construct segBC := segment B C
       construct segAC := segment A C

@@ -1053,8 +1053,18 @@ open Geometry.Construction.Lowering
 
 /-- DSL → SVG via the lowering pass. Lets atlas's `direct_rep` accept
 a `Construction` literal directly (instance lookup picks this up by
-type), without callers needing to invoke `lower` themselves. -/
+type), without callers needing to invoke `lower` themselves. The
+default `Renderable` instance keeps the inline `<style>` block so
+the SVG is standalone (works in the InfoView widget, libresvg,
+direct file-open). -/
 instance : Renderable Construction String where
   render c := Renderable.render (lower c)
+
+/-- Render a `Construction` to SVG WITHOUT the inline `<style>` block.
+For host environments that supply their own stylesheet (e.g. the
+atlas viewer's editorial theme). The output still carries the
+`.txt`, `.lbl`, `.callout` classes so the host CSS can target them. -/
+def renderBare (c : Construction) : String :=
+  Figures.SVG.render (lower c) { inlineStyles := false }
 
 end Geometry.Construction

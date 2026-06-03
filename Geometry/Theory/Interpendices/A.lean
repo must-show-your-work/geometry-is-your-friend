@@ -347,16 +347,10 @@ atlas commentary := by
   via lemma 1.0.11
   name "Two lines are distinct iff some point lies on exactly one"
   preface "Two lines are distinct iff they have at least one point not in common"
-
-  figure := by
-    construction {
-      exists P : Point
-      exists L M : Line
-      assert incident P L
-    }
-    title "Lemma 1.0.11"
-    index 1
-    caption "P lies on L but not on M, witnessing their distinctness."
+  -- Figure intentionally omitted: any 2D drawing of "two distinct
+  -- lines, P on L but not M" makes the lines look either parallel or
+  -- crossing, both of which read as additional content the lemma
+  -- doesn't claim. Better to ship no figure than a misleading one.
 
 atlas lemma 1.0.11 "Two lines are distinct iff some point lies on exactly one"
   : ∀ L M : Line,
