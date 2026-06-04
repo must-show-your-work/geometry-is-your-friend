@@ -78,7 +78,11 @@ unsafe def main : IO Unit := do
           failed := failed + 1
         | some info =>
           try
-            let tex ← LeanTeX.run_latexPP info.type {}
+            -- `implicationAssoc := true` makes the implication operator
+            -- render right-associative (matching the source `H1 → H2 →
+            -- C` shape) instead of inserting parens around every right
+            -- side.
+            let tex ← LeanTeX.run_latexPP info.type { implicationAssoc := true }
             let entry := "\"" ++ jsonEscape declName.toString ++ "\":\""
                       ++ jsonEscape tex ++ "\""
             out := out.push entry
