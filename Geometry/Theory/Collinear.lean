@@ -53,7 +53,7 @@ latex_pp_app_rules (const := Geometry.Theory.Collinear)
     if elems.size = 0 then failure
     let texs ← elems.mapM latexPP
     let inner := LatexData.intercalate ", " texs
-    return LatexData.atomString "\\operatorname{collinear}(" ++ inner ++ LatexData.atomString ")"
+    return LatexData.atomString "\\operatorname{collinear}\\," ++ inner
 
 /-! ## LeanTeX rule — `Not (Collinear …)` collapses to `noncollinear(…)`.
 
@@ -73,7 +73,7 @@ latex_pp_app_rules (const := Not)
     if elems.size = 0 then failure
     let texs ← elems.mapM latexPP
     let inner := LatexData.intercalate ", " texs
-    return LatexData.atomString "\\operatorname{noncollinear}(" ++ inner ++ LatexData.atomString ")"
+    return LatexData.atomString "\\operatorname{noncollinear}\\," ++ inner
 
 -- Extract the line from collinearity
 noncomputable def Collinear.line {points : Finset Point} (h : Collinear points) : Line := Classical.choose h
