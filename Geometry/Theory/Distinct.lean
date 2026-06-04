@@ -47,7 +47,7 @@ latex_pp_app_rules (const := Geometry.Theory.Distinct)
     if elems.size = 0 then failure
     let texs ← elems.mapM latexPP
     let inner := LatexData.intercalate ", " texs
-    return LatexData.atomString "\\operatorname{distinct}\\{" ++ inner ++ "\\}"
+    return LatexData.atomString "\\operatorname{distinct}(" ++ inner ++ LatexData.atomString ")"
 
 namespace Distinct
 

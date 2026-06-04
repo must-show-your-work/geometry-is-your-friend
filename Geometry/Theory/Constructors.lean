@@ -427,9 +427,8 @@ latex_pp_app_rules (const := Geometry.Theory.Intersects)
     let pm ← latexPP m
     let px ← latexPP x
     return pl.protect 50
-        ++ LatexData.atomString " \\cap " ++ pm.protect 50
-        ++ LatexData.binOp " = " .none 50
-        ++ LatexData.atomString "\\{" ++ px ++ LatexData.atomString "\\}"
+        ++ LatexData.atomString " \\text{ intersects } " ++ pm.protect 50
+        ++ LatexData.atomString " \\text{ at } " ++ px.protect 50
 
 open LeanTeX in
 latex_pp_app_rules (const := Geometry.Theory.IntersectsSome)
@@ -437,9 +436,7 @@ latex_pp_app_rules (const := Geometry.Theory.IntersectsSome)
     let pl ← latexPP l
     let pm ← latexPP m
     return pl.protect 50
-        ++ LatexData.atomString " \\cap " ++ pm.protect 50
-        ++ LatexData.binOp " \\neq " .none 50
-        ++ LatexData.atomString "\\emptyset"
+        ++ LatexData.atomString " \\text{ intersects } " ++ pm.protect 50
 
 /-! ## Examples -/
 
