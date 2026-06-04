@@ -25,6 +25,7 @@ subprocess started) so re-running after a touched-source edit only
 spends time on the actually-changed files.
 """
 from __future__ import annotations
+import re
 import shutil
 import subprocess
 import sys
@@ -45,13 +46,52 @@ if SHELL is None:
 ULIMIT_V_KB = 12_000_000
 
 
+# Top-level keywords that introduce something `DumpTactics` might
+# actually want to extract. Files with none of these are umbrella
+# files (just `import …` lines + `namespace`/`open`/`end`) and have
+# no decls to dump — running them through SubVerso's frontend
+# re-elab burns the entire import closure for zero output, and on
+# heavy umbrellas (Ch2.Prop, Ch3.Prop) consistently blows past the
+# vmem cap with "failed to create thread".
+_DECL_KW = re.compile(
+    r"^\s*"
+    r"(?:@\[[^\]]+\]\s*)*"            # optional attribute(s)
+    r"(?:public\s+|private\s+|protected\s+|noncomputable\s+|unsafe\s+|partial\s+)*"
+    r"(?:def|theorem|lemma|example|axiom|structure|inductive|"
+    r"class|instance|abbrev|opaque|atlas\s+\S+)\b",
+    re.MULTILINE,
+)
+
+
+def has_decls(path: Path) -> bool:
+    """Cheap scan for any decl keyword. Misses macros / syntax / elab
+    declarations but those don't carry tactic content anyway. False
+    means "skip — pure umbrella"."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True  # fail-open: if we can't read it, let DumpTactics try
+    return bool(_DECL_KW.search(text))
+
+
 def discover_modules() -> list[str]:
-    """Return dotted module names for every `Geometry/**.lean` file."""
+    """Return dotted module names for every `Geometry/**.lean` file
+    that carries at least one decl. Pure-umbrella files (just
+    `import …` chains) are skipped — see `has_decls`."""
     out: list[str] = []
+    skipped: list[str] = []
     for p in GEO_DIR.rglob("*.lean"):
         rel = p.relative_to(ROOT)
         dotted = str(rel.with_suffix("")).replace("/", ".")
-        out.append(dotted)
+        if has_decls(p):
+            out.append(dotted)
+        else:
+            skipped.append(dotted)
+    if skipped:
+        print(f"[run_dumptactics] skipping {len(skipped)} umbrella "
+              f"module(s) with no decls: {', '.join(skipped[:6])}"
+              f"{' …' if len(skipped) > 6 else ''}",
+              flush=True)
     return sorted(out)
 
 
