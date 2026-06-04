@@ -115,6 +115,46 @@ notation:80 P:81 " off " L:81 => P ∉ L
 notation:80 L:81 " has " P:81 => P ∈ L
 notation:80 L:81 " avoids " P:81 => P ∉ L
 
+/-! ## LeanTeX rules — generic set-style operators
+
+Render `Union.union L M`, `Inter.inter L M`, `HasSubset.Subset L M`
+as the math-textbook glyphs `L \cup M`, `L \cap M`, `L \subseteq M`
+(LeanTeX upstream renders these as raw `\text{Union.union}(...)` etc.,
+matching the Lean constant name). The `autoParam` wrapper used by
+Lean's tactic-default-arguments machinery is collapsed to just its
+body — the embedded tactic name has no business in a printed type. -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Union.union)
+  | _, #[_, _, l, m] => do
+    let pl ← latexPP l
+    let pm ← latexPP m
+    return pl.protectRight 65
+        ++ LatexData.binOp " \\cup " .left 65
+        ++ pm.protectLeft 65
+
+open LeanTeX in
+latex_pp_app_rules (const := Inter.inter)
+  | _, #[_, _, l, m] => do
+    let pl ← latexPP l
+    let pm ← latexPP m
+    return pl.protectRight 70
+        ++ LatexData.binOp " \\cap " .left 70
+        ++ pm.protectLeft 70
+
+open LeanTeX in
+latex_pp_app_rules (const := HasSubset.Subset)
+  | _, #[_, _, l, m] => do
+    let pl ← latexPP l
+    let pm ← latexPP m
+    return pl.protectRight 50
+        ++ LatexData.binOp " \\subseteq " .none 50
+        ++ pm.protectLeft 50
+
+open LeanTeX in
+latex_pp_app_rules (const := autoParam)
+  | _, #[p, _] => latexPP p
+
 /-! ## LeanTeX rule — `Not (P ∈ L)` collapses to `P off L`.
 
 The `off` notation desugars to `¬ (P ∈ L)` which elaborates to
