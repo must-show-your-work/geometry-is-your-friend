@@ -84,14 +84,19 @@ end DumpAuxFigures
 
 open DumpAuxFigures Lean Meta
 
-def main : IO Unit := do
+unsafe def main : IO Unit := do
+  initSearchPath (← findSysroot)
+  enableInitializersExecution
   let imports : Array Import := #[
     { module := `Geometry },
     { module := `Geometry.Construction.Lowering },
     { module := `Geometry.Construction.ProgressiveFigure },
     { module := `Atlas }
   ]
-  let env ← importModules imports {}
+  -- `loadExts := true` makes `Atlas.baseIRExprFor` see the imported
+  -- `baseIRExprExt` state; without it every lookup returns `none` and
+  -- the dumper silently emits zero entries.
+  let env ← importModules imports {} (loadExts := true)
   let fp := Geometry.DumpCache.defaultFingerprint env
   if (← Geometry.DumpCache.readCached "aux-figures") == some fp then
     IO.eprintln s!"[aux-figures] cache hit (fingerprint {fp}), skipping"
