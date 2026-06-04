@@ -34,6 +34,15 @@ require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 require subverso from git
   "https://github.com/leanprover/subverso" @ "main"
 
+-- LeanTeX (kmill/LeanTeX) drives the AST-based latex pipeline that
+-- replaces the regex pile in atlas/scripts/card.js. Upstream is
+-- pinned at v4.18; our `must-show-your-work/LeanTeX` fork carries
+-- the v4.31 compatibility patches (see `shed/forks/LeanTeX.md` for
+-- the takeover notes). Used by `scripts/DumpTypeTeX.lean` (Lean-
+-- side dumper) and per-domain `latex_pp_rules` declarations.
+require leantex from git
+  "https://github.com/must-show-your-work/LeanTeX" @ "main"
+
 meta if get_config? env = some "dev" then
 require «doc-gen4» from git
   "https://github.com/leanprover/doc-gen4" @ "main"

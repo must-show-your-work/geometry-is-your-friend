@@ -7,6 +7,7 @@ import Geometry.Ch3.Ex.Betweenness.Ex1
 import Geometry.Construction.AtlasField
 
 import Atlas
+import LeanTeX
 
 namespace Geometry.Theory
 
@@ -138,6 +139,52 @@ def delabArrangement : Delab := do
   let e2 := elemStxs[2]!
   let rest := elemStxs.extract 3 elemStxs.size
   `($e0 - $e1 - $e2 $[- $rest]*)
+
+/-- Walk a List cons-chain, returning the literal prefix and an optional
+non-literal tail. Symmetric with `listConsSpine` in `Primitives.lean`, but
+inlined here because that one's `private` (file-scoped). When the tail is
+`some _`, the printer renders `A \ast B \ast … \ast rest` instead of
+failing, so partially-literal arrangements like `Arr [A, B, C, rest]` stay
+readable. -/
+private partial def arrangementSpine (e : Lean.Expr) (acc : Array Lean.Expr) :
+    Array Lean.Expr × Option Lean.Expr :=
+  match Lean.Expr.getAppFnArgs e with
+  | (``List.cons, args) =>
+    if args.size ≥ 3 then arrangementSpine args[2]! (acc.push args[1]!)
+    else (acc, some e)
+  | (``List.nil, _) => (acc, none)
+  | _ => (acc, some e)
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Arrangement)
+  | _, #[listExpr] => do
+    let (elems, tail?) := arrangementSpine listExpr #[]
+    if elems.isEmpty then failure
+    let texs ← elems.mapM latexPP
+    let tailTex? ← match tail? with
+      | none => pure none
+      | some t => pure (some (← latexPP t))
+    let starOp := LatexData.binOp " \\ast " .none 50
+    let dotsAtom := LatexData.atomString "\\ldots"
+    -- Build the chain. Single element + tail: `A \ast …rest`. Multiple
+    -- elements: `A \ast B \ast … \ast rest`. No tail: same as before.
+    if texs.size = 1 then
+      match tailTex? with
+      | none => return texs[0]!
+      | some t =>
+        return texs[0]!.protectRight 50 ++ starOp
+            ++ dotsAtom ++ starOp ++ t.protectLeft 50
+    let mut acc := texs[0]!.protectRight 50
+    for k in [1:texs.size - 1] do
+      acc := acc ++ starOp ++ texs[k]!.protect 50
+    let lastIdx := texs.size - 1
+    match tailTex? with
+    | none =>
+      return acc ++ starOp ++ texs[lastIdx]!.protectLeft 50
+    | some t =>
+      return acc ++ starOp ++ texs[lastIdx]!.protect 50
+                ++ starOp ++ dotsAtom
+                ++ starOp ++ t.protectLeft 50
 
 end Geometry.Theory
 

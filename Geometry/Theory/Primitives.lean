@@ -1,6 +1,7 @@
 import Geometry.Tactics
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
+import LeanTeX
 
 namespace Geometry.Theory
 
@@ -132,6 +133,75 @@ def delabBetween : Delab := do
   let b ← withNaryArg 1 delab
   let c ← withNaryArg 2 delab
   `($a - $b - $c)
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Between)
+  | _, #[a, b, c] => do
+    let pa ← latexPP a
+    let pb ← latexPP b
+    let pc ← latexPP c
+    return pa.protectRight 50
+        ++ LatexData.binOp " \\ast " .none 50
+        ++ pb.protect 50
+        ++ LatexData.binOp " \\ast " .none 50
+        ++ pc.protectLeft 50
+
+/-! ## LeanTeX const rules — strip the `Geometry.Theory.` namespace for the
+    two opaque types so they render as `\text{Point}` and `\text{Line}`
+    rather than `\text{Geometry.Theory.Point}`. -/
+
+open LeanTeX in
+latex_pp_const_rule Geometry.Theory.Point := return LatexData.atomString "\\text{Point}"
+
+open LeanTeX in
+latex_pp_const_rule Geometry.Theory.Line := return LatexData.atomString "\\text{Line}"
+
+/-! ## LeanTeX rule — `Line.mk x` renders as just `x`. Lean's
+    `(carrier : Line)` coercion produces `Line.mk (X.carrier)`; pairing
+    this with the carrier-projection rules in `Constructors.lean` makes
+    `(segment A B : Line)` render as `\overline{AB}`. -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Line.mk)
+  | _, #[x] => latexPP x
+
+/-! ## LeanTeX rule — list literals render as `[A, B, C, …]`. Standalone
+    rule rather than a Geometry concern; lives here because List is a
+    core Lean type that we use throughout (Arrangement, etc.) and
+    LeanTeX upstream doesn't ship a rule. Mirrors the cons/nil walker
+    pattern in Arrangement.lean. -/
+
+/-- Walk a cons-chain and split it into `(literal-prefix-elements, optional
+non-literal tail expression)`. The walker stops at the first node that isn't
+a `List.cons` or `List.nil`; if it's neither, the tail is returned as the
+non-literal `Some Expr` so the printer can emit `[A, B, …xs]` instead of
+giving up. Returns `none` only when there's truly nothing to render
+(empty acc and the node isn't a list constructor) — which can't happen
+from a successful `List.cons` rule entry. -/
+private partial def listConsSpine (e : Lean.Expr) (acc : Array Lean.Expr) :
+    Array Lean.Expr × Option Lean.Expr :=
+  match Lean.Expr.getAppFnArgs e with
+  | (``List.cons, args) =>
+    if args.size ≥ 3 then listConsSpine args[2]! (acc.push args[1]!)
+    else (acc, some e)
+  | (``List.nil, _) => (acc, none)
+  | _ => (acc, some e)
+
+open LeanTeX in
+latex_pp_app_rules (const := List.cons)
+  | e, _ => do
+    let (elems, tail?) := listConsSpine e #[]
+    if elems.isEmpty then failure
+    let texs ← elems.mapM latexPP
+    let body := LatexData.intercalate ", " texs
+    let body := match tail? with
+      | none => body
+      | some _ => body ++ LatexData.atomString ", \\ldots"
+    return (LatexData.atomString "[") ++ body ++ (LatexData.atomString "]")
+
+open LeanTeX in
+latex_pp_app_rules (const := List.nil)
+  | _, _ => return LatexData.atomString "[]"
 
 /- Examples -/
 

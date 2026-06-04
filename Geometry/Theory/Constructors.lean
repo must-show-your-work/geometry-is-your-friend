@@ -1,5 +1,6 @@
 import Geometry.Theory.Primitives
 import Mathlib.Data.Set.Basic
+import LeanTeX
 
 /-!
 # Constructors
@@ -47,6 +48,39 @@ structure LineThrough (A B : Point) where
 @[inline] def Extension.past (A B : Point) : Extension A B := ⟨()⟩
 @[inline] def LineThrough.through (A B : Point) : LineThrough A B := ⟨()⟩
 
+/-! ## LeanTeX rules — endpoints in textbook glyphs
+
+Render each line-part by composing its endpoints under the matching
+diacritic: `\overline` for segments, `\overrightarrow` for rays and
+extensions (extensions are rays past the second endpoint), and
+`\overleftrightarrow` for the line through two points.
+
+Atoms at infinity BP — these are noun-phrase constructions; they
+shouldn't get extra parens regardless of surrounding context. -/
+
+private def renderEndpointPair (diacritic : String) (a b : Lean.Expr) :
+    LeanTeX.LatexPrinterM LeanTeX.LatexData := do
+  let pa ← LeanTeX.latexPP a
+  let pb ← LeanTeX.latexPP b
+  let inner := pa.latex.1 ++ pb.latex.1
+  return LeanTeX.LatexData.atomString (diacritic ++ "{" ++ inner ++ "}")
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Segment.between)
+  | _, #[a, b] => renderEndpointPair "\\overline" a b
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Ray.from_)
+  | _, #[a, b] => renderEndpointPair "\\overrightarrow" a b
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Extension.past)
+  | _, #[a, b] => renderEndpointPair "\\overrightarrow" a b
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.LineThrough.through)
+  | _, #[a, b] => renderEndpointPair "\\overleftrightarrow" a b
+
 /-! ## Carriers — projection to `Set Point`
 
     Reducible defs that unfold to the same set-theoretic content as
@@ -65,6 +99,30 @@ structure LineThrough (A B : Point) where
 
 @[reducible] def LineThrough.carrier {A B : Point} (_L : LineThrough A B) : Set Point :=
   {C | C = A ∨ C = B ∨ A - C - B ∨ A - B - C ∨ C - A - B}
+
+/-! ## Carrier-projection rules — render `x.carrier` exactly as `x`.
+
+The CoeHead from a typed line-part to `Line` produces `Line.mk (x.carrier)`.
+Combined with the `Line.mk` rule in `Primitives.lean` (which unwraps to its
+arg) and these rules (which unwrap `x.carrier` to `x` itself), the chain
+collapses to the typed line-part's own render — so `(segment A B : Line)`
+emerges as just `\overline{AB}`. -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Segment.carrier)
+  | _, #[_, _, s] => latexPP s
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Ray.carrier)
+  | _, #[_, _, r] => latexPP r
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Extension.carrier)
+  | _, #[_, _, e] => latexPP e
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.LineThrough.carrier)
+  | _, #[_, _, L] => latexPP L
 
 /-! ## Pretty-printer unexpanders — proof states show the surface syntax
 
@@ -359,6 +417,29 @@ macro_rules (kind := intersectsBare)
 def IntersectsSome.unexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $L $M) => `($L intersects $M)
   | _ => throw ()
+
+/-! ## LeanTeX rules — `Intersects L M X` / `IntersectsSome L M` -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Intersects)
+  | _, #[l, m, x] => do
+    let pl ← latexPP l
+    let pm ← latexPP m
+    let px ← latexPP x
+    return pl.protect 50
+        ++ LatexData.atomString " \\cap " ++ pm.protect 50
+        ++ LatexData.binOp " = " .none 50
+        ++ LatexData.atomString "\\{" ++ px ++ LatexData.atomString "\\}"
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.IntersectsSome)
+  | _, #[l, m] => do
+    let pl ← latexPP l
+    let pm ← latexPP m
+    return pl.protect 50
+        ++ LatexData.atomString " \\cap " ++ pm.protect 50
+        ++ LatexData.binOp " \\neq " .none 50
+        ++ LatexData.atomString "\\emptyset"
 
 /-! ## Examples -/
 
