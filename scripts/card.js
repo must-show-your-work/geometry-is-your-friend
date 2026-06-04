@@ -585,6 +585,17 @@ function renderTypeHtml(rawType, opts = {}) {
   return texToKatexHtml(tex, { ...opts, displayMode: true });
 }
 
+// AST-path render: take a finished LaTeX string from LeanTeX
+// (already represents the full type) and just hand it to KaTeX. No
+// regex pipeline, no binder restructuring, no paren stripping — all
+// of that lives in LeanTeX's rules on the Lean side. Used in
+// `?compare=1` mode alongside `renderTypeHtml` so the two paths can
+// be visually checked decl-by-decl.
+function renderTypeHtmlFromTex(latexString, opts = {}) {
+  if (!latexString) return '';
+  return texToKatexHtml(latexString, { ...opts, displayMode: true });
+}
+
 // ---------- Markers + side-by-side source ----------
 
 function renderMarkerLeft(m) {
@@ -625,6 +636,20 @@ function renderMarkerLeft(m) {
   if (extendedKinds.has(m._kind)) {
     return `<div class="bn-marker bn-marker-${m._kind}" ${lineAttr}>
       <span class="bn-chip-slot"><span class="bn-chip bn-chip-${m._kind}">${m._kind}</span></span><span class="bn-text">${escapeHtml(m.text)}</span>
+    </div>`;
+  }
+  if (m._kind === 'aux-figure') {
+    // Inline figure delta from an `auxillary { … }` block: a small
+    // SVG embedded next to the proof step that introduces it. Sits
+    // in the RHS commentary column at the slid-forward anchor line.
+    const desc = m.description
+      ? `<div class="aux-figure-desc">${escapeHtml(m.description)}</div>` : '';
+    return `<div class="bn-marker bn-marker-aux-figure" ${lineAttr}>
+      <span class="bn-chip-slot"><span class="bn-chip bn-chip-aux-figure">fig</span></span>
+      <div class="bn-text aux-figure-body">
+        <div class="aux-figure-svg">${m.svg || ''}</div>
+        ${desc}
+      </div>
     </div>`;
   }
   return '';
@@ -723,7 +748,7 @@ window.AtlasCard = {
   escapeHtml, escapeMath,
   LEAN_KEYWORDS, highlightLean,
   LEAN_TO_TEX_OPS, ARG_PAT, leanToLatex,
-  texToKatexHtml, renderTypeHtml,
+  texToKatexHtml, renderTypeHtml, renderTypeHtmlFromTex,
   renderMarkerLeft, renderSourceWithMarkers, wrapLines,
   renderCommentarySection,
 };

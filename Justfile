@@ -33,6 +33,7 @@ graph:
     lake env lean --run scripts/DumpDecls.lean
     lake env lean --run scripts/DumpImports.lean
     lake env lean --run scripts/DumpFigures.lean
+    lake env lean --run scripts/DumpTypeTeX.lean
     python scripts/run_dumptactics.py || true
     python scripts/ingest.py
     python scripts/export_graph.py
@@ -50,6 +51,7 @@ dump-obvious:
     lake env lean --run scripts/DumpDecls.lean
     lake env lean --run scripts/DumpImports.lean
     lake env lean --run scripts/DumpFigures.lean
+    lake env lean --run scripts/DumpTypeTeX.lean
     python scripts/ingest.py
     python scripts/export_graph.py
 

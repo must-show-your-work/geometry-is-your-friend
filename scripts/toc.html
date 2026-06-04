@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./vendor/katex/katex.min.css?v=local-10">
 <script src="./vendor/katex/katex.min.js?v=local-10"></script>
-<script src="./card.js?v=23"></script>
+<script src="./card.js?v=25"></script>
 
 <style>
 :root {
@@ -237,6 +237,15 @@ html, body {
   padding: 10px 0;
 }
 .card-statement.empty { color: var(--ink-ghost); font-style: italic; font-size: 13px; }
+/* `?compare=1` mode: stack the regex-pipeline render and the
+   LeanTeX-AST render with small labels so the two paths can be
+   visually checked decl-by-decl during the cutover. */
+.card-statement-compare { display: flex; flex-direction: column; gap: 10px; }
+.card-statement-compare .cmp-label {
+  font: 500 10px/1 "JetBrains Mono", monospace; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-muted); margin-top: 4px;
+}
+.card-statement-compare .cmp-label:first-child { margin-top: 0; }
 .card-statement .katex { font-size: 1em; }
 .card-figure.placeholder {
   min-height: 60px; color: var(--ink-ghost); font-style: italic; font-size: 13px;
@@ -552,6 +561,21 @@ body.mode-production .bn-line:hover { background: transparent; }
 .bn-chip-todo       { background: rgba(147, 161, 161, 0.18); color: #586e75; }
 .bn-chip-fixme      { background: rgba(220,  50,  47, 0.22); color: #93222b; }
 .bn-chip-detail     { background: rgba(108, 113, 196, 0.12); color: #6c71c4; font-style: italic; }
+.bn-chip-aux-figure {
+  background: rgba(44, 79, 80, 0.18); color: var(--teal);
+}
+/* Inline auxillary figure: a small SVG attached to the proof step
+   that introduced it. Sized to a fraction of the column so the SVG
+   doesn't dominate the proof flow. */
+.aux-figure-body { display: flex; flex-direction: column; gap: 4px; }
+.aux-figure-svg svg {
+  max-width: 100%; height: auto; color: var(--ink);
+  background: var(--paper); border-radius: 3px;
+  border: 1px solid var(--paper-deep);
+}
+.aux-figure-desc {
+  font-style: italic; color: var(--ink-muted); font-size: 0.9em;
+}
 
 /* Dark-mode chip foregrounds. The rgba *backgrounds* carry semantic
    color tinting (yellow=idea, red=fixme, etc.) and still read on a
@@ -1137,6 +1161,19 @@ function renderProofTriColumn(d) {
       (rightByLine[anchor] ||= []).push(m);
     }
   }
+  // Aux figures (`auxillary { … }` blocks) attach to the RHS column
+  // alongside editor markers. Each one carries its rendered SVG and
+  // an optional description; renderMarkerLeft dispatches on
+  // `_kind === 'aux-figure'`.
+  for (const fig of (d.aux_figures || [])) {
+    const anchor = slideForward(fig.line);
+    (rightByLine[anchor] ||= []).push({
+      _kind: 'aux-figure',
+      line: fig.line,
+      svg: fig.svg,
+      description: fig.description,
+    });
+  }
 
   // Drop elided rows entirely, then compress consecutive blank rows.
   // The compress pass kicks in after elision because removing a
@@ -1186,11 +1223,30 @@ function renderProofTriColumn(d) {
   return `<div class="proof-grid">${sourceCells.join('')}${leftCells}${rightCells}</div>`;
 }
 
+// `?compare=1` in the URL turns on the side-by-side LeanTeX-vs-regex
+// statement render. Off by default — keeps the card uncluttered for
+// non-audit reviews.
+const COMPARE_MODE = new URLSearchParams(location.search).get('compare') === '1';
+
 function renderCard(d) {
   const typeHtml = A.renderTypeHtml(d.type_pp, { displayMode: false });
+  // LeanTeX path: hand the finished LaTeX from blueprint/type-tex.json
+  // to KaTeX directly. Only used when COMPARE_MODE is on AND the
+  // dump produced a string for this decl.
+  const typeTexHtml = (COMPARE_MODE && d.type_tex)
+    ? A.renderTypeHtmlFromTex(d.type_tex) : '';
   const cb = (window.commentaryByDecl && window.commentaryByDecl[d.id]) || null;
 
-  const statementBody = `<div class="card-statement${typeHtml ? '' : ' empty'}">${typeHtml || '(no type signature)'}</div>`;
+  // In compare mode, stack both renders with small labels above each;
+  // out of compare mode, just render the regex pipeline as before.
+  const statementBody = COMPARE_MODE
+    ? `<div class="card-statement-compare">
+        <div class="cmp-label">regex pipeline (current)</div>
+        <div class="card-statement${typeHtml ? '' : ' empty'}">${typeHtml || '(no type signature)'}</div>
+        <div class="cmp-label">leantex (ast)</div>
+        <div class="card-statement${typeTexHtml ? '' : ' empty'}">${typeTexHtml || '(no type-tex — DumpTypeTeX may not have run, or the decl failed in LeanTeX)'}</div>
+      </div>`
+    : `<div class="card-statement${typeHtml ? '' : ' empty'}">${typeHtml || '(no type signature)'}</div>`;
   const figureBody = d.figure_svg
     ? `<div class="card-figure">${d.figure_svg}</div>`
     : `<div class="card-figure placeholder">no figure</div>`;

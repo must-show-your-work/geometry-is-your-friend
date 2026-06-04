@@ -219,6 +219,33 @@ def main() -> None:
             print(f"warning: {fig_path} is malformed ({e}); figures omitted",
                   file=sys.stderr)
 
+    # Inline auxiliary figures (`auxillary { … }` blocks) written by
+    # `scripts/DumpAuxFigures.lean`. Per-decl list of
+    # `{line, svg, description}` entries; rendered inline in the
+    # proof source's RHS commentary column at each block's anchor
+    # line. Missing file → empty dict, decls get no aux figures.
+    aux_figures_by_decl: dict[str, list] = {}
+    aux_path = BLUEPRINT_DIR / "aux-figures.json"
+    if aux_path.exists():
+        try:
+            aux_figures_by_decl = json.loads(aux_path.read_text())
+        except Exception as e:
+            print(f"warning: {aux_path} is malformed ({e}); aux-figures omitted",
+                  file=sys.stderr)
+
+    # LeanTeX-rendered LaTeX strings for each decl's type. Drives the
+    # AST-based statement render in the viewer; the regex-based
+    # `leanToLatex` in card.js falls back when this is absent.
+    # Written by `scripts/DumpTypeTeX.lean`.
+    type_tex_by_decl: dict[str, str] = {}
+    type_tex_path = BLUEPRINT_DIR / "type-tex.json"
+    if type_tex_path.exists():
+        try:
+            type_tex_by_decl = json.loads(type_tex_path.read_text())
+        except Exception as e:
+            print(f"warning: {type_tex_path} is malformed ({e}); type-tex omitted",
+                  file=sys.stderr)
+
     nodes = []
     kind_of: dict[str, str] = {}
     doc_of: dict[str, str | None] = {}
@@ -289,6 +316,19 @@ def main() -> None:
                 # Populated from `blueprint/figures.json`, written by
                 # `scripts/DumpFigures.lean`.
                 "figure_svg": figures_by_decl.get(name),
+                # Inline auxiliary figures: list of
+                # `{line, svg, description}` entries for each
+                # `auxillary { … }` block in the proof. Empty list when
+                # the decl has no aux blocks. Populated from
+                # `blueprint/aux-figures.json`, written by
+                # `scripts/DumpAuxFigures.lean`.
+                "aux_figures": aux_figures_by_decl.get(name, []),
+                # LeanTeX-rendered LaTeX for the decl's type. Drives
+                # the AST-based statement render in the viewer; the
+                # regex `leanToLatex` in card.js falls back when this
+                # is None. Populated from `blueprint/type-tex.json`,
+                # written by `scripts/DumpTypeTeX.lean`.
+                "type_tex": type_tex_by_decl.get(name),
                 # Per-decl `obvious`-cascade usage records, populated by a
                 # `GIYF_DUMP_DEPS=1 lake build`. Each entry is
                 # `{stage, closer, count}`. Empty list when the decl
