@@ -20,37 +20,36 @@ graph:
     # the fact. Each run overwrites the previous log; copy aside
     # beforehand if you need history.
     exec > >(tee blueprint/graph.log) 2>&1
-    # SubVerso is required at exe-build time (see lakefile.lean) and
-    # pinned to `@main`. The manifest rev drifts from upstream
-    # whenever they push; without a `lake update subverso` the cached
-    # rev's `.olean`s are sometimes incompatible with the Lean
-    # toolchain we just pulled. Run the update first so the manifest
-    # matches whatever subverso's main is right now. Idempotent — no
-    # upstream change means no manifest mutation.
+    # Per-step bracket markers — make it easy to see in graph.log
+    # exactly which stage was reached. An earlier run silently stopped
+    # after `lake build` and the log gave no indication where; these
+    # echos guarantee a breadcrumb on either side of every command.
+    step() { echo; echo "[graph] >>> $* @ $(date '+%H:%M:%S')"; }
+    step "lake update subverso"
     lake update subverso
-    # Force a clean rebuild with `GIYF_DUMP_DEPS=1` so every `obvious`
-    # invocation appends its `(module, line, stage, closer)` record to
-    # blueprint/obvious_uses.jsonl. Lake's `.olean` cache wouldn't
-    # re-run tactic elaboration without the clean. Env var rather than
-    # a Lean option because custom options can't be set via Lake's `-D`.
+    step "lake clean"
     lake clean
+    step "GIYF_DUMP_DEPS=1 lake build (default target = Geometry)"
     GIYF_DUMP_DEPS=1 lake build
-    # SubVerso isn't transitively imported by `Geometry`, only by
-    # `scripts/DumpTactics.lean`. Default-target build skips it, so
-    # build it explicitly here — otherwise the dumptactics script
-    # bails with "unknown module prefix 'SubVerso'".
+    step "lake build subverso (forced — Geometry doesn't transitively pull it)"
     lake build subverso
-    # Use `lean --run` rather than `lake exe` — the latter native-compiles
-    # via clang and on NixOS hits a missing `-lc++` / `-lgmp` / `-luv`
-    # cascade unless the dev shell exports `LIBRARY_PATH` correctly.
+    step "DumpDecls"
     lake env lean --run scripts/DumpDecls.lean
+    step "DumpImports"
     lake env lean --run scripts/DumpImports.lean
+    step "DumpFigures"
     lake env lean --run scripts/DumpFigures.lean
+    step "DumpAuxFigures"
     lake env lean --run scripts/DumpAuxFigures.lean
+    step "DumpTypeTeX"
     lake env lean --run scripts/DumpTypeTeX.lean
+    step "run_dumptactics.py"
     python scripts/run_dumptactics.py || true
+    step "ingest.py"
     python scripts/ingest.py
+    step "export_graph.py"
     python scripts/export_graph.py
+    step "done"
 
 # Fast iteration on the obvious-uses pipeline only — skips
 # `run_dumptactics.py` (the slow per-module re-elaboration) so the
