@@ -165,6 +165,67 @@ open LeanTeX in
 latex_pp_app_rules (const := Geometry.Theory.Line.mk)
   | _, #[x] => latexPP x
 
+/-! ## LeanTeX override — gang consecutive same-type `∀` binders.
+
+LeanTeX's upstream `forallE` printer (Builtins.lean:92) renders one
+binder at a time, so `∀ A B C : Point, P` comes out as
+`∀ A : Point, ∀ B : Point, ∀ C : Point, P`. We override only the
+pure-forall case (proposition, non-arrow, non-pi) and gang consecutive
+binders whose domain is structurally equal. Everything else
+(implications, function arrows, Π-types) falls through to the upstream
+rule via `failure`.
+
+The dispatch lookup in `LeanTeX.latexPPFor` iterates handlers in
+reverse-definition order: later registrations win first. Since this
+giyf-side rule is registered after `Geometry` imports LeanTeX, it
+gets tried before the builtin and we can pick our cases. -/
+
+/-- Walk a chain of `∀ _ : dom, …` forallE's whose binding domain
+matches `dom` (structurally), accumulating their binder names, then
+invoke the continuation `k` with the names and the residual body —
+all within the stacked `withBindingBodyUnusedName` scopes so the
+freshly-introduced fvars stay in the local context for the body's
+own LaTeX render. -/
+private partial def gangSameTypeForall
+    (dom : Lean.Expr) (e : Lean.Expr) (acc : Array Lean.Name)
+    (k : Array Lean.Name → Lean.Expr → LeanTeX.LatexPrinterM LeanTeX.LatexData) :
+    LeanTeX.LatexPrinterM LeanTeX.LatexData :=
+  match e with
+  | .forallE _ dom' _ _ =>
+    if dom == dom' then
+      LeanTeX.withBindingBodyUnusedName e fun name body =>
+        gangSameTypeForall dom body (acc.push name) k
+    else
+      k acc e
+  | _ => k acc e
+
+open LeanTeX in
+latex_pp_rules (kind := forallE) | e => do
+  -- Take the pure-forall branch only: `e` must be a proposition, not
+  -- an arrow (which is implication when the domain is a prop, or a
+  -- function type otherwise), and not a Π-type over Sort.
+  let prop? ← try Lean.Meta.isProp e catch _ => pure false
+  guard prop?
+  guard !e.isArrow
+  let dom := e.bindingDomain!
+  -- Π-type sanity: if the domain is a prop, fall through to the upstream
+  -- printer (which renders the `arrow? ∧ domProp?` case as implication).
+  let domProp? ← try Lean.Meta.isProp dom catch _ => pure true
+  guard !domProp?
+  let pdom ← latexPP dom
+  -- Open the first binder and collect any consecutive same-type
+  -- followers. The continuation runs INSIDE every introduced fvar's
+  -- scope so the body's render sees them in the local context.
+  withBindingBodyUnusedName e fun firstName body0 => do
+    gangSameTypeForall dom body0 #[firstName] fun names residual => do
+      let pbody ← latexPP residual
+      let nameStr := " ".intercalate (names.toList.map Lean.Name.toLatex)
+      let binder :=
+        if (← read).omitBinders then LatexData.atomString ""
+        else " : " ++ pdom.resetBP .Infinity .Infinity
+      let pall := s!"\\forall {nameStr}" ++ binder ++ ",\\ " ++ pbody
+      return pall |>.resetBP (lbp := .Infinity) |>.mergeBP (rbp := .NonAssoc 0)
+
 /-! ## LeanTeX rule — list literals render as `[A, B, C, …]`. Standalone
     rule rather than a Geometry concern; lives here because List is a
     core Lean type that we use throughout (Arrangement, etc.) and
