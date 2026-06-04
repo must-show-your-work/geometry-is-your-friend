@@ -35,6 +35,11 @@ graph:
     # a Lean option because custom options can't be set via Lake's `-D`.
     lake clean
     GIYF_DUMP_DEPS=1 lake build
+    # SubVerso isn't transitively imported by `Geometry`, only by
+    # `scripts/DumpTactics.lean`. Default-target build skips it, so
+    # build it explicitly here — otherwise the dumptactics script
+    # bails with "unknown module prefix 'SubVerso'".
+    lake build subverso
     # Use `lean --run` rather than `lake exe` — the latter native-compiles
     # via clang and on NixOS hits a missing `-lc++` / `-lgmp` / `-luv`
     # cascade unless the dev shell exports `LIBRARY_PATH` correctly.
@@ -57,6 +62,11 @@ dump-obvious:
     rm -f blueprint/obvious_uses.jsonl
     lake clean
     GIYF_DUMP_DEPS=1 lake build
+    # SubVerso isn't transitively imported by `Geometry`, only by
+    # `scripts/DumpTactics.lean`. Default-target build skips it, so
+    # build it explicitly here — otherwise the dumptactics script
+    # bails with "unknown module prefix 'SubVerso'".
+    lake build subverso
     lake env lean --run scripts/DumpDecls.lean
     lake env lean --run scripts/DumpImports.lean
     lake env lean --run scripts/DumpFigures.lean
