@@ -115,6 +115,27 @@ notation:80 P:81 " off " L:81 => P ∉ L
 notation:80 L:81 " has " P:81 => P ∈ L
 notation:80 L:81 " avoids " P:81 => P ∉ L
 
+/-! ## LeanTeX rule — `Not (P ∈ L)` collapses to `P off L`.
+
+The `off` notation desugars to `¬ (P ∈ L)` which elaborates to
+`Not (Membership.mem L P)`. The default `Not` printer plus the
+upstream membership renderer would emit `P \notin L`; we recognize
+the shape and render the verbal `P \text{ off } L` form to match
+the surface syntax. Falls through to the upstream `Not` printer
+when the argument isn't a membership application. -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Not)
+  | _, #[arg] => do
+    guard <| arg.isAppOfArity ``Membership.mem 5
+    let coll := arg.getArg! 3
+    let elem := arg.getArg! 4
+    let pelem ← latexPP elem
+    let pcoll ← latexPP coll
+    return pelem.protectRight 50
+        ++ LatexData.binOp " \\text{ off } " .none 50
+        ++ pcoll.protectLeft 50
+
 axiom Between : Point -> Point -> Point -> Prop
 
 -- Ed: In the text, the author uses `*`, but Lean reserves that, so I've chosen `-`. `∗` is available, but I don't want
