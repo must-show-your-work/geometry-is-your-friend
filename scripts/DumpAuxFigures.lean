@@ -1,5 +1,6 @@
 import Lean
 import Geometry
+import Geometry.DumpCache
 import Atlas
 import Figures
 import Figures.SVG
@@ -91,6 +92,10 @@ def main : IO Unit := do
     { module := `Atlas }
   ]
   let env ← importModules imports {}
+  let fp := Geometry.DumpCache.defaultFingerprint env
+  if (← Geometry.DumpCache.readCached "aux-figures") == some fp then
+    IO.eprintln s!"[aux-figures] cache hit (fingerprint {fp}), skipping"
+    return
   let auxEntries := entriesFromImports
                     Geometry.Construction.auxillaryAddendaExt env
   let coreCtx : Core.Context := { fileName := "<dumpauxfigures>", fileMap := default }
@@ -141,3 +146,4 @@ def main : IO Unit := do
   IO.FS.createDirAll "blueprint"
   IO.FS.writeFile "blueprint/aux-figures.json" json
   IO.eprintln s!"Wrote aux-figures for {entries.size} decls to blueprint/aux-figures.json"
+  Geometry.DumpCache.writeCached "aux-figures" fp

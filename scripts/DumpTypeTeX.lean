@@ -1,5 +1,6 @@
 import Lean
 import Geometry
+import Geometry.DumpCache
 import Atlas
 import LeanTeX
 
@@ -58,41 +59,38 @@ unsafe def main : IO Unit := do
   -- `enableInitializersExecution` above (the interpreter has to be
   -- able to materialise the registered handlers' closures).
   let env ← importModules imports {} (loadExts := true)
-  let imported := Atlas.atlasStateFromImports env
-  let live     := Atlas.atlasExt.getState env
-  let byName := imported.byName.foldl (init := live.byName) fun acc n e =>
-    match acc.find? n with
-    | some _ => acc
-    | none   => acc.insert n e
+  let byName := Geometry.DumpCache.mergedAtlasByName env
+  let fp := Geometry.DumpCache.withLeanTexFingerprint env
 
-  let coreCtx : Core.Context := { fileName := "<dumptypetex>", fileMap := default }
-  let coreState : Core.State := { env := env }
+  Geometry.DumpCache.runIfChanged "type-tex" fp do
+    let coreCtx : Core.Context := { fileName := "<dumptypetex>", fileMap := default }
+    let coreState : Core.State := { env := env }
 
-  let metaAction : MetaM (Array String) := do
-    let mut out : Array String := #[]
-    let mut considered := 0
-    let mut failed     := 0
-    for (declName, _) in byName do
-      considered := considered + 1
-      match env.find? declName with
-      | none =>
-        IO.eprintln s!"[dumptypetex] {declName}: not in env"
-        failed := failed + 1
-      | some info =>
-        try
-          let tex ← LeanTeX.run_latexPP info.type {}
-          let entry := "\"" ++ jsonEscape declName.toString ++ "\":\""
-                    ++ jsonEscape tex ++ "\""
-          out := out.push entry
-        catch ex =>
-          let msg ← ex.toMessageData.toString
-          IO.eprintln s!"[dumptypetex] {declName}: {msg}"
+    let metaAction : MetaM (Array String) := do
+      let mut out : Array String := #[]
+      let mut considered := 0
+      let mut failed     := 0
+      for (declName, _) in byName do
+        considered := considered + 1
+        match env.find? declName with
+        | none =>
+          IO.eprintln s!"[dumptypetex] {declName}: not in env"
           failed := failed + 1
-    IO.eprintln s!"[dumptypetex] considered={considered} succeeded={out.size} failed={failed}"
-    return out
+        | some info =>
+          try
+            let tex ← LeanTeX.run_latexPP info.type {}
+            let entry := "\"" ++ jsonEscape declName.toString ++ "\":\""
+                      ++ jsonEscape tex ++ "\""
+            out := out.push entry
+          catch ex =>
+            let msg ← ex.toMessageData.toString
+            IO.eprintln s!"[dumptypetex] {declName}: {msg}"
+            failed := failed + 1
+      IO.eprintln s!"[dumptypetex] considered={considered} succeeded={out.size} failed={failed}"
+      return out
 
-  let (entries, _) ← metaAction.run'.toIO coreCtx coreState
-  let json := "{\n  " ++ String.intercalate ",\n  " entries.toList ++ "\n}"
-  IO.FS.createDirAll "blueprint"
-  IO.FS.writeFile "blueprint/type-tex.json" json
-  IO.eprintln s!"Wrote {entries.size} type-tex entries to blueprint/type-tex.json"
+    let (entries, _) ← metaAction.run'.toIO coreCtx coreState
+    let json := "{\n  " ++ String.intercalate ",\n  " entries.toList ++ "\n}"
+    IO.FS.createDirAll "blueprint"
+    IO.FS.writeFile "blueprint/type-tex.json" json
+    IO.eprintln s!"Wrote {entries.size} type-tex entries to blueprint/type-tex.json"

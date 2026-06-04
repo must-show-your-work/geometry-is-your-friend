@@ -1,5 +1,6 @@
 import Lean
 import Geometry
+import Geometry.DumpCache
 import Atlas
 
 /-! Dump every atlas-tagged declaration to `blueprint/decls.json`.
@@ -302,6 +303,10 @@ def main : IO Unit := do
     (#[{ module := `Geometry }] : Array Import) ++
     buildable.map fun n => { module := n : Import }
   let env ← importModules imports {}
+  let fp := Geometry.DumpCache.defaultFingerprint env
+  if (← Geometry.DumpCache.readCached "decls") == some fp then
+    IO.eprintln s!"[decls] cache hit (fingerprint {fp}), skipping"
+    return
   -- Merge the current and imported atlas state into a single
   -- `NameMap AtlasEntry`. (`addImportedFn` is unreliable across module
   -- boundaries, hence the manual `getModuleEntries` walk in
@@ -390,3 +395,4 @@ def main : IO Unit := do
             ++ "\n]"
   IO.FS.writeFile "blueprint/commentary.json" commentaryJson
   IO.eprintln s!"Wrote {commentaryBlocks.size} commentary blocks to blueprint/commentary.json"
+  Geometry.DumpCache.writeCached "decls" fp

@@ -1,5 +1,6 @@
 import Lean
 import Geometry
+import Geometry.DumpCache
 import Atlas
 import Figures
 import Figures.SVG
@@ -102,26 +103,29 @@ def main : IO Unit := do
     { module := `Atlas }
   ]
   let env ← importModules imports {}
-  let entries := entriesFromImports Atlas.baseIRExprExt env
-  let coreCtx : Core.Context := { fileName := "<dumpfigures>", fileMap := default }
-  let coreState : Core.State := { env := env }
-  let metaAction : MetaM (Array String) := do
-    let mut out : Array String := #[]
-    for ((kind, num), e) in entries do
-      match findDeclForTarget env kind num with
-      | none =>
-        IO.eprintln s!"[dumpfigures] no decl found for ({kind}, {num}); skipping"
-      | some declName =>
-        try
-          let svg ← renderOne e
-          let entry := s!"\"{jsonEscape declName.toString}\":\"{jsonEscape svg}\""
-          out := out.push entry
-        catch ex =>
-          let msg ← ex.toMessageData.toString
-          IO.eprintln s!"[dumpfigures] failed to render ({kind} {num}) for {declName}: {msg}"
-    return out
-  let (entries, _) ← metaAction.run'.toIO coreCtx coreState
-  let json := "{\n  " ++ String.intercalate ",\n  " entries.toList ++ "\n}"
-  IO.FS.createDirAll "blueprint"
-  IO.FS.writeFile "blueprint/figures.json" json
-  IO.eprintln s!"Wrote {entries.size} figures to blueprint/figures.json"
+  let fp := Geometry.DumpCache.defaultFingerprint env
+
+  Geometry.DumpCache.runIfChanged "figures" fp do
+    let entries := entriesFromImports Atlas.baseIRExprExt env
+    let coreCtx : Core.Context := { fileName := "<dumpfigures>", fileMap := default }
+    let coreState : Core.State := { env := env }
+    let metaAction : MetaM (Array String) := do
+      let mut out : Array String := #[]
+      for ((kind, num), e) in entries do
+        match findDeclForTarget env kind num with
+        | none =>
+          IO.eprintln s!"[dumpfigures] no decl found for ({kind}, {num}); skipping"
+        | some declName =>
+          try
+            let svg ← renderOne e
+            let entry := s!"\"{jsonEscape declName.toString}\":\"{jsonEscape svg}\""
+            out := out.push entry
+          catch ex =>
+            let msg ← ex.toMessageData.toString
+            IO.eprintln s!"[dumpfigures] failed to render ({kind} {num}) for {declName}: {msg}"
+      return out
+    let (entries, _) ← metaAction.run'.toIO coreCtx coreState
+    let json := "{\n  " ++ String.intercalate ",\n  " entries.toList ++ "\n}"
+    IO.FS.createDirAll "blueprint"
+    IO.FS.writeFile "blueprint/figures.json" json
+    IO.eprintln s!"Wrote {entries.size} figures to blueprint/figures.json"

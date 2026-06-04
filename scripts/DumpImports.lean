@@ -1,5 +1,6 @@
 import Lean
 import Geometry
+import Geometry.DumpCache
 
 /-- Convert a module name `Geometry.Ch3.Prop.P4` to a path `Geometry/Ch3/Prop/P4.lean`. -/
 def moduleToFile (m : String) : String :=
@@ -41,6 +42,10 @@ def main : IO Unit := do
     (#[{ module := `Geometry }] : Array Import) ++
     buildable.map fun n => { module := n : Import }
   let env ← importModules imports {}
+  let fp := Geometry.DumpCache.importsFingerprint env
+  if (← Geometry.DumpCache.readCached "modules") == some fp then
+    IO.eprintln s!"[modules] cache hit (fingerprint {fp}), skipping"
+    return
   -- For each `Geometry.*` module in the loaded environment, emit its direct
   -- (level-1) imports filtered to `Geometry.*`.
   let mut entries : Array String := #[]
@@ -64,3 +69,4 @@ def main : IO Unit := do
   IO.FS.createDirAll "blueprint"
   IO.FS.writeFile "blueprint/modules.json" json
   IO.eprintln s!"Wrote {entries.size} modules to blueprint/modules.json"
+  Geometry.DumpCache.writeCached "modules" fp
