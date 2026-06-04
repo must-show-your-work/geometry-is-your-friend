@@ -143,8 +143,8 @@ def delabArrangement : Delab := do
 /-- Walk a List cons-chain, returning the literal prefix and an optional
 non-literal tail. Symmetric with `listConsSpine` in `Primitives.lean`, but
 inlined here because that one's `private` (file-scoped). When the tail is
-`some _`, the printer renders `A \ast B \ast … \ast rest` instead of
-failing, so partially-literal arrangements like `Arr [A, B, C, rest]` stay
+`some _`, the printer renders `A - B - … - rest` instead of failing,
+so partially-literal arrangements like `Arr [A, B, C, rest]` stay
 readable. -/
 private partial def arrangementSpine (e : Lean.Expr) (acc : Array Lean.Expr) :
     Array Lean.Expr × Option Lean.Expr :=
@@ -164,10 +164,10 @@ latex_pp_app_rules (const := Geometry.Theory.Arrangement)
     let tailTex? ← match tail? with
       | none => pure none
       | some t => pure (some (← latexPP t))
-    let starOp := LatexData.binOp " \\ast " .none 50
+    let starOp := LatexData.binOp " - " .none 50
     let dotsAtom := LatexData.atomString "\\ldots"
-    -- Build the chain. Single element + tail: `A \ast …rest`. Multiple
-    -- elements: `A \ast B \ast … \ast rest`. No tail: same as before.
+    -- Build the chain. Single element + tail: `A - …rest`. Multiple
+    -- elements: `A - B - … - rest`. No tail: same as before.
     if texs.size = 1 then
       match tailTex? with
       | none => return texs[0]!

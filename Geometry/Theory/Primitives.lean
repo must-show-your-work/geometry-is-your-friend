@@ -141,9 +141,9 @@ latex_pp_app_rules (const := Geometry.Theory.Between)
     let pb ← latexPP b
     let pc ← latexPP c
     return pa.protectRight 50
-        ++ LatexData.binOp " \\ast " .none 50
+        ++ LatexData.binOp " - " .none 50
         ++ pb.protect 50
-        ++ LatexData.binOp " \\ast " .none 50
+        ++ LatexData.binOp " - " .none 50
         ++ pc.protectLeft 50
 
 /-! ## LeanTeX const rules — strip the `Geometry.Theory.` namespace for the
