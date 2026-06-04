@@ -43,7 +43,13 @@ SHELL = shutil.which("bash") or shutil.which("sh")
 if SHELL is None:
     sys.exit("run_dumptactics: no bash/sh on PATH")
 
-ULIMIT_V_KB = 12_000_000
+# 12 GB was too tight for heavy-import modules (P5, AtlasTactic — both
+# pull in Mathlib + Atlas + the world). The .olean mmap reservations
+# alone push VmSize past 10 G; SubVerso's frontend re-elab then needs
+# room for thread stacks + IR mmaps. Either appears as "failed to
+# create thread" (mmap for thread stack ENOMEM) or "failed to read
+# file" (mmap for `.ir` file ENOMEM). 16 G leaves comfortable slack.
+ULIMIT_V_KB = 16_000_000
 
 
 # Top-level keywords that introduce something `DumpTactics` might
