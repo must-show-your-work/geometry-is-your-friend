@@ -39,21 +39,16 @@ private def jsonEscape (s : String) : String :=
     | c    => if c.toNat < 0x20 then acc ++ s!"\\u{Nat.toDigits 16 c.toNat}"
               else acc.push c
 
-/-- Walk a SimplePersistentEnvExtension's entries across all imported
-    modules. Same shape as DumpFigures's helper. -/
+/-- Collect every entry tracked by a `SimplePersistentEnvExtension`.
+With `importModules (loadExts := true)`, `ext.getState env` is the
+complete answer — imported entries are merged into state at load
+time and the live state under a fresh env is empty. The earlier
+imports-walking variant (kept in `DumpFigures.lean` for the
+loadExts := false path) would double-count here. -/
 private def entriesFromImports {α} [Inhabited α]
     (ext : SimplePersistentEnvExtension α (Array α)) (env : Environment) :
-    Array α := Id.run do
-  let mut acc : Array α := #[]
-  let mut i : Nat := 0
-  let n := env.allImportedModuleNames.size
-  while i < n do
-    for e in PersistentEnvExtension.getModuleEntries ext env i do
-      acc := acc.push e
-    i := i + 1
-  for e in ext.getState env do
-    acc := acc.push e
-  return acc
+    Array α :=
+  ext.getState env
 
 /-- Per-decl (kind, num) lookup from the merged atlas state. Used to
 find the decl's base IR Expr keyed by (kind, num) in `baseIRExprExt`. -/
