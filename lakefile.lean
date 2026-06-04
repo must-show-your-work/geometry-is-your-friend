@@ -110,7 +110,7 @@ lean_lib «Geometry» where
   -- theory umbrella still get built as part of `lake build`. Without
   -- this, scripts that import the utility fail at load time because
   -- the olean was never produced.
-  globs := #[.submodules `Geometry]
+  globs := #[.andSubmodules `Geometry]
   -- You can also specify includeDirs if needed, e.g., for diagrams
   -- includeDirs := #[ "geometry/**/diagrams" ]
 
