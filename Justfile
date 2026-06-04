@@ -20,6 +20,14 @@ graph:
     # the fact. Each run overwrites the previous log; copy aside
     # beforehand if you need history.
     exec > >(tee blueprint/graph.log) 2>&1
+    # SubVerso is required at exe-build time (see lakefile.lean) and
+    # pinned to `@main`. The manifest rev drifts from upstream
+    # whenever they push; without a `lake update subverso` the cached
+    # rev's `.olean`s are sometimes incompatible with the Lean
+    # toolchain we just pulled. Run the update first so the manifest
+    # matches whatever subverso's main is right now. Idempotent — no
+    # upstream change means no manifest mutation.
+    lake update subverso
     # Force a clean rebuild with `GIYF_DUMP_DEPS=1` so every `obvious`
     # invocation appends its `(module, line, stage, closer)` record to
     # blueprint/obvious_uses.jsonl. Lake's `.olean` cache wouldn't
@@ -33,6 +41,7 @@ graph:
     lake env lean --run scripts/DumpDecls.lean
     lake env lean --run scripts/DumpImports.lean
     lake env lean --run scripts/DumpFigures.lean
+    lake env lean --run scripts/DumpAuxFigures.lean
     lake env lean --run scripts/DumpTypeTeX.lean
     python scripts/run_dumptactics.py || true
     python scripts/ingest.py
@@ -51,6 +60,7 @@ dump-obvious:
     lake env lean --run scripts/DumpDecls.lean
     lake env lean --run scripts/DumpImports.lean
     lake env lean --run scripts/DumpFigures.lean
+    lake env lean --run scripts/DumpAuxFigures.lean
     lake env lean --run scripts/DumpTypeTeX.lean
     python scripts/ingest.py
     python scripts/export_graph.py
