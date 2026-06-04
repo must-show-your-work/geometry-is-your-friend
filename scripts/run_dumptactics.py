@@ -81,10 +81,20 @@ def run_one(mod: str, idx: int, total: int) -> int:
     """Spawn `lake exe dumptactics MOD` in a niced/ulimited subprocess.
     Returns the exit code (non-zero ≠ fatal here; we just log and move
     on so one bad module doesn't block the rest)."""
+    # `MALLOC_ARENA_MAX=2` caps glibc's per-thread malloc arenas (each
+    # ~64 MB of vmem) to two total. Lean+SubVerso spawn many threads
+    # internally; without this each arena counts against the per-
+    # subprocess vmem cap and `mmap` for new thread stacks starts
+    # failing with `lean::exception: failed to create thread`. Also
+    # shrink the thread stack from glibc's default 8 MB to 2 MB so
+    # each thread costs less vmem; Lean's elaborator isn't deeply
+    # recursive in our codebase.
     cmd = (
         f"ulimit -v {ULIMIT_V_KB} && "
+        f"ulimit -s 2048 && "
         f"nice -n 19 ionice -c 3 "
-        f"env LEAN_NUM_THREADS=1 lake env lean --run scripts/DumpTactics.lean {mod}"
+        f"env LEAN_NUM_THREADS=1 MALLOC_ARENA_MAX=2 "
+        f"lake env lean --run scripts/DumpTactics.lean {mod}"
     )
     print(f"[run_dumptactics] [{idx}/{total}] {mod}", flush=True)
     r = subprocess.run(cmd, shell=True, executable=SHELL, cwd=ROOT)
