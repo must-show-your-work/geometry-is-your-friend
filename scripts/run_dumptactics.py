@@ -42,11 +42,13 @@ SHELL = shutil.which("bash") or shutil.which("sh")
 if SHELL is None:
     sys.exit("run_dumptactics: no bash/sh on PATH")
 
-# Per-subprocess virtual-memory cap in KB. 12 GB is comfortably above
-# a Mathlib import + Geometry elaboration but well under the box's
-# total RAM, so a runaway gets killed instead of swap-thrashing the
-# whole system.
-ULIMIT_V_KB = 12_000_000
+# Per-subprocess virtual-memory cap in KB. 20 GB is well above
+# a Mathlib import + Geometry elaboration even with SubVerso's
+# frontend re-elab; still under the box's total RAM so a runaway
+# gets killed instead of swap-thrashing the whole system. 12 GB
+# was too tight — Lean's mmap for thread stacks hit the cap when
+# the process was near full and raised "failed to create thread".
+ULIMIT_V_KB = 20_000_000
 
 
 def discover_modules() -> list[str]:
