@@ -4,6 +4,8 @@ import Mathlib.Data.Set.Insert
 
 import Geometry.Theory.Axioms
 import Geometry.Theory.Interpendices.B
+import Geometry.Theory.Arrangement
+import Geometry.Theory.Forgetting
 
 import Geometry.Tactics
 
@@ -43,11 +45,24 @@ atlas commentary := by
 atlas proposition 3.6 "If A - B - C, then B cuts line AC into two parts"
   { A B C : Point } (ABC : A - B - C := by assumption) :
   ((ray B A) intersects (ray B C) at B) ∧ ((ray A B : Set Point) = (ray A C)) := by
+  have dABC : distinct A B C := obvious
   constructor
-  · sorry
+  · apply Line.eq_of_subset
+    · intro P ⟨PinBA, PinBC⟩
+      sorry
+    · intro P PisB
+      obvious
   · apply Subset.antisymm
     · intro P PinAB
-      sorry
+      rcases PinAB with (APB | rfl | rfl) | ⟨ABP, AneP, BneP⟩
+      · comment "I regard applications of 3.3 and its friends as obvious; so does the author after this theorem, more or less"
+        have : A - P - B - C := obvious
+        have : A - P - C := by arrangement this
+        have : P on ray A C := obvious
+        exact this
+      · obvious
+      · obvious
+      · sorry
     · intro P PinAC
       sorry
 
