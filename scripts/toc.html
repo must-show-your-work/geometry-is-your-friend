@@ -26,6 +26,7 @@
 <script src="./card.js?v=37"></script>
 <!-- cytoscape: mirrors the load in graph.html -->
 <script src="https://unpkg.com/cytoscape@3.30.0/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/cytoscape-elk/dist/cytoscape-elk.js"></script>
 
 <style>
 * { box-sizing: border-box; }
@@ -680,6 +681,20 @@ function nbReadVar(name, fallback) {
   return v || fallback;
 }
 
+function nbElkOpts() {
+  return {
+    name: typeof cytoscapeElk !== 'undefined' ? 'elk' : 'cose',
+    elk: {
+      algorithm: 'layered',
+      'elk.direction': 'DOWN',
+      'elk.spacing.nodeNode': 50,
+      'elk.layered.spacing.nodeNodeBetweenLayers': 120,
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+    },
+    fit: true, padding: 24, animate: false,
+  };
+}
+
 function buildNeighborhoodStyle() {
   const paper      = nbReadVar('--paper',      '#faf6ec');
   const paperSoft  = nbReadVar('--paper-soft', '#f5efe2');
@@ -752,6 +767,10 @@ function initNeighborhoodCy() {
   if (typeof cytoscape === 'undefined') return;
   const container = document.getElementById('neighborhoodCy');
   if (!container) return;
+  if (typeof cytoscapeElk !== 'undefined' && !cytoscape._nbElkRegistered) {
+    cytoscape.use(cytoscapeElk);
+    cytoscape._nbElkRegistered = true;
+  }
 
   const nodes = DECLS.map(d => {
     const pr = (d.centrality && d.centrality.pagerank) || 0;
@@ -789,18 +808,7 @@ function initNeighborhoodCy() {
     minZoom: 0.1, maxZoom: 3,
     wheelSensitivity: 0.2,
     style: buildNeighborhoodStyle(),
-    layout: {
-      name: 'cose',
-      animate: false,
-      fit: true,
-      padding: 24,
-      idealEdgeLength: 440,
-      edgeElasticity: 60,
-      nodeRepulsion: 80000,
-      nodeOverlap: 80,
-      gravity: 0.03,
-      numIter: 2000,
-    },
+    layout: nbElkOpts(),
   });
   NB_CY.on('tap', 'node', ev => {
     const d = ev.target.data('decl');
