@@ -671,11 +671,9 @@ document.getElementById('tocList').addEventListener('click', ev => {
 // ${atlas_number}` form the rest of the viewer uses (toc-item-id,
 // ref-chip-id). Clicking a node navigates the toc to that decl.
 let NB_CY = null;
-const NB_SCALE_MIN = 0.5;
-const NB_SCALE_MAX = 3.0;
-const NB_NATURAL_W = 120;
-const NB_NATURAL_H = 48;
-const NB_NATURAL_FONT = 8;
+const NB_FONT_MIN = 10;
+const NB_FONT_MAX = 96;
+const NB_WRAP_RATIO = 18;
 
 function nbReadVar(name, fallback) {
   const v = getComputedStyle(document.body).getPropertyValue(name).trim();
@@ -788,10 +786,9 @@ function initNeighborhoodCy() {
   const range = (maxPr - minPr) || 1;
   for (const n of nodes) {
     const norm = Math.sqrt((n.data.pagerank - minPr) / range);
-    const scale = NB_SCALE_MIN + norm * (NB_SCALE_MAX - NB_SCALE_MIN);
-    n.data.scale = scale;
-    n.data.fontSize = NB_NATURAL_FONT * scale;
-    n.data.textMaxWidth = NB_NATURAL_W * scale;
+    const fontSize = NB_FONT_MIN + norm * (NB_FONT_MAX - NB_FONT_MIN);
+    n.data.fontSize = fontSize;
+    n.data.textMaxWidth = fontSize * NB_WRAP_RATIO;
     n.data.label = labelFor(n.data.decl);
   }
   const edges = [];
