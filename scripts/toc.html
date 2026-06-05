@@ -24,6 +24,8 @@
 <script src="./vendor/katex/katex.min.js?v=local-10"></script>
 <link rel="stylesheet" href="./card.css?v=2">
 <script src="./card.js?v=37"></script>
+<!-- cytoscape: mirrors the load in graph.html -->
+<script src="https://unpkg.com/cytoscape@3.30.0/dist/cytoscape.min.js"></script>
 
 <style>
 * { box-sizing: border-box; }
@@ -109,7 +111,7 @@ html, body {
   border-top: 1px solid var(--paper-deep);
   background: var(--paper);
   padding: 10px 12px 12px;
-  min-height: 220px;
+  min-height: 280px; max-height: 320px;
   display: grid; grid-template-rows: auto 1fr;
 }
 .neighborhood-head {
@@ -120,25 +122,7 @@ html, body {
 .neighborhood-head .rank-chip {
   font-weight: 400; color: var(--ink-ghost);
 }
-.neighborhood-svg { width: 100%; height: 100%; display: block; }
-.neighborhood-svg .nb-edge {
-  stroke: var(--paper-deep); stroke-width: 1; fill: none;
-}
-.neighborhood-svg .nb-edge.in  { stroke: var(--teal-soft, #6c9aa0); }
-.neighborhood-svg .nb-edge.out { stroke: var(--accent-soft, #b07849); }
-.neighborhood-svg .nb-label {
-  font-family: "JetBrains Mono", monospace;
-  fill: var(--ink); cursor: pointer; user-select: none;
-  text-anchor: middle; dominant-baseline: central;
-}
-.neighborhood-svg .nb-label.center {
-  font-weight: 600; fill: var(--accent);
-}
-.neighborhood-svg .nb-label.kind-axiom    { fill: #8a6a25; }
-.neighborhood-svg .nb-label.kind-lemma    { fill: var(--ink-muted); }
-.neighborhood-svg .nb-label.kind-corollary{ fill: var(--accent-soft); }
-.neighborhood-svg .nb-label.kind-exercise { fill: var(--teal-soft); }
-.neighborhood-svg .nb-label:hover { text-decoration: underline; }
+.neighborhood-cy { width: 100%; height: 100%; }
 .neighborhood-empty {
   color: var(--ink-ghost); font-size: 12px; font-style: italic;
   text-align: center; padding-top: 30px;
@@ -172,10 +156,10 @@ html, body {
     <div class="toc-list" id="tocList"></div>
     <div class="neighborhood" id="neighborhood">
       <div class="neighborhood-head">
-        <span>neighborhood</span>
+        <span>graph</span>
         <span class="rank-chip" id="neighborhoodRank"></span>
       </div>
-      <div class="neighborhood-empty">Select a theorem.</div>
+      <div class="neighborhood-cy" id="neighborhoodCy"></div>
     </div>
   </aside>
 
@@ -677,98 +661,136 @@ document.getElementById('tocList').addEventListener('click', ev => {
   if (item) selectSlug(item.dataset.slug);
 });
 
-// ---------- Neighborhood widget ----------
-// Sits below the TOC list; centers on the selected decl with its 1-hop
-// USES + USED_BY neighbors arranged radially. Label font-size scales by
-// PageRank (precomputed in `export_graph.py::compute_centrality`), so
-// foundational axioms read larger than incidental utilities.
-function renderNeighborhood(d) {
-  const host = document.getElementById('neighborhood');
-  const rankChip = document.getElementById('neighborhoodRank');
-  // Existing body (everything except the head row) is the area we re-fill.
-  let body = host.querySelector('.neighborhood-svg, .neighborhood-empty');
+// ---------- Neighborhood graph widget (cytoscape) ----------
+// Renders the full atlas dep graph once on first selection; subsequent
+// selections only pan/zoom the camera to the chosen decl. Mirrors the
+// node-sizing convention from graph.html: PageRank → box width × height
+// via SCALE_MIN .. SCALE_MAX. Labels use the same `${atlas_kind}
+// ${atlas_number}` form the rest of the viewer uses (toc-item-id,
+// ref-chip-id). Clicking a node navigates the toc to that decl.
+let NB_CY = null;
+const NB_SCALE_MIN = 0.55;
+const NB_SCALE_MAX = 1.6;
+const NB_NATURAL_W = 86;
+const NB_NATURAL_H = 28;
 
-  const outs = (OUT_EDGES.get(d.id) || []).map(id => BY_ID.get(id)).filter(Boolean);
-  const ins  = (IN_EDGES.get(d.id)  || []).map(id => BY_ID.get(id)).filter(Boolean);
+function initNeighborhoodCy() {
+  if (NB_CY) return;
+  if (typeof cytoscape === 'undefined') return;
+  const container = document.getElementById('neighborhoodCy');
+  if (!container) return;
+
+  const nodes = DECLS.map(d => {
+    const pr = (d.centrality && d.centrality.pagerank) || 0;
+    return { data: { id: d.id, decl: d, pagerank: pr } };
+  });
+  // Normalise PageRank to [0,1] before mapping to box scale, same as
+  // graph.html does. Avoids the dominant node swamping everything.
+  let minPr = Infinity, maxPr = -Infinity;
+  for (const n of nodes) {
+    const r = n.data.pagerank;
+    if (r < minPr) minPr = r;
+    if (r > maxPr) maxPr = r;
+  }
+  const range = (maxPr - minPr) || 1;
+  for (const n of nodes) {
+    const norm = (n.data.pagerank - minPr) / range;
+    const scale = NB_SCALE_MIN + norm * (NB_SCALE_MAX - NB_SCALE_MIN);
+    n.data.w = NB_NATURAL_W * scale;
+    n.data.h = NB_NATURAL_H * scale;
+    n.data.label = labelFor(n.data.decl);
+  }
+  const edges = [];
+  for (const [s, ts] of OUT_EDGES.entries()) {
+    if (!BY_ID.has(s)) continue;
+    for (const t of ts) {
+      if (BY_ID.has(t)) edges.push({ data: { source: s, target: t } });
+    }
+  }
+
+  NB_CY = cytoscape({
+    container,
+    elements: { nodes, edges },
+    minZoom: 0.1, maxZoom: 3,
+    wheelSensitivity: 0.2,
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'shape': 'round-rectangle',
+          'background-color': 'var(--paper-soft, #f5efe2)',
+          'border-color': 'var(--paper-deep, #d9cfb8)',
+          'border-width': 1,
+          'label': 'data(label)',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'color': 'var(--ink, #2b2820)',
+          'font-family': '"JetBrains Mono", monospace',
+          'font-size': 9,
+          'width': 'data(w)',
+          'height': 'data(h)',
+          'padding': 2,
+        },
+      },
+      { selector: 'node[?decl][decl.kind = "axiom"]',
+        style: { 'border-color': '#8a6a25', 'color': '#8a6a25' } },
+      { selector: 'node[?decl][decl.atlas_kind = "lemma"]',
+        style: { 'color': 'var(--ink-muted, #6f6a5e)' } },
+      { selector: 'node[?decl][decl.atlas_kind = "corollary"]',
+        style: { 'color': 'var(--accent-soft, #b07849)' } },
+      { selector: 'node[?decl][decl.atlas_kind = "exercise"]',
+        style: { 'color': 'var(--teal-soft, #6c9aa0)' } },
+      { selector: 'node.nb-active',
+        style: {
+          'background-color': 'var(--accent, #c0653a)',
+          'border-color': 'var(--accent, #c0653a)',
+          'color': 'var(--paper, #faf6ec)',
+          'z-index': 99,
+        }
+      },
+      {
+        selector: 'edge',
+        style: {
+          'width': 0.6,
+          'line-color': 'var(--ink, #2b2820)',
+          'line-opacity': 0.18,
+          'target-arrow-shape': 'triangle-backcurve',
+          'target-arrow-color': 'var(--ink, #2b2820)',
+          'arrow-scale': 0.5,
+          'curve-style': 'bezier',
+        },
+      },
+    ],
+    layout: { name: 'cose', animate: false, idealEdgeLength: 60, nodeRepulsion: 4000, fit: true, padding: 12 },
+  });
+  NB_CY.on('tap', 'node', ev => {
+    const d = ev.target.data('decl');
+    if (d) selectSlug(declSlug(d));
+  });
+}
+
+function labelFor(d) {
+  if (d.atlas_kind && d.atlas_number) return `${d.atlas_kind} ${d.atlas_number}`;
+  return d.label || d.id.split('.').pop();
+}
+
+function renderNeighborhood(d) {
+  const rankChip = document.getElementById('neighborhoodRank');
   const pr = (d.centrality && d.centrality.pagerank) || 0;
   rankChip.textContent = pr ? `pr ${pr.toFixed(4)}` : '';
 
-  if (!outs.length && !ins.length) {
-    if (body) body.outerHTML = '<div class="neighborhood-empty">No neighbors.</div>';
-    return;
+  initNeighborhoodCy();
+  if (!NB_CY) return;
+  NB_CY.nodes('.nb-active').removeClass('nb-active');
+  const target = NB_CY.getElementById(d.id);
+  if (target.length) {
+    target.addClass('nb-active');
+    NB_CY.animate(
+      { center: { eles: target }, zoom: 1.2 },
+      { duration: 280, easing: 'ease-out' }
+    );
   }
-
-  // Layout: ins on top half, outs on bottom half, current decl at center.
-  // Within a half, angles spread evenly across (-π/2 .. +π/2) for outs
-  // and (+π/2 .. +3π/2) for ins. The fixed viewBox + preserveAspectRatio
-  // means we don't have to measure the host on render.
-  const W = 320, H = 200;
-  const cx = W / 2, cy = H / 2, r = Math.min(W, H) / 2 - 28;
-
-  const place = (group, baseAngle, spread) => group.map((n, i) => {
-    const t = group.length === 1 ? 0.5 : i / (group.length - 1);
-    const angle = baseAngle + (t - 0.5) * spread;
-    return {
-      n,
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-    };
-  });
-
-  // Outs at bottom (this decl depends DOWN), ins at top (referrers above).
-  const outPos = place(outs, Math.PI / 2,     Math.PI * 0.8);
-  const inPos  = place(ins,  -Math.PI / 2,    Math.PI * 0.8);
-
-  // Font-size mapping: sqrt of pagerank, clamped to a comfy range.
-  const scoreToSize = (score) => {
-    const t = Math.min(1, Math.sqrt(Math.max(0, score)) / Math.sqrt(0.05));
-    return 9 + 9 * t;
-  };
-
-  const labelOf = (n) => {
-    if (n.atlas_kind && n.atlas_number) return `${n.atlas_kind[0]}.${n.atlas_number}`;
-    return n.label || n.id.split('.').pop();
-  };
-
-  const edge = (p, cls) =>
-    `<line class="nb-edge ${cls}" x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" `
-    + `x2="${cx}" y2="${cy}"/>`;
-  const label = (n, x, y, cls, fontSize) =>
-    `<text class="nb-label ${cls} kind-${n.kind || ''}" `
-    + `data-id="${encodeAttr(n.id)}" `
-    + `x="${x.toFixed(1)}" y="${y.toFixed(1)}" `
-    + `font-size="${fontSize.toFixed(1)}">${escapeXml(labelOf(n))}</text>`;
-
-  const centerSize = scoreToSize(pr) + 2;
-  const svg = `<svg class="neighborhood-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-    <g>
-      ${outPos.map(p => edge(p, 'out')).join('')}
-      ${inPos.map(p => edge(p, 'in')).join('')}
-    </g>
-    <g>
-      ${label(d, cx, cy, 'center', centerSize)}
-      ${outPos.map(p => label(p.n, p.x, p.y, '', scoreToSize((p.n.centrality||{}).pagerank||0))).join('')}
-      ${inPos.map(p => label(p.n, p.x, p.y, '', scoreToSize((p.n.centrality||{}).pagerank||0))).join('')}
-    </g>
-  </svg>`;
-
-  if (body) body.outerHTML = svg;
-  else host.insertAdjacentHTML('beforeend', svg);
 }
-
-function escapeXml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-function encodeAttr(s) { return escapeXml(s); }
-
-document.getElementById('neighborhood').addEventListener('click', ev => {
-  const lbl = ev.target.closest('.nb-label');
-  if (!lbl) return;
-  const id = lbl.dataset.id;
-  const d = BY_ID.get(id);
-  if (d) selectSlug(declSlug(d));
-});
 
 // Card pane: ref-chip navigation + flag-button toggle + notes save/delete.
 document.getElementById('cardPane').addEventListener('click', async ev => {
