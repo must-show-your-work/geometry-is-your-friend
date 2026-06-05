@@ -64,17 +64,26 @@ jobs:
         run: nix develop --accept-flake-config -c just graph
 
       - name: Stage dist/
-        # GH Pages serves whatever's in the uploaded artifact. We layer
-        # `scripts/` (viewer HTML + card.css + card.js + vendor) on top
-        # of `blueprint/` (data JSON) so the relative fetch paths in the
-        # viewer (`../blueprint/graph.json`, etc.) resolve correctly.
-        # `index.html` at the dist root is the cover page that points
-        # at the two viewers.
+        # `scripts/` carries the toc viewer (HTML + card.css + card.js
+        # + vendor/), `blueprint/` carries the data JSON. The viewer
+        # fetches data via `../blueprint/...` from `/scripts/toc.html`,
+        # so the layout under dist/ matches the relative paths.
+        #
+        # Graph standalone view + cover index intentionally dropped —
+        # the toc carries the embedded graph widget now. See
+        # shed/BACKLOG.md "Atlas as canned viewer infrastructure"
+        # for the eventual atlas-side packaging.
         run: |
           mkdir -p dist
           cp -r scripts dist/scripts
           cp -r blueprint dist/blueprint
-          cp scripts/index.html dist/index.html
+          rm -f dist/scripts/graph.html dist/scripts/index.html
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <meta http-equiv="refresh" content="0; url=./scripts/toc.html">
+          <title>Theorem Atlas</title>
+          <a href="./scripts/toc.html">→ Theorem Atlas</a>
+          HTML
 
       - uses: actions/upload-pages-artifact@v3
         with:
