@@ -50,11 +50,10 @@ jobs:
       - name: Cache blueprint dumper caches
         uses: actions/cache@v4
         with:
-          # The per-dumper fingerprint files in blueprint/ let
-          # `just graph` skip unchanged dumps. The `highlighted-cache/`
-          # subdir is the per-module dumptactics cache (heaviest step).
           path: |
             blueprint/*.cache.hash
+            blueprint/*.json
+            blueprint/*.jsonl
             blueprint/highlighted-cache
           key: blueprint-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
@@ -64,15 +63,6 @@ jobs:
         run: nix develop --accept-flake-config -c just graph
 
       - name: Stage dist/
-        # `scripts/` carries the toc viewer (HTML + card.css + card.js
-        # + vendor/), `blueprint/` carries the data JSON. The viewer
-        # fetches data via `../blueprint/...` from `/scripts/toc.html`,
-        # so the layout under dist/ matches the relative paths.
-        #
-        # Graph standalone view + cover index intentionally dropped —
-        # the toc carries the embedded graph widget now. See
-        # shed/BACKLOG.md "Atlas as canned viewer infrastructure"
-        # for the eventual atlas-side packaging.
         run: |
           mkdir -p dist
           cp -r scripts dist/scripts
