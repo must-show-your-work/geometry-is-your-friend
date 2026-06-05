@@ -1,24 +1,15 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
-import Geometry.Theory
+
 import Geometry.Theory.Axioms
+import Geometry.Theory.Distinct
+import Geometry.Theory.Interpendices.B
+
 import Geometry.Tactics
 
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
 import Geometry.Ch3.Prop.B4iii
-import Geometry.Ch3.Prop.P2
-import Geometry.Ch3.Prop.P3
-import Geometry.Ch3.Prop.P4
-import Geometry.Ch3.Ex.Betweenness.Ex1
-import Geometry.Theory.Distinct
-import Geometry.Theory.Interpendices.A
-import Geometry.Theory.Interpendices.B
-import Geometry.Theory.Forgetting
-import Geometry.Construction.DSL
-import Geometry.Construction.Syntax
-import Geometry.Construction.Lowering
+
 import Geometry.Construction.AtlasField
 import Geometry.Construction.AtlasTactic
 import Atlas
@@ -29,7 +20,6 @@ open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
 open Geometry.Ch3.Prop
-open Geometry.Ch3.Ex
 open Atlas
 
 
@@ -67,9 +57,6 @@ another side."
     title "Pasch's Theorem"
     index 1
     caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L."
-    
-    
-
 
 atlas theorem 3.0 "Pasch's Theorem"
   {A B C : Point} {L : Line} {distinctABC : distinct A B C} {AXB : A - X - B}

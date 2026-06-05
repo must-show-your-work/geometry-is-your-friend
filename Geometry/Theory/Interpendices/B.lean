@@ -7,7 +7,8 @@ import Geometry.Theory.Interpendices.A
 
 import Geometry.Tactics
 
-import Geometry.Ch2.Prop
+import Geometry.Ch2.Prop.P1
+
 import Geometry.Construction.AtlasField
 import Atlas
 

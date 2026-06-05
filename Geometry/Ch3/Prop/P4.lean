@@ -1,23 +1,17 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
-import Geometry.Theory
-import Geometry.Theory.Axioms
-import Geometry.Tactics
 
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
-import Geometry.Ch3.Prop.B4iii
-import Geometry.Ch3.Prop.P2
-import Geometry.Ch3.Prop.P3
-import Geometry.Ch3.Ex.Betweenness.Ex1
+import Geometry.Theory.Axioms
 import Geometry.Theory.Distinct
-import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
-import Geometry.Construction.DSL
-import Geometry.Construction.Syntax
-import Geometry.Construction.Lowering
+import Geometry.Theory.Extending
+
+import Geometry.Tactics
+
+import Geometry.Ch3.Prop.P3
+
 import Geometry.Construction.AtlasField
 import Geometry.Construction.AtlasTactic
 import Atlas
@@ -28,8 +22,7 @@ open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
 open Geometry.Ch3.Prop
-open Geometry.Ch3.Ex
-open Atlas  -- enables `atlas commentary := by …` field keywords (scoped)
+open Atlas
 
 atlas commentary := by
   via proposition 3.4

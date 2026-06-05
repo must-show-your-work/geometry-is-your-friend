@@ -1,23 +1,18 @@
-
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
-import Geometry.Tactics
 
 import Geometry.Theory.Axioms
-import Geometry.Theory.Ch1
-import Geometry.Theory.Ch2
 import Geometry.Theory.Interpendices.B
+
+import Geometry.Tactics
+
 import Geometry.Construction.AtlasField
 import Atlas
-
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
 
 namespace Geometry.Ch3.Prop
 
 open Geometry.Theory
-open Geometry.Ch2.Prop
 open Atlas
 
 atlas commentary := by

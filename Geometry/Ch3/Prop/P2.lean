@@ -1,16 +1,17 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
+
 import Geometry.Theory.Axioms
-import Geometry.Theory.Ch1
-import Geometry.Theory.Ch2
+import Geometry.Theory.Distinct
+import Geometry.Theory.Interpendices.B
+
 import Geometry.Tactics
+
+import Geometry.Ch2.Prop.P3
+
 import Geometry.Construction.AtlasField
 import Atlas
-
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
-import Geometry.Ch3.Prop.B4iii
 
 namespace Geometry.Ch3.Prop
 

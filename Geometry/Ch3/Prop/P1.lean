@@ -2,10 +2,8 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
 
-import Geometry.Theory.Axioms
-import Geometry.Theory.Ch1
-import Geometry.Theory.Ch2
-import Geometry.Theory.Interpendices.B
+import Geometry.Theory.Distinct
+import Geometry.Theory.Interpendices.A
 
 import Geometry.Tactics
 import Geometry.Construction.AtlasField

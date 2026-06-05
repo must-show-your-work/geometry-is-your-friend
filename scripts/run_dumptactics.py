@@ -43,13 +43,7 @@ SHELL = shutil.which("bash") or shutil.which("sh")
 if SHELL is None:
     sys.exit("run_dumptactics: no bash/sh on PATH")
 
-# 12 GB was too tight for heavy-import modules (P5, AtlasTactic — both
-# pull in Mathlib + Atlas + the world). The .olean mmap reservations
-# alone push VmSize past 10 G; SubVerso's frontend re-elab then needs
-# room for thread stacks + IR mmaps. Either appears as "failed to
-# create thread" (mmap for thread stack ENOMEM) or "failed to read
-# file" (mmap for `.ir` file ENOMEM). 16 G leaves comfortable slack.
-ULIMIT_V_KB = 16_000_000
+MEMORY_MAX = "8G"
 
 
 # Top-level keywords that introduce something `DumpTactics` might
@@ -127,18 +121,20 @@ def run_one(mod: str, idx: int, total: int) -> int:
     """Spawn `lake exe dumptactics MOD` in a niced/ulimited subprocess.
     Returns the exit code (non-zero ≠ fatal here; we just log and move
     on so one bad module doesn't block the rest)."""
-    # `MALLOC_ARENA_MAX=2` caps glibc's per-thread malloc arenas (each
-    # ~64 MB of vmem) to two total. Lean+SubVerso spawn many threads
-    # internally; without this each arena counts against the per-
-    # subprocess vmem cap and `mmap` for new thread stacks starts
-    # failing with `lean::exception: failed to create thread`. Also
-    # shrink the thread stack from glibc's default 8 MB to 2 MB so
-    # each thread costs less vmem; Lean's elaborator isn't deeply
-    # recursive in our codebase.
+    # Cap RSS (resident memory) via a transient systemd user-scope
+    # cgroup. `ulimit -v` (vmem) was the wrong knob — Lean mmaps ~12 G
+    # of olean files just to load the closure, and the kernel counts
+    # the mapping against VmSize even though most pages are clean
+    # file-backed and never resident. Switching to `MemoryMax` (RSS)
+    # lets Lean keep its 12 G address-space reservation; the kernel
+    # evicts cold olean pages under pressure and pagefaults them
+    # back in when the elaborator dereferences them. The trade-off
+    # is disk I/O, not crashes. `MemorySwapMax=0` keeps everything
+    # off swap so RSS reflects true working-set.
     cmd = (
-        f"ulimit -v {ULIMIT_V_KB} && "
-        f"ulimit -s 2048 && "
-        f"nice -n 19 ionice -c 3 "
+        f"systemd-run --user --scope --quiet "
+        f"-p MemoryMax={MEMORY_MAX} -p MemorySwapMax=0 "
+        f"-- nice -n 19 ionice -c 3 "
         f"env LEAN_NUM_THREADS=1 MALLOC_ARENA_MAX=2 "
         f"lake env lean --run scripts/DumpTactics.lean {mod}"
     )

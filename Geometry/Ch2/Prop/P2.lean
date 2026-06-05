@@ -1,12 +1,12 @@
 import Geometry.Tactics
 
 import Geometry.Theory.Axioms
-import Geometry.Theory.Ch1
 import Geometry.Theory.Interpendices.A
-import Geometry.Construction.AtlasField
-import Atlas
 
 import Geometry.Ch2.Prop.P1
+
+import Geometry.Construction.AtlasField
+import Atlas
 
 namespace Geometry.Ch2.Prop
 
