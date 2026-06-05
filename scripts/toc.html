@@ -718,14 +718,14 @@ function buildNeighborhoodStyle() {
         'text-valign': 'center',
         'text-halign': 'center',
         'text-wrap': 'wrap',
-        'text-max-width': 'data(w)',
+        'text-max-width': 'data(textMaxWidth)',
         'color': ink,
         'font-family': '"JetBrains Mono", monospace',
         'font-size': 'data(fontSize)',
         'line-height': 1.15,
-        'width': 'data(w)',
-        'height': 'data(h)',
-        'padding': 0,
+        'width': 'label',
+        'height': 'label',
+        'padding': 2,
       },
     },
     { selector: 'node[?decl][decl.atlas_kind = "axiom"]',
@@ -790,9 +790,8 @@ function initNeighborhoodCy() {
     const norm = (n.data.pagerank - minPr) / range;
     const scale = NB_SCALE_MIN + norm * (NB_SCALE_MAX - NB_SCALE_MIN);
     n.data.scale = scale;
-    n.data.w = NB_NATURAL_W * scale;
-    n.data.h = NB_NATURAL_H * scale;
     n.data.fontSize = NB_NATURAL_FONT * scale;
+    n.data.textMaxWidth = NB_NATURAL_W * scale;
     n.data.label = labelFor(n.data.decl);
   }
   const edges = [];
