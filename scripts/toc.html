@@ -815,6 +815,8 @@ function initNeighborhoodCy() {
     const d = ev.target.data('decl');
     if (d) selectSlug(declSlug(d));
   });
+  NB_CY._nbLayoutReady = false;
+  NB_CY.one('layoutstop', () => { NB_CY._nbLayoutReady = true; });
 }
 
 function labelFor(d) {
@@ -832,13 +834,14 @@ function renderNeighborhood(d) {
   if (!NB_CY) return;
   NB_CY.nodes('.nb-active').removeClass('nb-active');
   const target = NB_CY.getElementById(d.id);
-  if (target.length) {
-    target.addClass('nb-active');
-    NB_CY.animate(
-      { center: { eles: target }, zoom: 1.2 },
-      { duration: 280, easing: 'ease-out' }
-    );
-  }
+  if (!target.length) return;
+  target.addClass('nb-active');
+  const doCenter = () => NB_CY.animate(
+    { center: { eles: target }, zoom: 1.2 },
+    { duration: 280, easing: 'ease-out' }
+  );
+  if (NB_CY._nbLayoutReady) doCenter();
+  else NB_CY.one('layoutstop', doCenter);
 }
 
 // Card pane: ref-chip navigation + flag-button toggle + notes save/delete.
