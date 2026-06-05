@@ -109,7 +109,7 @@ html, body {
 /* ---------- Neighborhood widget ---------- */
 .neighborhood {
   border-top: 1px solid var(--paper-deep);
-  background: var(--paper);
+  background: var(--paper-soft);
   padding: 10px 12px 12px;
   min-height: 560px; max-height: 640px;
   display: grid; grid-template-rows: auto 1fr;
@@ -674,6 +674,78 @@ const NB_SCALE_MAX = 1.6;
 const NB_NATURAL_W = 120;
 const NB_NATURAL_H = 48;
 
+function nbReadVar(name, fallback) {
+  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+function buildNeighborhoodStyle() {
+  const paper      = nbReadVar('--paper',      '#faf6ec');
+  const paperSoft  = nbReadVar('--paper-soft', '#f5efe2');
+  const paperDeep  = nbReadVar('--paper-deep', '#d9cfb8');
+  const ink        = nbReadVar('--ink',        '#2b2820');
+  const inkMuted   = nbReadVar('--ink-muted',  '#6f6a5e');
+  const accent     = nbReadVar('--accent',     '#c0653a');
+  const accentSoft = nbReadVar('--accent-soft','#b07849');
+  const teal       = nbReadVar('--teal',       '#3d6b70');
+  const tealSoft   = nbReadVar('--teal-soft',  '#6c9aa0');
+  return [
+    {
+      selector: 'node',
+      style: {
+        'shape': 'round-rectangle',
+        'background-color': paper,
+        'border-color': ink,
+        'border-width': 1,
+        'label': 'data(label)',
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'text-wrap': 'wrap',
+        'text-max-width': 'data(w)',
+        'color': ink,
+        'font-family': '"JetBrains Mono", monospace',
+        'font-size': 8,
+        'line-height': 1.15,
+        'width': 'data(w)',
+        'height': 'data(h)',
+        'padding': 3,
+      },
+    },
+    { selector: 'node[?decl][decl.atlas_kind = "axiom"]',
+      style: { 'color': '#8a6a25' } },
+    { selector: 'node[?decl][decl.atlas_kind = "lemma"]',
+      style: { 'color': inkMuted } },
+    { selector: 'node[?decl][decl.atlas_kind = "corollary"]',
+      style: { 'color': accentSoft } },
+    { selector: 'node[?decl][decl.atlas_kind = "exercise"]',
+      style: { 'color': tealSoft } },
+    { selector: 'node.nb-active',
+      style: {
+        'border-color': accent,
+        'border-width': 2,
+        'shadow-blur': 18,
+        'shadow-color': accent,
+        'shadow-opacity': 0.55,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+        'z-index': 99,
+      }
+    },
+    {
+      selector: 'edge',
+      style: {
+        'width': 0.6,
+        'line-color': ink,
+        'line-opacity': 0.18,
+        'target-arrow-shape': 'triangle-backcurve',
+        'target-arrow-color': ink,
+        'arrow-scale': 0.5,
+        'curve-style': 'bezier',
+      },
+    },
+  ];
+}
+
 function initNeighborhoodCy() {
   if (NB_CY) return;
   if (typeof cytoscape === 'undefined') return;
@@ -713,57 +785,7 @@ function initNeighborhoodCy() {
     elements: { nodes, edges },
     minZoom: 0.1, maxZoom: 3,
     wheelSensitivity: 0.2,
-    style: [
-      {
-        selector: 'node',
-        style: {
-          'shape': 'round-rectangle',
-          'background-color': 'var(--paper-soft, #f5efe2)',
-          'border-color': 'var(--paper-deep, #d9cfb8)',
-          'border-width': 1,
-          'label': 'data(label)',
-          'text-valign': 'center',
-          'text-halign': 'center',
-          'text-wrap': 'wrap',
-          'text-max-width': 'data(w)',
-          'color': 'var(--ink, #2b2820)',
-          'font-family': '"JetBrains Mono", monospace',
-          'font-size': 8,
-          'line-height': 1.15,
-          'width': 'data(w)',
-          'height': 'data(h)',
-          'padding': 3,
-        },
-      },
-      { selector: 'node[?decl][decl.kind = "axiom"]',
-        style: { 'border-color': '#8a6a25', 'color': '#8a6a25' } },
-      { selector: 'node[?decl][decl.atlas_kind = "lemma"]',
-        style: { 'color': 'var(--ink-muted, #6f6a5e)' } },
-      { selector: 'node[?decl][decl.atlas_kind = "corollary"]',
-        style: { 'color': 'var(--accent-soft, #b07849)' } },
-      { selector: 'node[?decl][decl.atlas_kind = "exercise"]',
-        style: { 'color': 'var(--teal-soft, #6c9aa0)' } },
-      { selector: 'node.nb-active',
-        style: {
-          'background-color': 'var(--accent, #c0653a)',
-          'border-color': 'var(--accent, #c0653a)',
-          'color': 'var(--paper, #faf6ec)',
-          'z-index': 99,
-        }
-      },
-      {
-        selector: 'edge',
-        style: {
-          'width': 0.6,
-          'line-color': 'var(--ink, #2b2820)',
-          'line-opacity': 0.18,
-          'target-arrow-shape': 'triangle-backcurve',
-          'target-arrow-color': 'var(--ink, #2b2820)',
-          'arrow-scale': 0.5,
-          'curve-style': 'bezier',
-        },
-      },
-    ],
+    style: buildNeighborhoodStyle(),
     layout: {
       name: 'cose',
       animate: false,
@@ -961,6 +983,7 @@ function applyMode(mode) {
   document.body.classList.toggle('dark-mode', mode === 'dark');
   const btn = document.getElementById('modeToggle');
   if (btn) btn.textContent = mode === 'dark' ? '◑ light' : '◐ dark';
+  if (NB_CY) NB_CY.style(buildNeighborhoodStyle());
 }
 function loadMode() {
   try { return localStorage.getItem(MODE_KEY) || 'light'; }
