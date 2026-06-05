@@ -8,6 +8,8 @@ import Geometry.Theory.Interpendices.B
 
 import Geometry.Tactics
 
+import Geometry.Ch2.Prop.P3
+
 import Geometry.Ch3.Prop.B4iii
 import Geometry.Ch3.Ex.Betweenness.Ex1
 
