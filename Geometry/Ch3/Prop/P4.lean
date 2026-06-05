@@ -12,9 +12,6 @@ import Geometry.Tactics
 
 import Geometry.Ch3.Prop.P3
 
-import Geometry.Construction.DSL
-import Geometry.Construction.Syntax
-import Geometry.Construction.Lowering
 import Geometry.Construction.AtlasField
 import Geometry.Construction.AtlasTactic
 import Atlas
