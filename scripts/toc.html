@@ -1041,7 +1041,12 @@ async function detectMode() {
     }
     groupAndRender();
     const initial = decodeURIComponent(location.hash.slice(1));
-    if (initial && BY_SLUG.has(initial)) selectSlug(initial);
+    if (initial && BY_SLUG.has(initial)) {
+      selectSlug(initial);
+    } else {
+      const pasch = DECLS.find(d => d.atlas_title === "Pasch's Theorem");
+      if (pasch) selectSlug(declSlug(pasch));
+    }
   } catch (e) {
     document.getElementById('tocList').innerHTML =
       `<div style="padding:20px;color:var(--accent)">Failed to load ${GRAPH_URL}: ${A.escapeHtml(e.message)}</div>`;
