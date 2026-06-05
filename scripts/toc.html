@@ -673,6 +673,7 @@ const NB_SCALE_MIN = 0.55;
 const NB_SCALE_MAX = 1.6;
 const NB_NATURAL_W = 120;
 const NB_NATURAL_H = 48;
+const NB_NATURAL_FONT = 8;
 
 function nbReadVar(name, fallback) {
   const v = getComputedStyle(document.body).getPropertyValue(name).trim();
@@ -704,7 +705,7 @@ function buildNeighborhoodStyle() {
         'text-max-width': 'data(w)',
         'color': ink,
         'font-family': '"JetBrains Mono", monospace',
-        'font-size': 8,
+        'font-size': 'data(fontSize)',
         'line-height': 1.15,
         'width': 'data(w)',
         'height': 'data(h)',
@@ -768,8 +769,10 @@ function initNeighborhoodCy() {
   for (const n of nodes) {
     const norm = (n.data.pagerank - minPr) / range;
     const scale = NB_SCALE_MIN + norm * (NB_SCALE_MAX - NB_SCALE_MIN);
+    n.data.scale = scale;
     n.data.w = NB_NATURAL_W * scale;
     n.data.h = NB_NATURAL_H * scale;
+    n.data.fontSize = NB_NATURAL_FONT * scale;
     n.data.label = labelFor(n.data.decl);
   }
   const edges = [];
@@ -791,12 +794,12 @@ function initNeighborhoodCy() {
       animate: false,
       fit: true,
       padding: 24,
-      idealEdgeLength: 220,
-      edgeElasticity: 80,
-      nodeRepulsion: 40000,
-      nodeOverlap: 40,
-      gravity: 0.05,
-      numIter: 1500,
+      idealEdgeLength: 440,
+      edgeElasticity: 60,
+      nodeRepulsion: 80000,
+      nodeOverlap: 80,
+      gravity: 0.03,
+      numIter: 2000,
     },
   });
   NB_CY.on('tap', 'node', ev => {
