@@ -29,12 +29,15 @@ namespace Geometry.Construction
 
 open Lean Elab Tactic Meta
 
-syntax (name := auxillaryTac) "auxillary" "{" constructionStmt* "}" : tactic
+-- Optional string-arg form `auxillary "description" { … }` lets the
+-- author narrate the construction step. The description surfaces as
+-- a caption in the figure widget and as accessibility narration.
+syntax (name := auxillaryTac) "auxillary" (str)? "{" constructionStmt* "}" : tactic
 
 @[tactic auxillaryTac]
 def elabAuxillary : Tactic := fun stx => do
   match stx with
-  | `(tactic| auxillary { $stmts:constructionStmt* }) => do
+  | `(tactic| auxillary $[$desc?:str]? { $stmts:constructionStmt* }) => do
     let some declName ← Term.getDeclName?
       | throwError "auxillary: no enclosing declaration"
     let some pos := stx.getPos? | return
@@ -43,7 +46,8 @@ def elabAuxillary : Tactic := fun stx => do
     let addendumExpr ← Term.elabTermAndSynthesize addendumStx none
     let addendum ← unsafe evalExpr DSL.Construction
       (mkConst ``DSL.Construction) addendumExpr
-    pushAddendum declName line addendum
+    let description : Option String := desc?.map (·.getString)
+    pushAddendum declName line addendum description
   | _ => throwUnsupportedSyntax
 
 end Geometry.Construction

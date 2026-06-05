@@ -1,23 +1,17 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
-import Geometry.Theory
-import Geometry.Theory.Axioms
-import Geometry.Tactics
 
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
-import Geometry.Ch3.Prop.B4iii
-import Geometry.Ch3.Prop.P2
-import Geometry.Ch3.Prop.P3
-import Geometry.Ch3.Ex.Betweenness.Ex1
+import Geometry.Theory.Axioms
 import Geometry.Theory.Distinct
-import Geometry.Theory.Interpendices.A
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Forgetting
-import Geometry.Construction.DSL
-import Geometry.Construction.Syntax
-import Geometry.Construction.Lowering
+import Geometry.Theory.Extending
+
+import Geometry.Tactics
+
+import Geometry.Ch3.Prop.P3
+
 import Geometry.Construction.AtlasField
 import Geometry.Construction.AtlasTactic
 import Atlas
@@ -28,8 +22,7 @@ open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
 open Geometry.Ch3.Prop
-open Geometry.Ch3.Ex
-open Atlas  -- enables `atlas commentary := by …` field keywords (scoped)
+open Atlas
 
 atlas commentary := by
   via proposition 3.4
@@ -40,31 +33,36 @@ atlas commentary := by
   ]
   preface "If C - A - B and l is the line through A, B, and C (Betweenness Axiom 1), then for every point P lying on l, P lies either on ray A B or on the opposite ray A C."
 
-  figure := by
-    construction {
-      exists A B C P : Point
-      assert distinct A B C P
-      construct rayAB := ray A B
-      construct rayAC := ray A C
-      assert between C A B
-      assert between A P B
-    }
-    title "Case: P on ray AB"
-    index 1
-    caption "Ray AB extends from A through B; ray AC is the opposite ray at vertex A. P lies between A and B — so P is on ray AB. The conclusion's first disjunct holds directly."
+  -- Figures flagged for revision (2026-06-03). The two-case figure
+  -- pair doesn't clearly read as "opposite rays at A": the opposite-ray
+  -- relationship between rayAB and rayAC needs a stronger visual cue
+  -- than the current layout provides. Revisit when the ray rendering
+  -- can show the apex sharing convincingly.
+  -- figure := by
+  --   construction {
+  --     exists A B C P : Point
+  --     assert distinct A B C P
+  --     construct rayAB := ray A B
+  --     construct rayAC := ray A C
+  --     assert between C A B
+  --     assert between A P B
+  --   }
+  --   title "Case: P on ray AB"
+  --   index 1
+  --   caption "Ray AB extends from A through B; ray AC is the opposite ray at vertex A. P lies between A and B — so P is on ray AB. The conclusion's first disjunct holds directly."
 
-  figure := by
-    construction {
-      exists A B C P : Point
-      assert distinct A B C P
-      construct rayAB := ray A B
-      construct rayAC := ray A C
-      assert between C A B
-      assert between C P A
-    }
-    title "Case: P on the opposite ray (ray AC)"
-    index 2
-    caption "P lies between C and A — so P is on ray AC, the opposite ray from ray AB at vertex A. This is the case the proof has to work for: assume P is not on ray AB, derive P-A-B, then use betweenness axiom B.3 to land on ray AC."
+  -- figure := by
+  --   construction {
+  --     exists A B C P : Point
+  --     assert distinct A B C P
+  --     construct rayAB := ray A B
+  --     construct rayAC := ray A C
+  --     assert between C A B
+  --     assert between C P A
+  --   }
+  --   title "Case: P on the opposite ray (ray AC)"
+  --   index 2
+  --   caption "P lies between C and A — so P is on ray AC, the opposite ray from ray AB at vertex A. This is the case the proof has to work for: assume P is not on ray AB, derive P-A-B, then use betweenness axiom B.3 to land on ray AC."
 
 atlas proposition 3.4 "Line separation by an interior point: points on the line lie on one of two opposite rays"
   {A B C P : Point} (CAB : C - A - B) (PonL : P on (line A B)) : P on ray A B ∨ P on ray A C := by

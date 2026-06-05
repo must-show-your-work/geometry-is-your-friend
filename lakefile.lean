@@ -24,6 +24,25 @@ require atlas from "../atlas"
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 
+-- SubVerso is already in the manifest as a transitive (inherited)
+-- dep of verso, but `lean_exe "dumptactics"` imports `SubVerso.*`
+-- modules directly. Lake's lean_exe target only sees explicitly
+-- required deps, not inherited ones, so the import resolution
+-- fails ("missing subverso dependency"). Require it explicitly to
+-- bring its modules onto the exe's import path. Pin matches the
+-- rev in lake-manifest.json so the manifest stays consistent.
+require subverso from git
+  "https://github.com/leanprover/subverso" @ "main"
+
+-- LeanTeX (kmill/LeanTeX) drives the AST-based latex pipeline that
+-- replaces the regex pile in atlas/scripts/card.js. Upstream is
+-- pinned at v4.18; our `must-show-your-work/LeanTeX` fork carries
+-- the v4.31 compatibility patches (see `shed/forks/LeanTeX.md` for
+-- the takeover notes). Used by `scripts/DumpTypeTeX.lean` (Lean-
+-- side dumper) and per-domain `latex_pp_rules` declarations.
+require leantex from git
+  "https://github.com/must-show-your-work/LeanTeX" @ "main"
+
 meta if get_config? env = some "dev" then
 require «doc-gen4» from git
   "https://github.com/leanprover/doc-gen4" @ "main"
@@ -43,7 +62,10 @@ abbrev baseOpts : Array LeanOption := #[
   ⟨`weak.linter.mathlibStandardSet, true⟩,
   ⟨`maxSynthPendingDepth, false⟩,
   ⟨`weak.linter.style.longLine, false⟩,
-  -- (`weak.linter.style.emptyLine, false),
+  -- Whitespace between commands (esp. inside `atlas commentary := by …`
+  -- blocks) is useful for readability; the Mathlib lint that bans it
+  -- is mostly annoying for our style.
+  ⟨`weak.linter.style.emptyLine, false⟩,
   ⟨`weak.linter.style.multiGoal, false⟩, -- FIXME: I don't know why this fires
   -- `linter.style.header` covers Mathlib's three header checks: copyright
   -- format, module-docstring-first, and a re-parse of the imports area.
@@ -83,6 +105,12 @@ lean_exe "dumptactics" where
 @[default_target]
 lean_lib «Geometry» where
   srcDir := "."    -- points to main src folder
+  -- Enumerate every `Geometry.*` submodule so utility modules (e.g.
+  -- `Geometry.DumpCache`) that aren't transitively imported by the
+  -- theory umbrella still get built as part of `lake build`. Without
+  -- this, scripts that import the utility fail at load time because
+  -- the olean was never produced.
+  globs := #[.andSubmodules `Geometry]
   -- You can also specify includeDirs if needed, e.g., for diagrams
   -- includeDirs := #[ "geometry/**/diagrams" ]
 

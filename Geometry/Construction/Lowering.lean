@@ -568,6 +568,13 @@ private def buildProjections (stmts : Array Stmt) (nameToIdx : Name → Option N
         | _ => none
       if ids.length ≥ 2 then
         projs := projs.push (Solver.Projections.collinear ids)
+    | .assert (.app "equal" [.name a, .name b]) _ =>
+      -- Figure-level identity: A and B must occupy the same position.
+      -- Used in degenerate-case constructions (e.g. "assume `segment A B
+      -- = segment B C`, then A = C") to render the case being ruled out.
+      match nameToIdx a, nameToIdx b with
+      | some ia, some ib => projs := projs.push (Solver.Projections.identify ia ib)
+      | _, _ => pure ()
     | _ => pure ()
   -- Multi-incidence collinear: only emit for lines NOT focused (the
   -- focused case is handled per-particle via intersect2 above, which
@@ -1053,8 +1060,28 @@ open Geometry.Construction.Lowering
 
 /-- DSL → SVG via the lowering pass. Lets atlas's `direct_rep` accept
 a `Construction` literal directly (instance lookup picks this up by
-type), without callers needing to invoke `lower` themselves. -/
+type), without callers needing to invoke `lower` themselves. The
+default `Renderable` instance keeps the inline `<style>` block so
+the SVG is standalone (works in the InfoView widget, libresvg,
+direct file-open). -/
 instance : Renderable Construction String where
   render c := Renderable.render (lower c)
+
+/-- Render a `Construction` to SVG WITHOUT the inline `<style>` block
+and WITHOUT a background fill. For host environments that supply their
+own stylesheet + page background (e.g. the atlas viewer's editorial
+theme — paper-cream pane, not the figure's legal-pad yellow default).
+The output still carries the `.txt`, `.lbl`, `.callout` classes so
+the host CSS can target them. -/
+def renderBare (c : Construction) : String :=
+  Figures.SVG.render (lower c) { inlineStyles := false, background := "none" }
+
+/-- Render a base + addendum pair the same way `renderBare` renders a
+single construction — no inline `<style>`, no background — so the
+atlas viewer's `.txt`/`.lbl`/`.callout` CSS and dark-mode page
+background apply. Used by `DumpAuxFigures` to emit small inline
+figure deltas next to each `auxillary { … }` step in the proof. -/
+def renderAuxBare (base : Construction) (addendum : Construction) : String :=
+  Figures.SVG.render (lowerAuxiliary base addendum) { inlineStyles := false, background := "none" }
 
 end Geometry.Construction

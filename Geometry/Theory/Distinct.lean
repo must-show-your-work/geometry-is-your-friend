@@ -7,6 +7,7 @@ import Mathlib.Data.Finset.Empty
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Erase
 import Atlas
+import LeanTeX
 
 namespace Geometry.Theory
 
@@ -25,6 +26,28 @@ set_option linter.style.emptyLine false
 
 structure Distinct {α : Type*} (s : Finset α) (n : ℕ) : Prop where
   card_eq : s.card = n
+
+/-! ## LeanTeX rule — render as `\operatorname{distinct}\{A, B, C, …\}` -/
+
+private partial def finsetLiteralElems (e : Lean.Expr) (acc : Array Lean.Expr) :
+    Option (Array Lean.Expr) :=
+  match Lean.Expr.getAppFnArgs e with
+  | (``Insert.insert, args) =>
+    if args.size ≥ 5 then
+      finsetLiteralElems args[4]! (acc.push args[3]!)
+    else none
+  | (``Singleton.singleton, args) =>
+    if args.size ≥ 4 then some (acc.push args[3]!) else none
+  | _ => none
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Distinct)
+  | _, #[_, setExpr, _] => do
+    let some elems := finsetLiteralElems setExpr #[] | failure
+    if elems.size = 0 then failure
+    let texs ← elems.mapM latexPP
+    let inner := LatexData.intercalate ", " texs
+    return LatexData.atomString "\\operatorname{distinct}\\," ++ inner
 
 namespace Distinct
 

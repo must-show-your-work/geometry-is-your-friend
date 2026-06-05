@@ -1,6 +1,7 @@
 import Geometry.Theory.Primitives
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
+import LeanTeX
 
 /-!
 # Collinearity
@@ -31,6 +32,48 @@ macro_rules
       `(Collinear $acc)
 
 -- Pretty printer: TODO restore after Finset-literal unexpander is written
+
+/-! ## LeanTeX rule — render as `\operatorname{collinear}\{A, B, C, …\}` -/
+
+private partial def finsetLiteralElems (e : Lean.Expr) (acc : Array Lean.Expr) :
+    Option (Array Lean.Expr) :=
+  match Lean.Expr.getAppFnArgs e with
+  | (``Insert.insert, args) =>
+    if args.size ≥ 5 then
+      finsetLiteralElems args[4]! (acc.push args[3]!)
+    else none
+  | (``Singleton.singleton, args) =>
+    if args.size ≥ 4 then some (acc.push args[3]!) else none
+  | _ => none
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Collinear)
+  | _, #[setExpr] => do
+    let some elems := finsetLiteralElems setExpr #[] | failure
+    if elems.size = 0 then failure
+    let texs ← elems.mapM latexPP
+    let inner := LatexData.intercalate ", " texs
+    return LatexData.atomString "\\operatorname{collinear}\\," ++ inner
+
+/-! ## LeanTeX rule — `Not (Collinear …)` collapses to `noncollinear(…)`.
+
+Surface notation `noncollinear A B C` desugars at parse time to
+`¬ collinear A B C` which elaborates to `Not (Collinear …)`. The
+default `Not` printer would render that as `¬ collinear(A, B, C)`;
+we recognize the shape and emit a single-word `noncollinear(…)` to
+match the surface notation. Falls through to the default `Not`
+printer when the argument isn't a `Collinear` application. -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Not)
+  | _, #[arg] => do
+    guard <| arg.isAppOfArity ``Geometry.Theory.Collinear 1
+    let setExpr := arg.getArg! 0
+    let some elems := finsetLiteralElems setExpr #[] | failure
+    if elems.size = 0 then failure
+    let texs ← elems.mapM latexPP
+    let inner := LatexData.intercalate ", " texs
+    return LatexData.atomString "\\operatorname{noncollinear}\\," ++ inner
 
 -- Extract the line from collinearity
 noncomputable def Collinear.line {points : Finset Point} (h : Collinear points) : Line := Classical.choose h

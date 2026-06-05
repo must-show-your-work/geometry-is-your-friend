@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Geometry Is Your Friend</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./scripts/card.css?v=2">
+<style>
+/* Cover-page layout. Shares the editorial palette + dark-mode plumbing
+   from card.css; only adds the centered hero + two large viewer cards. */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  font-family: "Fraunces", Georgia, serif;
+  color: var(--ink); background: var(--paper);
+}
+.cover {
+  min-height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 80px 32px 48px;
+  gap: 56px;
+}
+.cover h1 {
+  margin: 0;
+  font: 500 56px/1.05 "Fraunces", Georgia, serif;
+  letter-spacing: -0.02em;
+  text-align: center;
+  max-width: 18em;
+}
+.cover .sub {
+  margin: 12px 0 0;
+  font: italic 18px/1.4 "Fraunces", Georgia, serif;
+  color: var(--ink-soft);
+  text-align: center;
+  max-width: 36em;
+}
+.viewers {
+  display: grid; gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  width: 100%; max-width: 920px;
+}
+.viewer-card {
+  display: block;
+  padding: 28px 32px 30px;
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-deep);
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.viewer-card:hover {
+  border-color: var(--ink-ghost);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -16px rgba(28, 20, 16, 0.25);
+}
+body.dark-mode .viewer-card:hover {
+  box-shadow: 0 12px 24px -16px rgba(0, 0, 0, 0.6);
+}
+.viewer-card .kicker {
+  font: 500 11px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.viewer-card h2 {
+  margin: 6px 0 8px;
+  font: 500 26px/1.15 "Fraunces", Georgia, serif;
+  letter-spacing: -0.012em;
+}
+.viewer-card p {
+  margin: 0;
+  font: 14px/1.5 "Fraunces", Georgia, serif;
+  color: var(--ink-muted);
+}
+.footer {
+  margin-top: auto;
+  font: italic 12px/1.4 "Fraunces", Georgia, serif;
+  color: var(--ink-ghost);
+  text-align: center;
+}
+.footer a { color: var(--ink-muted); }
+
+.mode-toggle {
+  position: fixed; top: 14px; right: 18px;
+  font: 500 11px/1 "JetBrains Mono", monospace;
+  background: var(--paper); border: 1px solid var(--paper-deep);
+  border-radius: 3px; color: var(--ink-muted); cursor: pointer;
+  padding: 6px 10px;
+}
+.mode-toggle:hover { color: var(--accent); border-color: var(--ink-ghost); }
+</style>
+</head>
+<body>
+<button id="modeToggle" class="mode-toggle" type="button" title="toggle light/dark (Shift+D)">◐ dark</button>
+
+<main class="cover">
+  <header>
+    <h1>Geometry Is Your Friend</h1>
+    <p class="sub">A Lean 4 formalization of Greenberg's <em>Euclidean and Non-Euclidean Geometries</em>, with an editorial atlas attached.</p>
+  </header>
+
+  <nav class="viewers" aria-label="viewers">
+    <a class="viewer-card" href="./scripts/toc.html">
+      <div class="kicker">§ atlas</div>
+      <h2>Table of contents</h2>
+      <p>Browse every formalized proposition / lemma / theorem in book order. Statement, figure, and proof side-by-side with the editorial commentary.</p>
+    </a>
+    <a class="viewer-card" href="./scripts/graph.html">
+      <div class="kicker">§ atlas</div>
+      <h2>Dependency graph</h2>
+      <p>Same cards arranged by their citation graph — see how each result builds on its predecessors. Click a card to drill in via the toc viewer.</p>
+    </a>
+  </nav>
+
+  <div class="footer">
+    Built from <a href="https://github.com/must-show-your-work/geometry-is-your-friend">must-show-your-work/geometry-is-your-friend</a>.
+  </div>
+</main>
+
+<script>
+// Dark mode — shares the `atlas.mode` localStorage key with the
+// toc + graph viewers so toggle state persists across the index.
+const MODE_KEY = 'atlas.mode';
+function applyMode(mode) {
+  document.body.classList.toggle('dark-mode', mode === 'dark');
+  const btn = document.getElementById('modeToggle');
+  if (btn) btn.textContent = mode === 'dark' ? '◑ light' : '◐ dark';
+}
+function loadMode() {
+  try { return localStorage.getItem(MODE_KEY) || 'light'; } catch { return 'light'; }
+}
+function toggleMode() {
+  const next = loadMode() === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem(MODE_KEY, next); } catch {}
+  applyMode(next);
+}
+applyMode(loadMode());
+document.getElementById('modeToggle').addEventListener('click', toggleMode);
+window.addEventListener('keydown', ev => {
+  if (ev.shiftKey && (ev.key === 'D' || ev.key === 'd') &&
+      !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) {
+    ev.preventDefault();
+    toggleMode();
+  }
+});
+</script>
+</body>
+</html>

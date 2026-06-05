@@ -25,6 +25,7 @@ subprocess started) so re-running after a touched-source edit only
 spends time on the actually-changed files.
 """
 from __future__ import annotations
+import re
 import shutil
 import subprocess
 import sys
@@ -42,20 +43,55 @@ SHELL = shutil.which("bash") or shutil.which("sh")
 if SHELL is None:
     sys.exit("run_dumptactics: no bash/sh on PATH")
 
-# Per-subprocess virtual-memory cap in KB. 12 GB is comfortably above
-# a Mathlib import + Geometry elaboration but well under the box's
-# total RAM, so a runaway gets killed instead of swap-thrashing the
-# whole system.
-ULIMIT_V_KB = 12_000_000
+MEMORY_MAX = "8G"
+
+
+# Top-level keywords that introduce something `DumpTactics` might
+# actually want to extract. Files with none of these are umbrella
+# files (just `import …` lines + `namespace`/`open`/`end`) and have
+# no decls to dump — running them through SubVerso's frontend
+# re-elab burns the entire import closure for zero output, and on
+# heavy umbrellas (Ch2.Prop, Ch3.Prop) consistently blows past the
+# vmem cap with "failed to create thread".
+_DECL_KW = re.compile(
+    r"^\s*"
+    r"(?:@\[[^\]]+\]\s*)*"            # optional attribute(s)
+    r"(?:public\s+|private\s+|protected\s+|noncomputable\s+|unsafe\s+|partial\s+)*"
+    r"(?:def|theorem|lemma|example|axiom|structure|inductive|"
+    r"class|instance|abbrev|opaque|atlas\s+\S+)\b",
+    re.MULTILINE,
+)
+
+
+def has_decls(path: Path) -> bool:
+    """Cheap scan for any decl keyword. Misses macros / syntax / elab
+    declarations but those don't carry tactic content anyway. False
+    means "skip — pure umbrella"."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True  # fail-open: if we can't read it, let DumpTactics try
+    return bool(_DECL_KW.search(text))
 
 
 def discover_modules() -> list[str]:
-    """Return dotted module names for every `Geometry/**.lean` file."""
+    """Return dotted module names for every `Geometry/**.lean` file
+    that carries at least one decl. Pure-umbrella files (just
+    `import …` chains) are skipped — see `has_decls`."""
     out: list[str] = []
+    skipped: list[str] = []
     for p in GEO_DIR.rglob("*.lean"):
         rel = p.relative_to(ROOT)
         dotted = str(rel.with_suffix("")).replace("/", ".")
-        out.append(dotted)
+        if has_decls(p):
+            out.append(dotted)
+        else:
+            skipped.append(dotted)
+    if skipped:
+        print(f"[run_dumptactics] skipping {len(skipped)} umbrella "
+              f"module(s) with no decls: {', '.join(skipped[:6])}"
+              f"{' …' if len(skipped) > 6 else ''}",
+              flush=True)
     return sorted(out)
 
 
@@ -85,10 +121,22 @@ def run_one(mod: str, idx: int, total: int) -> int:
     """Spawn `lake exe dumptactics MOD` in a niced/ulimited subprocess.
     Returns the exit code (non-zero ≠ fatal here; we just log and move
     on so one bad module doesn't block the rest)."""
+    # Cap RSS (resident memory) via a transient systemd user-scope
+    # cgroup. `ulimit -v` (vmem) was the wrong knob — Lean mmaps ~12 G
+    # of olean files just to load the closure, and the kernel counts
+    # the mapping against VmSize even though most pages are clean
+    # file-backed and never resident. Switching to `MemoryMax` (RSS)
+    # lets Lean keep its 12 G address-space reservation; the kernel
+    # evicts cold olean pages under pressure and pagefaults them
+    # back in when the elaborator dereferences them. The trade-off
+    # is disk I/O, not crashes. `MemorySwapMax=0` keeps everything
+    # off swap so RSS reflects true working-set.
     cmd = (
-        f"ulimit -v {ULIMIT_V_KB} && "
-        f"nice -n 19 ionice -c 3 "
-        f"env LEAN_NUM_THREADS=1 lake env lean --run scripts/DumpTactics.lean {mod}"
+        f"systemd-run --user --scope --quiet "
+        f"-p MemoryMax={MEMORY_MAX} -p MemorySwapMax=0 "
+        f"-- nice -n 19 ionice -c 3 "
+        f"env LEAN_NUM_THREADS=1 MALLOC_ARENA_MAX=2 "
+        f"lake env lean --run scripts/DumpTactics.lean {mod}"
     )
     print(f"[run_dumptactics] [{idx}/{total}] {mod}", flush=True)
     r = subprocess.run(cmd, shell=True, executable=SHELL, cwd=ROOT)

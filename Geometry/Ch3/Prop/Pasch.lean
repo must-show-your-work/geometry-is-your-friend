@@ -1,24 +1,15 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
-import Geometry.Theory
+
 import Geometry.Theory.Axioms
+import Geometry.Theory.Distinct
+import Geometry.Theory.Interpendices.B
+
 import Geometry.Tactics
 
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
 import Geometry.Ch3.Prop.B4iii
-import Geometry.Ch3.Prop.P2
-import Geometry.Ch3.Prop.P3
-import Geometry.Ch3.Prop.P4
-import Geometry.Ch3.Ex.Betweenness.Ex1
-import Geometry.Theory.Distinct
-import Geometry.Theory.Interpendices.A
-import Geometry.Theory.Interpendices.B
-import Geometry.Theory.Forgetting
-import Geometry.Construction.DSL
-import Geometry.Construction.Syntax
-import Geometry.Construction.Lowering
+
 import Geometry.Construction.AtlasField
 import Geometry.Construction.AtlasTactic
 import Atlas
@@ -29,7 +20,6 @@ open Set
 open Geometry.Theory
 open Geometry.Ch2.Prop
 open Geometry.Ch3.Prop
-open Geometry.Ch3.Ex
 open Atlas
 
 
@@ -67,9 +57,6 @@ another side."
     title "Pasch's Theorem"
     index 1
     caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L."
-    
-    
-
 
 atlas theorem 3.0 "Pasch's Theorem"
   {A B C : Point} {L : Line} {distinctABC : distinct A B C} {AXB : A - X - B}
@@ -78,8 +65,6 @@ atlas theorem 3.0 "Pasch's Theorem"
   (C off L -> ¬((L intersects segment A C) ∧ (L intersects segment B C))) := by
     comment "mise en place"
     separate at distinctABC
-    -- Here is a place where I might want to add a temporary constraint to the line; `assert segment A B = segment B C`
-    -- and show the degenerate diagram as a result
     clearly (segment A B : Line) ≠ (segment B C : Line) := by
       idea "if AB = BC, then ABC are collinear, which is a contradiction"
       have colABC : collinear A B C := by
@@ -89,12 +74,14 @@ atlas theorem 3.0 "Pasch's Theorem"
         · obvious
         · obvious
         · rw [PeqC, SegABeqSegBC]; obvious
+      auxillary { assert collinear A B C }
       contradiction
     clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (via lemma 2.0.12)
     clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (via lemma 2.0.12)
     clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (via lemma 2.0.12)
     quoting (1) "Either C lies on L or it does not; if it does, the theorem holds (law the excluded middle)"
     clearly C off L := by
+      auxillary { assert incident C L }
       have ConAC : C on segment A C := obvious
       have CinInt : C ∈ L ∩ segment A C := obvious
       have LintersectsAC : L intersects segment A C := ⟨C, ConL, ConAC⟩
@@ -104,6 +91,7 @@ atlas theorem 3.0 "Pasch's Theorem"
     quoting (2) "A and B do not lie on L," ...
     comment "Author asserts without proof, but it is obvious that these result in true instances for Pasch."
     clearly A off L := by
+      auxillary { assert incident A L }
       constructor
       · left ; have AonAB : A on segment A C := obvious
         exact ⟨A, AonL, AonAB⟩
@@ -117,6 +105,7 @@ atlas theorem 3.0 "Pasch's Theorem"
         separate at dAXB
         contradiction
     clearly B off L := by
+      auxillary { assert incident B L }
       idea "same as above"
       constructor
       · right ; have BonBC : B on segment B C := obvious

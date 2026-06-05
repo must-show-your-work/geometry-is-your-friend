@@ -57,7 +57,10 @@ def tokenClass : Token.Kind → String
   | .const ..            => "lean-const"    -- reference to a constant
   | .anonCtor ..         => "lean-ctor"
   | .var ..              => "lean-var"
-  | .str _               => "lean-str"
+  | .str ..              => "lean-str"
+  | .delim ..            => "lean-delim"
+  | .separator ..        => "lean-sep"
+  | .bracket ..          => "lean-bracket"
   | .option ..           => "lean-opt"
   | .docComment          => "lean-doc"
   | .sort _              => "lean-sort"
@@ -66,6 +69,13 @@ def tokenClass : Token.Kind → String
   | .levelConst _        => "lean-lvl"
   | .moduleName _        => "lean-mod"
   | .withType _          => "lean-typed"
+  | .operator ..         => "lean-op"
+  | .commentDelim        => "lean-comment-delim"
+  | .lineComment         => "lean-comment"
+  | .blockComment        => "lean-comment"
+  | .num ..              => "lean-num"
+  | .char ..             => "lean-char"
+  | .wildcard ..         => "lean-wildcard"
   | .unknown             => "lean-unk"
 
 /-- Walk a `Highlighted` tree, emitting HTML. Tactic spans and
