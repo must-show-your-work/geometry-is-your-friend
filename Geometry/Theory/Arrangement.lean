@@ -21,6 +21,10 @@ structure Arrangement (pts : List Point) : Prop where
     i.val < j.val → j.val < k.val →
     Between (pts.get i) (pts.get j) (pts.get k)
 
+macro_rules (kind := Geometry.Theory.dashChain)
+  | `($a:term - $b:term - $c:term - $d:term $[- $rest:term]*) =>
+      `(Arrangement [$a, $b, $c, $d, $rest,*])
+
 theorem Arrangement.tri {pts : List Point} (arr : Arrangement pts)
     (i j k : Nat) (hi : i < pts.length) (hj : j < pts.length) (hk : k < pts.length)
     (hij : i < j) (hjk : j < k) :
@@ -1039,5 +1043,7 @@ atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P
   · right; right
     exact via proposition 3.3.i ⟨ABP, h₂⟩
 
+macro_rules (kind := obviousArrangement)
+  | `(tactic| obvious_arrangement) => `(tactic| organize_auto)
 
 end Geometry.Theory
