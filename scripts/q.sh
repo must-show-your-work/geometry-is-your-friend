@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Wrapper around the Kuzu DB:
-#   `q` (no args)   — list every query with its one-line description
-#   `q <name>`      — print the query's legend, then run it
+#   `q` (no args)            — list every query with its one-line description
+#   `q <name>`               — print the query's legend, then run it
+#   `q <name> <arg1> [arg2…]` — same, with $1/$2/… substituted in the
+#                              query body before execution
 #
 # Runs the query via the kuzu Python driver in the project venv. The `kuzu`
 # CLI binary (in the Nix dev shell) would also work, but the Python path
@@ -39,5 +41,24 @@ awk '/^[[:space:]]*\/\//{
   print "  " $0; next
 } {exit}' "$file"
 printf "\n"
+
+# Argument substitution: any extra args after the query name are spliced
+# into the cypher body as $1/$2/… literal replacements. Used by
+# parameterized queries like `module_deps_of $1`. No substitution happens
+# when no extra args are passed, so non-parameterized queries are unaffected.
+shift
+if [ "$#" -gt 0 ]; then
+  rendered=$(mktemp /tmp/q-XXXXXX.cypher)
+  trap 'rm -f "$rendered"' EXIT
+  cp "$file" "$rendered"
+  i=1
+  for a in "$@"; do
+    # Quote sed delimiters in the argument so module names with '.' work.
+    esc=$(printf '%s' "$a" | sed 's/[\/&]/\\&/g')
+    sed -i "s/\$${i}\b/${esc}/g" "$rendered"
+    i=$((i + 1))
+  done
+  file="$rendered"
+fi
 
 exec .venv/bin/python scripts/run_query.py "$file" "$DB_PATH"

@@ -92,5 +92,8 @@ toc-view port="8765":
 # Run a bundled query, or list them when called with no name.
 #   `just q`              — list all queries with one-line descriptions
 #   `just q sorry_blocked`— print the query's legend, then run it
-q name="":
-    @./scripts/q.sh "{{name}}"
+#   `just q module_deps_of Geometry.Ch3.Prop.P5` — extra args are spliced
+#                          into the cypher body as $1/$2/… replacements,
+#                          for parameterized queries.
+q name="" *args="":
+    @./scripts/q.sh "{{name}}" {{args}}
