@@ -418,6 +418,11 @@ def IntersectsSome.unexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $L $M) => `($L intersects $M)
   | _ => throw ()
 
+@[app_unexpander Intersects]
+def Intersects.unexpander : Lean.PrettyPrinter.Unexpander
+  | `($_ $L $M $X) => `($L intersects $M at $X)
+  | _ => throw ()
+
 /-! ## LeanTeX rules — `Intersects L M X` / `IntersectsSome L M` -/
 
 open LeanTeX in
