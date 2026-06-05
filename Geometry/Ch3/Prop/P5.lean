@@ -1,22 +1,14 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
-import Geometry.Theory
+
 import Geometry.Theory.Axioms
+import Geometry.Theory.Distinct
+import Geometry.Theory.Interpendices.B
+import Geometry.Theory.Arrangement
+
 import Geometry.Tactics
 
-import Geometry.Ch2.Prop
-import Geometry.Ch3.Prop.P1
-import Geometry.Ch3.Prop.B4iii
-import Geometry.Ch3.Prop.P2
-import Geometry.Ch3.Prop.P3
-import Geometry.Ch3.Prop.P4
-import Geometry.Ch3.Ex.Betweenness.Ex1
-import Geometry.Theory.Distinct
-import Geometry.Theory.Interpendices.A
-import Geometry.Theory.Interpendices.B
-import Geometry.Theory.Interpendices.C
-import Geometry.Theory.Forgetting
 import Geometry.Construction.AtlasField
 import Atlas
 
@@ -24,9 +16,7 @@ namespace Geometry.Ch3.Prop
 
 open Set
 open Geometry.Theory
-open Geometry.Ch2.Prop
 open Geometry.Ch3.Prop
-open Geometry.Ch3.Ex
 open Atlas
 
 
