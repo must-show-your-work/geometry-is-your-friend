@@ -167,6 +167,66 @@ def transitive_reduce(edges: list[tuple[str, str]]) -> list[tuple[str, str]]:
     return [(u, v) for (u, v) in edges if (u, v) not in redundant]
 
 
+# ---------------------------------------------------------------------------
+# Per-decl centrality scores. Computed on the filtered+reduced edge set so
+# they reflect "importance in the viewer-visible graph" rather than a literal
+# term-graph count (which would inflate atmospheric utilities). Extend the
+# returned dict with new metrics — `betweenness`, `closeness`, etc. — as the
+# viewer needs them.
+#
+# PageRank convention: edge u→v means "u USES v", so v is important if many
+# important decls point to it. Standard power iteration on the reversed
+# adjacency; dangling-mass uniformly redistributed each step. Score sums to 1.
+# ---------------------------------------------------------------------------
+def compute_centrality(
+    node_ids: list[str],
+    edges: list[tuple[str, str]],
+    *,
+    damping: float = 0.85,
+    max_iters: int = 200,
+    eps: float = 1e-8,
+) -> dict[str, dict[str, float]]:
+    n = len(node_ids)
+    if n == 0:
+        return {}
+
+    id_set = set(node_ids)
+    in_neighbors: dict[str, list[str]] = {d: [] for d in node_ids}
+    out_deg: dict[str, int] = {d: 0 for d in node_ids}
+    in_deg: dict[str, int] = {d: 0 for d in node_ids}
+    for s, t in edges:
+        if s not in id_set or t not in id_set:
+            continue
+        in_neighbors[t].append(s)
+        out_deg[s] += 1
+        in_deg[t] += 1
+
+    score: dict[str, float] = {d: 1.0 / n for d in node_ids}
+    teleport = (1.0 - damping) / n
+    for _ in range(max_iters):
+        dangling = sum(score[d] for d in node_ids if out_deg[d] == 0)
+        dangling_share = damping * dangling / n
+        new_score: dict[str, float] = {d: teleport + dangling_share
+                                       for d in node_ids}
+        for d in node_ids:
+            for u in in_neighbors[d]:
+                if out_deg[u] > 0:
+                    new_score[d] += damping * score[u] / out_deg[u]
+        delta = sum(abs(new_score[d] - score[d]) for d in node_ids)
+        score = new_score
+        if delta < eps:
+            break
+
+    return {
+        d: {
+            "pagerank": score[d],
+            "in_degree": in_deg[d],
+            "out_degree": out_deg[d],
+        }
+        for d in node_ids
+    }
+
+
 def main() -> None:
     full = "--full" in sys.argv[1:]
     skip_reduce = "--no-reduce" in sys.argv[1:]
@@ -416,6 +476,13 @@ def main() -> None:
         nodes = nodes_kept
     else:
         node_dropped = 0
+
+    centrality = compute_centrality(
+        [n["data"]["id"] for n in nodes],
+        final,
+    )
+    for n in nodes:
+        n["data"]["centrality"] = centrality.get(n["data"]["id"], {})
 
     OUT.write_text(json.dumps({"nodes": nodes, "edges": edges}, indent=2))
 
