@@ -1043,5 +1043,7 @@ atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P
   · right; right
     exact via proposition 3.3.i ⟨ABP, h₂⟩
 
+macro_rules (kind := obviousArrangement)
+  | `(tactic| obvious_arrangement) => `(tactic| organize_auto)
 
 end Geometry.Theory

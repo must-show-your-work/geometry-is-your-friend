@@ -28,6 +28,8 @@ call regardless of whether `done` or `tauto` ultimately closes.
 
 initialize Lean.registerTraceClass `obvious
 
+syntax (name := obviousArrangement) "obvious_arrangement" : tactic
+
 -- Dump-deps tracking is opted in via the env var `GIYF_DUMP_DEPS=1`,
 -- read at tactic runtime in `dumpObviousUse` below. Env var instead of
 -- a Lean option because custom options can't be set via Lake's `-D` flag
@@ -145,6 +147,7 @@ private def obviousStages : TacticM (Array ObviousStage) := do
   let decideT ← `(tactic| decide)
   let tautoT ← `(tactic| tauto)
   let aesopT ← `(tactic| aesop)
+  let obviousArr ← `(tactic| obvious_arrangement)
   -- Cheap closers tried before tauto: done (simp_all already closed),
   -- assumption (hypothesis match), decide (decidable-instance reduction).
   -- Each is fast-to-fail when inapplicable, so paying them per-stage is cheap.
@@ -188,7 +191,11 @@ private def obviousStages : TacticM (Array ObviousStage) := do
       closers := cheapThenTauto },
     { name := "Finset ext",
       preamble := finsetExt,
-      closers := cheapThenTauto }
+      closers := cheapThenTauto },
+    { name := "arrangement",
+      applies := goalMentions (.mkStr3 "Geometry" "Theory" "Arrangement"),
+      preamble := obviousArr,
+      closers := #[("done", doneT)] }
   ]
 
 open Lean Lean.Elab.Tactic in
