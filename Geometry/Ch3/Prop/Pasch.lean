@@ -60,9 +60,6 @@ another side."
     title "Pasch's Theorem"
     index 1
     caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L."
-    
-    
-
 
 atlas theorem 3.0 "Pasch's Theorem"
   {A B C : Point} {L : Line} {distinctABC : distinct A B C} {AXB : A - X - B}
