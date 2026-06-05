@@ -671,8 +671,9 @@ document.getElementById('tocList').addEventListener('click', ev => {
 // ${atlas_number}` form the rest of the viewer uses (toc-item-id,
 // ref-chip-id). Clicking a node navigates the toc to that decl.
 let NB_CY = null;
-const NB_FONT_MIN = 10;
-const NB_FONT_MAX = 96;
+const NB_FONT_MIN = 10 * 2/3;
+const NB_FONT_MAX = 96 * 2/3;
+const NB_PADDING_RATIO = 0.25;
 const NB_WRAP_RATIO = 18;
 
 function nbReadVar(name, fallback) {
@@ -723,7 +724,7 @@ function buildNeighborhoodStyle() {
         'line-height': 1.15,
         'width': 'label',
         'height': 'label',
-        'padding': 2,
+        'padding': 'data(padding)',
       },
     },
     { selector: 'node[?decl][decl.atlas_kind = "axiom"]',
@@ -788,6 +789,7 @@ function initNeighborhoodCy() {
     const norm = Math.sqrt((n.data.pagerank - minPr) / range);
     const fontSize = NB_FONT_MIN + norm * (NB_FONT_MAX - NB_FONT_MIN);
     n.data.fontSize = fontSize;
+    n.data.padding = fontSize * NB_PADDING_RATIO;
     n.data.textMaxWidth = fontSize * NB_WRAP_RATIO;
     n.data.label = labelFor(n.data.decl);
   }
