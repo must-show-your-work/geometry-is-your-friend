@@ -80,9 +80,6 @@ atlas theorem 3.0 "Pasch's Theorem"
     separate at distinctABC
     clearly (segment A B : Line) ≠ (segment B C : Line) := by
       idea "if AB = BC, then ABC are collinear, which is a contradiction"
-      auxillary {
-        -- assert AB = BC
-      }
       have colABC : collinear A B C := by
         use (segment A B : Line)
         intro P PisABorC
@@ -90,12 +87,14 @@ atlas theorem 3.0 "Pasch's Theorem"
         · obvious
         · obvious
         · rw [PeqC, SegABeqSegBC]; obvious
+      auxillary { assert collinear A B C }
       contradiction
     clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (via lemma 2.0.12)
     clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (via lemma 2.0.12)
     clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (via lemma 2.0.12)
     quoting (1) "Either C lies on L or it does not; if it does, the theorem holds (law the excluded middle)"
     clearly C off L := by
+      auxillary { assert incident C L }
       have ConAC : C on segment A C := obvious
       have CinInt : C ∈ L ∩ segment A C := obvious
       have LintersectsAC : L intersects segment A C := ⟨C, ConL, ConAC⟩
@@ -105,6 +104,7 @@ atlas theorem 3.0 "Pasch's Theorem"
     quoting (2) "A and B do not lie on L," ...
     comment "Author asserts without proof, but it is obvious that these result in true instances for Pasch."
     clearly A off L := by
+      auxillary { assert incident A L }
       constructor
       · left ; have AonAB : A on segment A C := obvious
         exact ⟨A, AonL, AonAB⟩
@@ -118,6 +118,7 @@ atlas theorem 3.0 "Pasch's Theorem"
         separate at dAXB
         contradiction
     clearly B off L := by
+      auxillary { assert incident B L }
       idea "same as above"
       constructor
       · right ; have BonBC : B on segment B C := obvious

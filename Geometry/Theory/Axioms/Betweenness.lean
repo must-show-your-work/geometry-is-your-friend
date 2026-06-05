@@ -5,6 +5,7 @@ import Geometry.Theory.Distinct
 import Geometry.Tactics.Obvious
 import Geometry.Construction.AtlasField
 import Atlas
+import LeanTeX
 
 /-!
 # Betweenness axioms
@@ -152,6 +153,36 @@ def Splits (L : Line) (A B : Point) : Prop := ¬(Guards A B L)
 
 notation:20 L " splits " A " and " B => Splits L A B
 notation:20 L " guards " A " and " B => Guards A B L
+
+/-! ## LeanTeX rules — render `Splits` / `Guards` as the verbal
+notation forms (`L splits A and B`, `L guards A and B`) that match
+the surface syntax. Argument-order quirk: `Splits` takes `(L A B)`
+but `Guards` takes `(A B L)` (the notation flips them); the rules
+below extract args by position and render the line first either way. -/
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Splits)
+  | _, #[l, a, b] => do
+    let pl ← latexPP l
+    let pa ← latexPP a
+    let pb ← latexPP b
+    return pl.protectRight 20
+        ++ LatexData.atomString " \\text{ splits } "
+        ++ pa.protect 20
+        ++ LatexData.atomString " \\text{ and } "
+        ++ pb.protectLeft 20
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.Guards)
+  | _, #[a, b, l] => do
+    let pl ← latexPP l
+    let pa ← latexPP a
+    let pb ← latexPP b
+    return pl.protectRight 20
+        ++ LatexData.atomString " \\text{ guards } "
+        ++ pa.protect 20
+        ++ LatexData.atomString " \\text{ and } "
+        ++ pb.protectLeft 20
 
 /-- `¬(L splits A and B) ↔ L guards A and B`. Tagged `@[push, simp]` so the
     `push Not` tactic (and therefore `by_contra!`) automatically converts the
