@@ -2,23 +2,12 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
 
--- Theory leaves Pasch actually uses (replacing the `Geometry.Theory`
--- umbrella, which also pulled in `Extending` + `Forgetting` for no benefit
--- here — `forgetting` is only used in P4):
---   * Axioms          → B.1, B.4.ii (via Axioms.Betweenness)
---   * Distinct        → `distinct A B C`, `separate at …`
---   * Interpendices.B → 2.0.12, 2.0.22, 3.7.2, 3.7.3 (transitively pulls
---                       Ch2.Prop, Interpendices.A, the Set chain)
 import Geometry.Theory.Axioms
 import Geometry.Theory.Distinct
 import Geometry.Theory.Interpendices.B
 
 import Geometry.Tactics
 
--- The B.4.iii corollary lives in its own Ch3 file. The Ch3 sibling
--- propositions (P1–P4) and Ex1 aren't referenced from this proof, so
--- they're omitted to keep the per-subprocess import closure small in
--- `scripts/run_dumptactics.py`.
 import Geometry.Ch3.Prop.B4iii
 
 import Geometry.Construction.DSL
