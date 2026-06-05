@@ -21,6 +21,10 @@ structure Arrangement (pts : List Point) : Prop where
     i.val < j.val → j.val < k.val →
     Between (pts.get i) (pts.get j) (pts.get k)
 
+macro_rules (kind := Geometry.Theory.dashChain)
+  | `($a:term - $b:term - $c:term - $d:term $[- $rest:term]*) =>
+      `(Arrangement [$a, $b, $c, $d, $rest,*])
+
 theorem Arrangement.tri {pts : List Point} (arr : Arrangement pts)
     (i j k : Nat) (hi : i < pts.length) (hj : j < pts.length) (hk : k < pts.length)
     (hij : i < j) (hjk : j < k) :
