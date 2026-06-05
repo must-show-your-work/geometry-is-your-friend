@@ -3,7 +3,6 @@ import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Insert
 
 import Geometry.Theory.Axioms
-import Geometry.Theory.Distinct
 import Geometry.Theory.Interpendices.B
 import Geometry.Theory.Arrangement
 
