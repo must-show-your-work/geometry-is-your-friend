@@ -55,7 +55,10 @@ atlas proposition 3.6 "If A - B - C, then B cuts line AC into two parts"
           · exfalso
             rcases PinSegBC with BPC | rfl | rfl
             · idea "this essentially argues that the points are arranged A - P - B - P - C; which is absurd"
-              sorry
+              have a1 : A - B - P - C := by sorry -- should be obvious
+              have a2 : A - P - B - C := by sorry -- should be obvious
+              have ABP : A - B - P := by arrangement a1
+              exact via lemma 1.0.19 ⟨BPA.symm, ABP⟩
             · exact via lemma 1.0.18 ⟨BPA, BPA⟩
             · exact via lemma 1.0.20 ⟨BPA, ABC⟩
           · obvious
@@ -79,7 +82,8 @@ atlas proposition 3.6 "If A - B - C, then B cuts line AC into two parts"
         exact this
       · obvious
       · obvious
-      · sorry
+      · by_contra! hNeg
+        sorry
     · intro P PinAC
       sorry
 
