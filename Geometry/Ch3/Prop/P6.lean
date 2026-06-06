@@ -22,7 +22,7 @@ open Atlas
 
 atlas commentary := by
   via proposition 3.6
-  page 0
+  page 115
   name "Line cuts"
   preface "Given A - B - C. Then B is the only point common to rays BA and BC, and ray AB = ray AC"
 
@@ -49,7 +49,24 @@ atlas proposition 3.6 "If A - B - C, then B cuts line AC into two parts"
   constructor
   · apply Line.eq_of_subset
     · intro P ⟨PinBA, PinBC⟩
-      sorry
+      rcases PinBA with PinSegBA | PinExtBA
+      · rcases PinBC with PinSegBC | PinExtBC
+        · rcases PinSegBA with BPA | rfl | rfl
+          · exfalso
+            rcases PinSegBC with BPC | rfl | rfl
+            · idea "this essentially argues that the points are arranged A - P - B - P - C; which is absurd"
+              sorry
+            · exact via lemma 1.0.18 ⟨BPA, BPA⟩
+            · exact via lemma 1.0.20 ⟨BPA, ABC⟩
+          · obvious
+          · exfalso
+            rcases PinSegBC with BPC | rfl | rfl
+            · exact via lemma 1.0.20 ⟨ABC, BPC.symm⟩
+            all_goals separate at dABC; contradiction
+        · sorry
+      · rcases PinBC with PinSegBC | PinExtBC
+        · sorry
+        · sorry
     · intro P PisB
       obvious
   · apply Subset.antisymm
