@@ -49,6 +49,10 @@ atlas proposition 3.6 "If A - B - C, then B cuts line AC into two parts"
   constructor
   · apply Line.eq_of_subset
     · intro P ⟨PinBA, PinBC⟩
+      fixme "This is _misery_, some kind of table-based approach is what's needed, 'here are all the cases in a matrix,
+fill them in' kind of thing"
+      todo "Additionally, we need something like a 'find all possible valid arrangments under the current assumption for
+all collinear points'"
       rcases PinBA with PinSegBA | PinExtBA
       · rcases PinBC with PinSegBC | PinExtBC
         · rcases PinSegBA with BPA | rfl | rfl
@@ -66,10 +70,26 @@ atlas proposition 3.6 "If A - B - C, then B cuts line AC into two parts"
             rcases PinSegBC with BPC | rfl | rfl
             · exact via lemma 1.0.20 ⟨ABC, BPC.symm⟩
             all_goals separate at dABC; contradiction
-        · sorry
-      · rcases PinBC with PinSegBC | PinExtBC
-        · sorry
-        · sorry
+        obtain ⟨BCP, PneB, PneC⟩ := PinExtBC
+        · rcases PinSegBA with BPA | rfl | rfl
+          · exfalso
+            have : A - P - B - C := by sorry
+            have : P - B - C := by arrangement this
+            exact via lemma 1.0.19 ⟨this, BCP.symm⟩
+          · obvious
+          · exfalso
+            exact via lemma 1.0.19 ⟨ABC, BCP.symm⟩
+      · obtain ⟨BAP, PneB, PneA⟩ := PinExtBA
+        rcases PinBC with PinSegBC | PinExtBC
+        · rcases PinSegBC with BCP | rfl | rfl
+          · exfalso ; sorry
+          · obvious
+          · exfalso ; sorry
+        · exfalso
+          obtain ⟨BCP, PneB, PneC⟩ := PinExtBC
+          have : P - A - B - C := by sorry
+          have : P - B - C := by arrangement this
+          exact via lemma 1.0.19 ⟨this, BCP.symm⟩
     · intro P PisB
       obvious
   · apply Subset.antisymm
