@@ -59,10 +59,9 @@ all collinear points'"
           · exfalso
             rcases PinSegBC with BPC | rfl | rfl
             · idea "this essentially argues that the points are arranged A - P - B - P - C; which is absurd"
-              have a1 : A - B - P - C := by sorry -- should be obvious
-              have a2 : A - P - B - C := by sorry -- should be obvious
-              have ABP : A - B - P := by arrangement a1
-              exact via lemma 1.0.19 ⟨BPA.symm, ABP⟩
+              have : A - B - P - C := by sorry -- should be obvious
+              have : A - B - P := by arrangement this
+              exact via lemma 1.0.19 ⟨BPA.symm, this⟩
             · exact via lemma 1.0.18 ⟨BPA, BPA⟩
             · exact via lemma 1.0.20 ⟨BPA, ABC⟩
           · obvious
@@ -107,10 +106,25 @@ all collinear points'"
         exact this
       · obvious
       · obvious
-      · by_contra! hNeg
-        sorry
+      · have : A - B - C - P ∨ A - B - P - C := by sorry
+        rcases this with ABCP | ABPC
+        · have : A - C - P := by arrangement ABCP
+          obvious
+        · have : A - P - C := by arrangement ABPC
+          obvious
     · intro P PinAC
-      sorry
-
+      rcases PinAC with PinSegAC | PinExtAC
+      · rcases PinSegAC with APC | rfl | rfl
+        · have : A - P - B - C ∨  A - B - P - C := by sorry
+          rcases this with APBC | ABPC
+          · have : A - P - B := by arrangement APBC
+            obvious
+          · have : A - B - P := by arrangement ABPC
+            obvious
+        all_goals obvious
+      · obtain ⟨ACP, PneA, PneC⟩ := PinExtAC
+        have : A - B - C - P := obvious
+        have : A - B - P := by arrangement this
+        obvious
 
 end Geometry.Ch3.Prop
