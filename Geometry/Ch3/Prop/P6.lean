@@ -82,9 +82,14 @@ all collinear points'"
       · obtain ⟨BAP, PneB, PneA⟩ := PinExtBA
         rcases PinBC with PinSegBC | PinExtBC
         · rcases PinSegBC with BCP | rfl | rfl
-          · exfalso ; sorry
+          · exfalso
+            have : P - A - B - C := by sorry
+            fixme "honestly arrangement should just be able to directly close this goal by constructing the intermediate arrangement"
+            have : P - B - C := by arrangement this
+            exact via lemma 1.0.20 ⟨this, BCP.symm⟩
           · obvious
-          · exfalso ; sorry
+          · exfalso
+            exact via lemma 1.0.18 ⟨BAP, ABC⟩
         · exfalso
           obtain ⟨BCP, PneB, PneC⟩ := PinExtBC
           have : P - A - B - C := by sorry
