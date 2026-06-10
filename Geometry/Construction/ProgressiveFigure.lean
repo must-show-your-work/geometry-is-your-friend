@@ -176,15 +176,12 @@ private def renderAuxHtml (base addendum : DSL.Construction) :
   | .error msg => throwError s!"progressive figure: SVG parse failed: {msg}"
 
 /-- Hook implementation: for each tactic line in `seq`, save a panel
-widget showing the cumulative figure at that line.
-Returns `true` iff a DSL-authored base existed and widgets were saved
-(the dispatcher uses this to decide whether to fall back to the
-proof-state-driven path). -/
+widget showing the cumulative figure at that line. -/
 def saveProgressiveFigures
     (kind num : String) (declName : Name) (seq : Syntax) :
-    TacticM Bool := do
+    TacticM Unit := do
   let env ← getEnv
-  let some baseExpr := Atlas.baseIRExprFor env kind num | return false
+  let some baseExpr := Atlas.baseIRExprFor env kind num | return
   let base ← unsafe Meta.evalExpr DSL.Construction
     (mkConst ``DSL.Construction) baseExpr
   let addenda := addendaFor env declName
@@ -231,10 +228,8 @@ def saveProgressiveFigures
       (hash HtmlDisplayPanel.javascript)
       (return Json.mkObj [("html", Atlas.htmlToJson html)])
       stx
-  return true
 
 initialize do
-  Atlas.Refs.figureProgressionHookRef.set
-    (fun k n d s => discard <| saveProgressiveFigures k n d s)
+  Atlas.Refs.figureProgressionHookRef.set saveProgressiveFigures
 
 end Geometry.Construction
