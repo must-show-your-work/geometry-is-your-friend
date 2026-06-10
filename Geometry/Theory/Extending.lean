@@ -1,10 +1,3 @@
-/- The `extending` tactic: closes a `Collinear (insert a s)` or `Distinct (insert a s) (n+1)`
-   goal by finding a matching source in scope (`Collinear s` or `Distinct s n`) and
-   discharging the side condition (`a on c.line` for Collinear, `a ∉ s` for Distinct).
-
-   Under the Finset framework the side condition is a single decidable membership check,
-   which is what makes this tactic much simpler than its `List`-based predecessor. -/
-
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Card
