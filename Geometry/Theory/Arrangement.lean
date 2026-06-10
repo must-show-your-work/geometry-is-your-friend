@@ -1010,6 +1010,7 @@ atlas commentary := by
 atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P=B, or B-P-C"
   {A B C P : Point} (h₁ : A - B - C) (h₂ : A - P - C) :
     (A - P - B) ∨ (P = B) ∨ (B - P - C) := by
+  fixme "This should be in an interpendix"
   by_cases hPeqB : P = B
   · right; left; exact hPeqB
   obtain ⟨distinctABC, colABC, _⟩ := via axiom B.1 h₁
