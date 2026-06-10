@@ -131,10 +131,11 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
           -- rw [<- BAeqBC] at DonBC -- why doesn't this work?
 
           sorry
-      · constructor
-        todo "this argument is symmetric about AD, so a suffices is probably usable here?"
-        · sorry
-        · sorry
+      · suffices key : ∀ {B C : Point}, B - D - C → (ray A C guards B and D) by
+          exact ⟨key BDC, key BDC.symm⟩
+        intro B C BDC
+         
+        sorry
 
 
 end Geometry.Ch3.Prop
