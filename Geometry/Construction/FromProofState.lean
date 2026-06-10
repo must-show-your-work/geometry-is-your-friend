@@ -7,12 +7,13 @@ unrecognized is silently dropped — graceful degradation, the figure
 still renders the parts the classifier understood.
 -/
 
-import Geometry.Theory.Axioms
-import Geometry.Theory.Constructors
-import Geometry.Theory.Distinct
-import Geometry.Theory.Collinear
-import Geometry.Theory.Angle
+import Lean
 import Geometry.Construction.DSL
+
+-- Note: classifier matches types by full Name (single-backtick literal),
+-- NOT by `` ``Foo.bar `` (which would require importing the declaring
+-- module). This file is on the proof-state hook's path and must stay
+-- light to avoid a Tactics → … → Theory.Distinct → Tactics cycle.
 
 namespace Geometry.Construction.FromProofState
 
@@ -24,7 +25,7 @@ private def readPointName? (e : Expr) : MetaM (Option Lean.Name) := do
   unless e.isFVar do return none
   let decl ← e.fvarId!.getDecl
   let ty ← instantiateMVars decl.type
-  if ty.isConstOf ``Geometry.Theory.Point then
+  if ty.isConstOf `Geometry.Theory.Point then
     return some decl.userName
   return none
 
@@ -70,16 +71,16 @@ its components. -/
 private partial def classifyType (ty : Expr) : MetaM (Array Stmt) := do
   let ty ← instantiateMVars ty
   match ty.getAppFnArgs with
-  | (``Geometry.Theory.Between, #[a, b, c]) =>
+  | (`Geometry.Theory.Between, #[a, b, c]) =>
     let some args ← readPointArgs #[a, b, c] | return #[]
     return #[assertN "between" args]
-  | (``Geometry.Theory.Distinct, #[s, _n]) =>
+  | (`Geometry.Theory.Distinct, #[s, _n]) =>
     let some pts ← readFinsetPoints s | return #[]
     return #[assertN "distinct" pts]
-  | (``Geometry.Theory.Collinear, #[s]) =>
+  | (`Geometry.Theory.Collinear, #[s]) =>
     let some pts ← readFinsetPoints s | return #[]
     return #[assertN "collinear" pts]
-  | (``Geometry.Theory.OppositeRay, _) =>
+  | (`Geometry.Theory.OppositeRay, _) =>
     -- Skip for now — not a DSL primitive. A future pass can render
     -- opposite rays as a configuration anchor.
     return #[]
@@ -89,7 +90,7 @@ private partial def classifyType (ty : Expr) : MetaM (Array Stmt) := do
     let elt := args[4]!
     let container := args[3]!
     match container.getAppFnArgs with
-    | (``Geometry.Theory.LineThrough.through, #[b, c]) =>
+    | (`Geometry.Theory.LineThrough.through, #[b, c]) =>
       let some d ← readPointName? elt | return #[]
       let some nb ← readPointName? b | return #[]
       let some nc ← readPointName? c | return #[]
@@ -99,12 +100,12 @@ private partial def classifyType (ty : Expr) : MetaM (Array Stmt) := do
           [.name nb.toString, .name nc.toString]),
         assertN "incident" #[d.toString, lineName]
       ]
-    | (``Geometry.Theory.Ray.from_, #[a, b]) =>
+    | (`Geometry.Theory.Ray.from_, #[a, b]) =>
       let some p ← readPointName? elt | return #[]
       let some na ← readPointName? a | return #[]
       let some nb ← readPointName? b | return #[]
       return #[assertN "on_ray" #[p.toString, na.toString, nb.toString]]
-    | (``Geometry.Theory.Segment.between, #[a, b]) =>
+    | (`Geometry.Theory.Segment.between, #[a, b]) =>
       let some p ← readPointName? elt | return #[]
       let some na ← readPointName? a | return #[]
       let some nb ← readPointName? b | return #[]
@@ -130,7 +131,7 @@ def extract : MetaM Construction := do
   for decl in lctx do
     if decl.isImplementationDetail then continue
     let ty ← instantiateMVars decl.type
-    if ty.isConstOf ``Geometry.Theory.Point then
+    if ty.isConstOf `Geometry.Theory.Point then
       points := points.push decl.userName.toString
     else
       asserts := asserts ++ (← classifyType ty)
