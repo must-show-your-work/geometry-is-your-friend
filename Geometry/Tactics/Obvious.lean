@@ -286,6 +286,36 @@ elab "obvious" : tactic => do
       m!"all alternatives failed:\n{MessageData.joinSep rows m!"\n"}"
   throwError "obvious: no alternative closed the goal"
 
+open Lean Lean.Elab.Tactic Lean.Meta.Tactic.TryThis in
+elab tk:"obvious?" : tactic => do
+  try evalTactic (← `(tactic| intros)) catch _ => pure ()
+  try evalTactic (← `(tactic| normalize_eq)) catch _ => pure ()
+  let stages ← obviousStages
+  let original ← saveState
+  for stage in stages do
+    original.restore
+    let g ← getMainGoal
+    if !(← stage.applies g) then continue
+    let (preOk, _) ← tryTimed stage.preamble
+    if !preOk then continue
+    let postPreamble ← saveState
+    for (cName, cTac) in stage.closers do
+      postPreamble.restore
+      let (ok, _) ← tryTimed cTac
+      if ok then
+        if (← IO.getEnv "GIYF_DUMP_DEPS").isSome then
+          dumpObviousUse stage.name cName
+        let preFmt ← Lean.PrettyPrinter.ppTactic stage.preamble
+        let text ← if cName == "done" then
+            pure preFmt.pretty
+          else do
+            let cFmt ← Lean.PrettyPrinter.ppTactic cTac
+            pure s!"{preFmt.pretty}; {cFmt.pretty}"
+        addSuggestion tk { suggestion := text } (origSpan? := ← getRef)
+        return
+  original.restore
+  throwError "obvious?: no alternative closed the goal"
+
 /-- Term-position form: `(obvious : T)` desugars to `(by obvious : T)`. -/
 macro "obvious" : term => `(by obvious)
 
