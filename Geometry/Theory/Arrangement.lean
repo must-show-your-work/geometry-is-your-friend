@@ -15,6 +15,126 @@ open Geometry.Ch3.Prop
 open Geometry.Ch3.Ex
 open Atlas
 
+-- NOTE: This is a mostly vibed syntax for now; the underlying theory is something like "If you take the natural
+-- generalization of betweenness you get ordered lists of points. If you have a bunch of betweenness conditions, there 
+-- is some set of implied possible 'arrangements' of those points, and you might be able to deduce (via B-3 and 
+-- other similar facts) a bunch of other betweenness conditions that can be useful."
+--
+-- Practically there are a bunch of problems with it right now, owing to the nature of vibecoding.
+--
+-- 1. It has trouble constructing the initial arrangement without a good amount of handholding and an arcane API. This
+-- is mitigated presently through the `obvious` tactic which is itself a kitchen sink that needs working.
+-- 2. you end up with a lot of proofs that are essentially "Here are all the possible arrangements under the current
+-- Betweenness assumptions, rcases over them" which could be much more ergonomic.
+-- 3. If you have a B condition like A-B-C and C-B-Q, you currently can't automatically derive `A-Q-B-C ∨ Q-A-B-C` which
+-- are the two valid arrangements of those B conditions via any means I"ve tried. Nor a situation like `A-B-C, A-Q-B`
+-- giving `A-Q-B-C`
+--
+-- All this before we get into congruity and managing that information on top of this.
+--
+-- The goal of this should be the following:
+--
+-- A tactic like 'arranging all points' which looks at the current proofstate and finds
+-- 1. all points + all b conditions + all collinearity conditions (without b cons already present) + all
+-- distinctness/inequality conditions
+-- 2. gangs points into groups by collinearity
+-- 3. for each group, creates a hypo with all valid arrangements on it. if there are multiple valid arrangments, it
+-- creates a disjunction hypo that can be rcased over
+--
+-- a second tactic / extension of `by_exhaustion` which takes a arrangement disjunction and creates autonamed cases for
+-- each. So if you have the a hypo like `h : A-B-C-D ∨ A-C-B-D` then `by_exhaustion h` gives two cases with hypos named
+-- ABCD and ACBD
+--
+-- a tactic `arrange h into bcon` that takes an arrangement hypo and coerces it down to the relevant betweenness
+-- condition. with the extension of `into <explicit condition>`. Works similar to `forgetting`. when you run it, it
+-- tries to `obvious` the goal after running; this makes it ergonomic to prove linepart conditions.
+--
+-- that would turn P 3.6, in particular, from something like:
+--
+/-
+      · have : A - B - C - P ∨ A - B - P - C := by sorry
+        rcases this with ABCP | ABPC
+        · have : A - C - P := by arrangement ABCP
+          obvious
+        · have : A - P - C := by arrangement ABPC
+-/
+-- to something like:
+/-
+      · arranging points A B C P with ABCP | ABPC
+        · arrange ABCP into A - C - P
+        · arrange ABPC into A - P - C
+-/
+-- alternatively, I wouldn't hate if I could do `arrange ABC + BPC into A-B-P` which delegates arrangement construction
+-- to a 'sum' operation. This might requre re-axiomatizing betweeness to enumerate all the degenerate cases.
+--
+-- A-A-A is trivially true and the additive identity.
+-- A-B-A is trivially true and implies B=A
+-- A-B-C by construction gives distinct and collinear
+--
+-- A-B-C + X-A-B = X-A-B-C
+-- A-B-C + A-X-B = A-X-B-C
+-- A-B-C + B-X-C = A-B-X-C
+-- A-B-C + B-C-X = A-B-C-X
+--
+-- any subset of three is a valid betweeness, so naturally if the inputs were proper (not trivial) then we have the
+-- property that if we have an arrangement of any order >= 3, it is unique, and all other arrangements on the implied
+-- line are false.
+--
+-- The most common contradiction in geometry is probably 'you have two incompatible total orders on those collinear
+-- points, you're only allowed one.'
+--
+-- this kind of feels group-y? if A-B-C + X-X-X = A-B-C-X ∨ X-A-B-C; (trivially A-B-C + X-Y-X = A-B-C + X-X-X), I
+-- suppose A-B-C + X-Y-Z = A-B-C-X-Y-Z ∨ X-Y-Z-A-B-C; we need common-pairs to deduce handedness generally. The
+-- general A-B-C... + X-Y-Z with howevermuch overlap is some version of that, though. If there are no point in common,
+-- `A + b(A, 0) = b(A,0)-A ∨ A-b(A,0)`; where b(A, n) is the betweenness condition with `n` points in 'common' with `A`,
+-- an arbitrary arrangement. for b(A,1) and b(A,2), we have a whole mess of disjunctions though, we can align the two
+-- other points relative to the 'anchor' point anywhere in the line. I suppose we need some higher concept to represent
+-- this; probably Arrangement is a list of points derived from an internal list of betweenness conditions, and it
+-- classifies the set of possible total orderings of those points subject to the betweeness laws. That way it's really
+-- just narrowing down and expanding a collection of betweenness conditions and doing the latticework which is starting
+-- to explain why it felt group-y. We can use each betweenness to collect stretches of totally ordered points within a
+-- line by choosing an arbitrary point as the 'leftmost' point of the line and ordering each point as 'to the left' of
+-- another. Each betweeness establishes two such relations. "A - B - C -> A left of B ∧ B left of C". to the left is
+-- transitive. it is exclusive. A left of B ∨ B left of A ∧ ¬(A left of B ∧ B left of A).
+--
+-- This breaks the commutativity of betweenness, but that's okay, we're adopting an arbitrary reference point, we can
+-- always re-arrange a betweenness with respect to that point, and in the case of full disjunction, we can just track
+-- both sides. (A-B-C + X-Y-Z) with respect to A is exactly two betweenesses -- hmm, it's hard to find a canonical
+-- ordering here, if we later get a A-X-Q condition, I think we end up in a case where we still can't break down to that
+-- `left of` relation because it requires a fixed reference point.
+--
+-- So if we're stuck building the lattice by stiching betweennesses together. Then I think we can still rely on the
+-- lattice approach, we know there is a total order (or we've found a contradiction which is better, if we can prove
+-- multiple total orders with whatever set of assumptions, we've probably finished a proof somewhere). The goal is
+-- really to measure how many possible ones we have, and once we're in a reasonable range we just rcases over them. I
+-- don't know anything about lattice theory (yet) but on pure chutzpah I believe it seems reasonable to be able to like,
+-- enumerate small ones completely, and maybe take a queue from chess and compute a magic hash for them over a small
+-- range. We generate up to 7 coedep cases now, i suppose that'd be a target. There is probably something involving
+-- whatever passes for primes in lattice theory to find some minimal set of betwixts (easier to type than betweenness).
+-- If we assume we need overlapping betwixts for each pair of points, we'd need A-B-C, B-C-D, C-D-E, E-F-G, but in face
+-- we only need A-B-C,C-D-E,E-F-G to boil it down to the two mirror cases. In generally I think you can drop one case
+-- in four this way. The real win is if the resulting number of possible orderings drops to 0 upon the addition of any
+-- condition, indicating a contradiction and probably end of proof.
+--
+-- I bet that's a thing, a geometry which drop the commutativity consequence from Between.Conseqeuences.
+-- in such a geometry you can't be sure that A-B-C iff C-B-A. In this, you'd essentially treat an image and it's mirror
+-- as distinct, so you do geometry in the mirror-world and real-world independently. All the theorems are the same, just
+-- backwards in mirror world, but I think you lose maybe lemma 1.0.20 (it uses a CAB.symm).
+--
+--
+-- If you have `n` total points in an arrangement, then there are n!/2 arrangements (each and its mirror paired by
+-- .symm), if you know 1 betwixt for this, then you fix two relations out of the `n` you need to fully fix the set; 
+-- you have to introduce the symmetry manually and map `left of` to `right of` as a commutativity portal kind of thing,
+-- but you would have:
+--
+-- A left of B = B right of A
+-- A left of B -> ¬(B left of A)
+--
+-- A-B-C ↔ A left of B ∧ B left of C
+--
+-- the .symm on A-B-C would have to propagate to the right-handed chiral option, that gets complicated quickly=
+
+
 structure Arrangement (pts : List Point) : Prop where
   three_plus : pts.length ≥ 3
   ordered_triple : ∀ (i j k : Fin pts.length),
@@ -680,6 +800,9 @@ syntax (name := arrangingTac) "arranging" (ppSpace colGt term:max)+
 @[tactic arrangingTac]
 def elabArranging : Tactic := fun stx => match stx with
   | `(tactic| arranging $hs* $[into $pat?]?) => do
+    -- FIXME: This should consider all betweenness hypos + their symmetric counterparts. Something like "Find all the
+    -- betweeness hypos and construct all valid arrangements from them / their symms. The list of valid arrangements is
+    -- a hypo upon which we can rcases over
     let goal ← getMainGoal
     goal.withContext do
       let mut facts : Array ArrFact := #[]
