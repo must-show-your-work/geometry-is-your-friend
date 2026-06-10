@@ -106,18 +106,8 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
       · obvious
       · rcases guardConditionCD with rfl | j
         · exfalso; exact absurd DoffAC obvious
-        · clearly B ≠ D := by
-            todo "This and it's cousin below should be obvious-dispatchable, tbh, the distinct probably should be
-            obvious-closable here."
-            exfalso
-            have : B on ray A B := obvious
-            rw [<- BeqD] at DoffAB
-            exact (absurd this) DoffAB
-          clearly C ≠ D := by
-            exfalso
-            have : C on ray A C := obvious
-            rw [<- CeqD] at DoffAC
-            exact (absurd this) DoffAC
+        · clearly B ≠ D
+          clearly C ≠ D
           have : distinct B C D := by
             separate; obvious
           rcases (via axiom B.3 B C D ⟨this, cBCD⟩) with ⟨BCD, _, _⟩ | ⟨_,CBD,_⟩ | ⟨_, _, BDC⟩
