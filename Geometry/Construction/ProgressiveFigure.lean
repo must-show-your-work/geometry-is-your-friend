@@ -176,16 +176,15 @@ private def renderAuxHtml (base addendum : DSL.Construction) :
   | .error msg => throwError s!"progressive figure: SVG parse failed: {msg}"
 
 /-- Hook implementation: for each tactic line in `seq`, save a panel
-widget showing the cumulative figure at that line. -/
-private def saveProgressiveFigures
+widget showing the cumulative figure at that line.
+Returns `true` iff a DSL-authored base existed and widgets were saved
+(the dispatcher uses this to decide whether to fall back to the
+proof-state-driven path). -/
+def saveProgressiveFigures
     (kind num : String) (declName : Name) (seq : Syntax) :
-    TacticM Unit := do
+    TacticM Bool := do
   let env ← getEnv
-  -- Look up the base IR Expr by (kind, num) and evaluate as a
-  -- Construction value. Per-target keying means corollaries without
-  -- their own `construction { … }` get no base (and therefore no
-  -- figure widgets) — no leakage from neighboring theorems.
-  let some baseExpr := Atlas.baseIRExprFor env kind num | return
+  let some baseExpr := Atlas.baseIRExprFor env kind num | return false
   let base ← unsafe Meta.evalExpr DSL.Construction
     (mkConst ``DSL.Construction) baseExpr
   let addenda := addendaFor env declName
@@ -232,8 +231,10 @@ private def saveProgressiveFigures
       (hash HtmlDisplayPanel.javascript)
       (return Json.mkObj [("html", Atlas.htmlToJson html)])
       stx
+  return true
 
 initialize do
-  Atlas.Refs.figureProgressionHookRef.set saveProgressiveFigures
+  Atlas.Refs.figureProgressionHookRef.set
+    (fun k n d s => discard <| saveProgressiveFigures k n d s)
 
 end Geometry.Construction

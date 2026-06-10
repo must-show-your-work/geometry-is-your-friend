@@ -21,6 +21,10 @@ import Mathlib.Data.List.Basic
 -- atlas command elaborates.
 import Atlas
 
+-- Installs the composite figure hook: DSL path first, proof-state
+-- fallback for theorems without a `construction { … }` block.
+import Geometry.Construction.FigureHookDispatch
+
 /-- Simp set for `obvious` — see `Geometry/Theory/Axioms.lean` for the
     macro that uses it. Tag chapter-by-chapter as you encounter
     canonical normalizations that Greenberg treats as background.
