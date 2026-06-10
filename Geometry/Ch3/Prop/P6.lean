@@ -59,7 +59,11 @@ all collinear points'"
           · exfalso
             rcases PinSegBC with BPC | rfl | rfl
             · idea "this essentially argues that the points are arranged A - P - B - P - C; which is absurd"
-              have : A - B - P - C := by sorry -- should be obvious
+              fixme "I keep hitting a 'cycle in constraints' which is true, except that's the point, the fact that it
+              found the cycle tells me that I can derive false. In particular it's noting precisly the idea above, P < B < P is
+              absurd. I think the topoSort needs to detect and return the 'I found a cycle you have archisplosion
+              happening' maybe something like an `absurd arrangement` tactic?"
+              have : A - B - P - C := by organize ABC BPC
               have : A - B - P := by arrangement this
               exact via lemma 1.0.19 ⟨BPA.symm, this⟩
             · exact via lemma 1.0.18 ⟨BPA, BPA⟩
@@ -72,7 +76,7 @@ all collinear points'"
         obtain ⟨BCP, PneB, PneC⟩ := PinExtBC
         · rcases PinSegBA with BPA | rfl | rfl
           · exfalso
-            have : A - P - B - C := by sorry
+            have : A - P - B - C := by organize BPA.symm ABC
             have : P - B - C := by arrangement this
             exact via lemma 1.0.19 ⟨this, BCP.symm⟩
           · obvious
@@ -80,18 +84,17 @@ all collinear points'"
             exact via lemma 1.0.19 ⟨ABC, BCP.symm⟩
       · obtain ⟨BAP, PneB, PneA⟩ := PinExtBA
         rcases PinBC with PinSegBC | PinExtBC
-        · rcases PinSegBC with BCP | rfl | rfl
+        · rcases PinSegBC with BPC | rfl | rfl
           · exfalso
-            have : P - A - B - C := by sorry
-            fixme "honestly arrangement should just be able to directly close this goal by constructing the intermediate arrangement"
+            have : P - A - B - C := by organize ABC BAP.symm
             have : P - B - C := by arrangement this
-            exact via lemma 1.0.20 ⟨this, BCP.symm⟩
+            exact via lemma 1.0.20 ⟨this, BPC.symm⟩
           · obvious
           · exfalso
             exact via lemma 1.0.18 ⟨BAP, ABC⟩
         · exfalso
           obtain ⟨BCP, PneB, PneC⟩ := PinExtBC
-          have : P - A - B - C := by sorry
+          have : P - A - B - C := by organize BAP.symm ABC
           have : P - B - C := by arrangement this
           exact via lemma 1.0.19 ⟨this, BCP.symm⟩
     · intro P PisB
