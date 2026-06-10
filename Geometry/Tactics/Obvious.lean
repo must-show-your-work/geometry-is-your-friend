@@ -29,6 +29,7 @@ call regardless of whether `done` or `tauto` ultimately closes.
 initialize Lean.registerTraceClass `obvious
 
 syntax (name := obviousArrangement) "obvious_arrangement" : tactic
+syntax (name := obviousDistinctOff) "obvious_distinct_off" : tactic
 
 -- Dump-deps tracking is opted in via the env var `GIYF_DUMP_DEPS=1`,
 -- read at tactic runtime in `dumpObviousUse` below. Env var instead of
@@ -122,6 +123,37 @@ private def goalMentions (c : Name) (g : MVarId) : TacticM Bool := do
       if (ld.type.find? (·.isConstOf c)).isSome then return true
     return false
 
+open Lean Lean.Elab.Tactic Lean.Meta in
+@[tactic obviousDistinctOff]
+def elabObviousDistinctOff : Tactic := fun _ => do
+  let saved ← saveState
+  try
+    evalTactic (← `(tactic| try exfalso))
+    evalTactic (← `(tactic| subst_eqs))
+  catch _ => saved.restore; throwError "obvious_distinct_off: subst_eqs failed"
+  let notNames ← (← getMainGoal).withContext do
+    let mut acc : Array Name := #[]
+    for ld in ← getLCtx do
+      if ld.isImplementationDetail then continue
+      if (← instantiateMVars ld.type).isAppOf ``Not then
+        acc := acc.push ld.userName
+    return acc
+  for notName in notNames do
+    let saved2 ← saveState
+    try
+      evalTactic (← `(tactic| apply $(mkIdent notName)))
+      evalTactic (← `(tactic|
+        simp only [obvious, Geometry.Theory.Ray.mem_def,
+          Geometry.Theory.Segment.mem_def,
+          Geometry.Theory.Extension.mem_def,
+          Geometry.Theory.LineThrough.mem_def,
+          Geometry.Theory.Line.mem_def]))
+      if (← getUnsolvedGoals).isEmpty then return
+      saved2.restore
+    catch _ => saved2.restore
+  saved.restore
+  throwError "obvious_distinct_off: no Not-hyp produced contradiction after subst_eqs"
+
 open Lean Lean.Elab.Tactic in
 /-- The cascade stages, in priority order. Each stage represents a *class
     of intuition* — a kind of reasoning the author would take for granted.
@@ -148,6 +180,7 @@ private def obviousStages : TacticM (Array ObviousStage) := do
   let tautoT ← `(tactic| tauto)
   let aesopT ← `(tactic| aesop)
   let obviousArr ← `(tactic| obvious_arrangement)
+  let obviousDistOff ← `(tactic| obvious_distinct_off)
   -- Cheap closers tried before tauto: done (simp_all already closed),
   -- assumption (hypothesis match), decide (decidable-instance reduction).
   -- Each is fast-to-fail when inapplicable, so paying them per-stage is cheap.
@@ -195,6 +228,9 @@ private def obviousStages : TacticM (Array ObviousStage) := do
     { name := "arrangement",
       applies := goalMentions (.mkStr3 "Geometry" "Theory" "Arrangement"),
       preamble := obviousArr,
+      closers := #[("done", doneT)] },
+    { name := "distinct-off",
+      preamble := obviousDistOff,
       closers := #[("done", doneT)] }
   ]
 
@@ -249,6 +285,70 @@ elab "obvious" : tactic => do
     addTrace `obvious
       m!"all alternatives failed:\n{MessageData.joinSep rows m!"\n"}"
   throwError "obvious: no alternative closed the goal"
+
+private def stageSuggestionFallback (stageName : String) : String :=
+  match stageName with
+  | "arrangement"  => "obvious_arrangement"
+  | "distinct-off" => "obvious_distinct_off"
+  | other          => other
+
+private def stageCloserSuggestion (closerName : String) : String :=
+  match closerName with
+  | "done"  => ""
+  | "aesop" => "; aesop?"
+  | other   => s!"; {other}"
+
+open Lean Lean.Elab.Tactic Lean.Meta.Tactic.TryThis in
+private def stageDescendingPreamble (stageName : String) :
+    TacticM (Option (TSyntax `tactic)) := do
+  match stageName with
+  | "simp_all"          => some <$> `(tactic| simp_all? only [obvious])
+  | "unfold Parallel"   => some <$> `(tactic| simp? only [obvious.parallel] at *)
+  | "unfold Intersects" => some <$> `(tactic| simp? only [obvious.intersects] at *)
+  | "unfold Guards"     => some <$> `(tactic| simp? only [obvious, obvious.guards] at *)
+  | "mem_def goal"      => some <$> `(tactic|
+      simp? only [Geometry.Theory.Segment.mem_def,
+        Geometry.Theory.Ray.mem_def,
+        Geometry.Theory.Extension.mem_def,
+        Geometry.Theory.LineThrough.mem_def])
+  | "mem_def at*"       => some <$> `(tactic|
+      simp? only [Geometry.Theory.Segment.mem_def,
+        Geometry.Theory.Ray.mem_def,
+        Geometry.Theory.Extension.mem_def,
+        Geometry.Theory.LineThrough.mem_def] at *)
+  | "Finset ext"        => some <$> `(tactic|
+      (ext; simp? only [Finset.mem_insert, Finset.mem_singleton,
+        Finset.mem_erase, ne_eq]))
+  | _ => return none
+
+open Lean Lean.Elab.Tactic Lean.Meta.Tactic.TryThis in
+elab tk:"obvious?" : tactic => do
+  try evalTactic (← `(tactic| intros)) catch _ => pure ()
+  try evalTactic (← `(tactic| normalize_eq)) catch _ => pure ()
+  let stages ← obviousStages
+  let original ← saveState
+  for stage in stages do
+    original.restore
+    let g ← getMainGoal
+    if !(← stage.applies g) then continue
+    let descending? ← stageDescendingPreamble stage.name
+    let preambleToRun := descending?.getD stage.preamble
+    let (preOk, _) ← withRef tk <| tryTimed preambleToRun
+    if !preOk then continue
+    let postPreamble ← saveState
+    for (cName, cTac) in stage.closers do
+      postPreamble.restore
+      let cToRun ← if cName == "aesop" then `(tactic| aesop?) else pure cTac
+      let (ok, _) ← withRef tk <| tryTimed cToRun
+      if ok then
+        if (← IO.getEnv "GIYF_DUMP_DEPS").isSome then
+          dumpObviousUse stage.name cName
+        if descending?.isNone && cName != "aesop" then
+          let text := stageSuggestionFallback stage.name ++ stageCloserSuggestion cName
+          addSuggestion tk { suggestion := text } (origSpan? := ← getRef)
+        return
+  original.restore
+  throwError "obvious?: no alternative closed the goal"
 
 /-- Term-position form: `(obvious : T)` desugars to `(by obvious : T)`. -/
 macro "obvious" : term => `(by obvious)
