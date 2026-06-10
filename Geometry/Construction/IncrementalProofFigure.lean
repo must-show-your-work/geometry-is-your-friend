@@ -1,12 +1,20 @@
 /-
 Geometry/Construction/IncrementalProofFigure.lean — per-tactic-step
-figure widget derived from the proof state, no hand-authored DSL
-required.
+figure widget derived from the proof state.
 
-Walks the InfoTree produced by `evalTacticSeq` after `with_atlas_panels`,
-finds each tactic step's `goalsBefore`, runs `FromProofState.extract` in
-that mvar's local context, lowers + renders, and attaches a panel widget
+Registers `Atlas.Refs.figureProgressionPerStepHookRef`. The hook fires
+BEFORE each tactic step inside `with_atlas_panels` with live TacticM
+state (current LCtx = entering state for the step). For targets WITHOUT
+a DSL-authored `construction { … }` figure, the hook extracts a
+Construction from the LCtx, lowers + renders, and saves a panel widget
 at the step's syntax position.
+
+Targets with a DSL figure skip this hook entirely — the post-hoc DSL
+path in `ProgressiveFigure` already covers them.
+
+Future work (Joe's `infer` opt-in UX): replace the auto-fallback with
+an explicit `inferModeExt` lookup so the user can mix proof-state
+derivation with `focus` / caption additions in the figure block.
 -/
 
 import Geometry.Construction.FromProofState
@@ -33,61 +41,24 @@ private def renderConstructionHtml (c : DSL.Construction) : MetaM Html := do
   | .ok h => return wrap h
   | .error msg => throwError s!"proof-state figure: SVG parse failed: {msg}"
 
-private partial def collectStepSyntax (stx : Syntax) : Array Syntax :=
-  if stx.getKind == ``Lean.Parser.Tactic.tacticSeq
-     || stx.getKind == ``Lean.Parser.Tactic.tacticSeq1Indented
-     || stx.getKind == `null then
-    stx.getArgs.foldl (fun acc s => acc ++ collectStepSyntax s) #[]
-  else
-    match stx with
-    | .node _ _ _ => #[stx]
-    | _           => #[]
+/-- Per-step hook implementation: fires BEFORE each tactic step.
+Skips if the DSL path owns this target. Otherwise reads the current
+LCtx, extracts a Construction, renders, saves a widget at the step's
+position. -/
+def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
+  let env ← getEnv
+  if (Atlas.baseIRExprFor env kind num).isSome then return
+  try
+    withMainContext do
+      let c ← FromProofState.extract
+      let html ← renderConstructionHtml c
+      Widget.savePanelWidgetInfo
+        (hash HtmlDisplayPanel.javascript)
+        (return Json.mkObj [("html", Atlas.htmlToJson html)])
+        stx
+  catch _ => pure ()
 
-/-- Build line → (ContextInfo, TacticInfo) by folding the InfoTrees.
-Earliest TacticInfo at each line wins — that's the outermost tactic,
-whose `goalsBefore` is the pre-state for that line. -/
-private def perLineTacticInfo (fileMap : FileMap) (seq : Syntax)
-    (trees : Array InfoTree) :
-    Std.HashMap Nat (ContextInfo × TacticInfo) := Id.run do
-  let mut m : Std.HashMap Nat (ContextInfo × TacticInfo) := {}
-  let some seqStart := seq.getPos? | return m
-  let some seqEnd := seq.getTailPos? | return m
-  let seqStartLine := fileMap.toPosition seqStart |>.line
-  let seqEndLine := fileMap.toPosition seqEnd |>.line
-  for tree in trees do
-    m := tree.foldInfo (init := m) fun ctx info acc =>
-      match info with
-      | .ofTacticInfo ti =>
-        match ti.stx.getPos? with
-        | none => acc
-        | some pos =>
-          let lineNum := fileMap.toPosition pos |>.line
-          if lineNum < seqStartLine || lineNum > seqEndLine then acc
-          else if acc.contains lineNum then acc
-          else acc.insert lineNum (ctx, ti)
-      | _ => acc
-  return m
-
-/-- Hook entry point: per-step proof-state figure widgets. -/
-def saveProofStateFigures (seq : Syntax) : TacticM Unit := do
-  let fileMap ← getFileMap
-  let trees := (← getInfoState).trees.toArray
-  let perLine := perLineTacticInfo fileMap seq trees
-  let mut seenLines : Std.HashSet Nat := {}
-  for stx in collectStepSyntax seq do
-    let some pos := stx.getPos? | continue
-    let lineNum := fileMap.toPosition pos |>.line
-    if seenLines.contains lineNum then continue
-    seenLines := seenLines.insert lineNum
-    let some (ctx, ti) := perLine[lineNum]? | continue
-    let some goal := ti.goalsBefore.head? | continue
-    let html ← ctx.runMetaM {} do
-      goal.withContext do
-        let c ← FromProofState.extract
-        renderConstructionHtml c
-    Widget.savePanelWidgetInfo
-      (hash HtmlDisplayPanel.javascript)
-      (return Json.mkObj [("html", Atlas.htmlToJson html)])
-      stx
+initialize do
+  Atlas.Refs.figureProgressionPerStepHookRef.set perStepHook
 
 end Geometry.Construction.IncrementalProofFigure

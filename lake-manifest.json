@@ -45,7 +45,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "d450eb829e4157e5e484864ae19174cd18740f2f",
+   "rev": "a907d0d36f343323490162cdbacc0df030952cd0",
    "name": "atlas",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",
