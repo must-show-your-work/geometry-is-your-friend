@@ -126,7 +126,7 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
         · separate; distinguish
         · by_contra!; obtain ⟨_, BAeqBC⟩ := this
           auxillary {
-            -- need to force AC onto AB,
+            assert collinear A B C -- equivalent to our RAA hypo
           }
           -- rw [<- BAeqBC] at DonBC -- why doesn't this work?
 

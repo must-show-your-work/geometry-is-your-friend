@@ -341,10 +341,26 @@ private def autoAnchorLines (stmts : Array Stmt) : Array Stmt := Id.run do
           |>.push (.assert (.app "incident" [.name anchorName, .name L]) "")
   return prepended ++ stmts ++ appended
 
+/-- Names that appear as the middle particle of some `between` assert.
+Pinning these as axis endpoints conflicts with the between projection
+(which wants the middle on segment AC interior — can't if it's pinned). -/
+private def betweenMiddles (stmts : Array Stmt) : Array Name :=
+  stmts.filterMap fun
+    | .assert (.app "between" [.name _, .name x, .name _]) _ => some x
+    | _ => none
+
 /-- Collect (name, name) pairs of points that anchor a segment or
-line. Each pair is sorted internally so (A, B) and (B, A) collide. -/
+line. Each pair is sorted internally so (A, B) and (B, A) collide.
+Pairs whose endpoints contain a between-middle are demoted to the
+end of the list (axis selection prefers between-outer pairs when
+available). Additionally, every `between a _ b` contributes (a, b)
+as a candidate — useful when the figure has no segment/ray construct
+on the outer pair. -/
 private def axisCandidates (stmts : Array Stmt) : Array (Name × Name) :=
-  let fromConstructs := stmts.filterMap fun
+  let middles := betweenMiddles stmts
+  let containsMiddle (p : Name × Name) : Bool :=
+    middles.contains p.1 || middles.contains p.2
+  let fromConstructs : Array (Name × Name) := stmts.filterMap fun
     | .construct _ (.app "segment" [.name a, .name b]) =>
       if a < b then some (a, b) else some (b, a)
     | .construct _ (.app "line_through" [.name a, .name b]) =>
@@ -352,8 +368,17 @@ private def axisCandidates (stmts : Array Stmt) : Array (Name × Name) :=
     | .construct _ (.app "ray" [.name a, .name b]) =>
       if a < b then some (a, b) else some (b, a)
     | _ => none
-  fromConstructs.qsort (fun (a₁, b₁) (a₂, b₂) =>
-    if a₁ != a₂ then a₁ < a₂ else b₁ < b₂)
+  let fromBetweens : Array (Name × Name) := stmts.filterMap fun
+    | .assert (.app "between" [.name a, .name _, .name b]) _ =>
+      if a < b then some (a, b) else some (b, a)
+    | _ => none
+  let combined := fromConstructs ++ fromBetweens
+  combined.qsort fun p₁ p₂ =>
+    let bad₁ := containsMiddle p₁
+    let bad₂ := containsMiddle p₂
+    if bad₁ != bad₂ then !bad₁
+    else if p₁.1 != p₂.1 then p₁.1 < p₂.1
+    else p₁.2 < p₂.2
 
 
 
@@ -1004,19 +1029,54 @@ def lower (c : Construction) (canvasW : Float := 1280) (canvasH : Float := 720)
   }
 
 
+/-- Build a deduplication key for an assert claim, ignoring negation
+polarity. `assert P args` and `assert ¬ P args` produce the same key,
+so the later occurrence overrides the earlier one. Non-assert stmts
+return `none` and are never deduplicated. -/
+private partial def claimToKey : ConstraintExpr → String
+  | .name n   => n
+  | .num k    => toString k
+  | .app f args =>
+    let inner := (args.map claimToKey).foldl (init := "") fun a b => a ++ " " ++ b
+    f ++ inner
+
+private def assertKey : Stmt → Option String
+  | .assert (.app "¬" [inner]) _ => some (claimToKey inner)
+  | .assert claim _              => some (claimToKey claim)
+  | _                            => none
+
+/-- Last-wins deduplication of asserts by claim signature (ignoring
+polarity). Lets a later `assert collinear A B C` override an earlier
+`assert ¬ collinear A B C` — useful for auxiliary blocks that explore
+contradictory branches. Non-assert stmts pass through unchanged. -/
+private def overrideEarlierAsserts (stmts : Array Stmt) : Array Stmt := Id.run do
+  let mut laterKeys : Array String := #[]
+  let mut out : Array Stmt := #[]
+  for s in stmts.reverse do
+    match assertKey s with
+    | none => out := out.push s
+    | some key =>
+      if laterKeys.contains key then continue
+      laterKeys := laterKeys.push key
+      out := out.push s
+  return out.reverse
+
 /-- Lower a base construction plus an addendum, rendering addendum's
 constructed shapes with `.dashed` style (visual "construction line"
 convention — these are auxiliary, not part of the canonical figure).
 Addendum's `exists`/`assert` stmts process normally and can move
 positions / declare new points; only the `construct` lines get the
-dashed override. -/
+dashed override.
+
+Asserts use last-wins dedup (`overrideEarlierAsserts`): an addendum's
+`assert collinear A B C` cancels a base `assert ¬ collinear A B C`. -/
 def lowerAuxiliary (base : Construction) (addendum : Construction)
     (canvasW : Float := 1280) (canvasH : Float := 720)
     (cachedPositions : Option (Array (Name × Pos2)) := none) : Scene Pos2 :=
   let cx := canvasW / 2
   let cy := canvasH / 2
   let r  := min cx cy * 0.75
-  let combinedStmts := autoAnchorLines (base.stmts ++ addendum.stmts)
+  let combinedStmts := overrideEarlierAsserts (autoAnchorLines (base.stmts ++ addendum.stmts))
   let combined : Construction := { stmts := combinedStmts }
   let alphabetized := (collectPointNames combinedStmts).qsort (· < ·)
   let b₀ : Bindings := {}
