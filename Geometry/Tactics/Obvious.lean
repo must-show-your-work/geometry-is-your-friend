@@ -286,6 +286,41 @@ elab "obvious" : tactic => do
       m!"all alternatives failed:\n{MessageData.joinSep rows m!"\n"}"
   throwError "obvious: no alternative closed the goal"
 
+private def stageSuggestionFallback (stageName : String) : String :=
+  match stageName with
+  | "arrangement"  => "obvious_arrangement"
+  | "distinct-off" => "obvious_distinct_off"
+  | other          => other
+
+private def stageCloserSuggestion (closerName : String) : String :=
+  match closerName with
+  | "done"  => ""
+  | "aesop" => "; aesop?"
+  | other   => s!"; {other}"
+
+open Lean Lean.Elab.Tactic Lean.Meta.Tactic.TryThis in
+private def stageDescendingPreamble (stageName : String) :
+    TacticM (Option (TSyntax `tactic)) := do
+  match stageName with
+  | "simp_all"          => some <$> `(tactic| simp_all? only [obvious])
+  | "unfold Parallel"   => some <$> `(tactic| simp? only [obvious.parallel] at *)
+  | "unfold Intersects" => some <$> `(tactic| simp? only [obvious.intersects] at *)
+  | "unfold Guards"     => some <$> `(tactic| simp? only [obvious, obvious.guards] at *)
+  | "mem_def goal"      => some <$> `(tactic|
+      simp? only [Geometry.Theory.Segment.mem_def,
+        Geometry.Theory.Ray.mem_def,
+        Geometry.Theory.Extension.mem_def,
+        Geometry.Theory.LineThrough.mem_def])
+  | "mem_def at*"       => some <$> `(tactic|
+      simp? only [Geometry.Theory.Segment.mem_def,
+        Geometry.Theory.Ray.mem_def,
+        Geometry.Theory.Extension.mem_def,
+        Geometry.Theory.LineThrough.mem_def] at *)
+  | "Finset ext"        => some <$> `(tactic|
+      (ext; simp? only [Finset.mem_insert, Finset.mem_singleton,
+        Finset.mem_erase, ne_eq]))
+  | _ => return none
+
 open Lean Lean.Elab.Tactic Lean.Meta.Tactic.TryThis in
 elab tk:"obvious?" : tactic => do
   try evalTactic (← `(tactic| intros)) catch _ => pure ()
@@ -296,22 +331,21 @@ elab tk:"obvious?" : tactic => do
     original.restore
     let g ← getMainGoal
     if !(← stage.applies g) then continue
-    let (preOk, _) ← tryTimed stage.preamble
+    let descending? ← stageDescendingPreamble stage.name
+    let preambleToRun := descending?.getD stage.preamble
+    let (preOk, _) ← withRef tk <| tryTimed preambleToRun
     if !preOk then continue
     let postPreamble ← saveState
     for (cName, cTac) in stage.closers do
       postPreamble.restore
-      let (ok, _) ← tryTimed cTac
+      let cToRun ← if cName == "aesop" then `(tactic| aesop?) else pure cTac
+      let (ok, _) ← withRef tk <| tryTimed cToRun
       if ok then
         if (← IO.getEnv "GIYF_DUMP_DEPS").isSome then
           dumpObviousUse stage.name cName
-        let preFmt ← Lean.PrettyPrinter.ppTactic stage.preamble
-        let text ← if cName == "done" then
-            pure preFmt.pretty
-          else do
-            let cFmt ← Lean.PrettyPrinter.ppTactic cTac
-            pure s!"{preFmt.pretty}; {cFmt.pretty}"
-        addSuggestion tk { suggestion := text } (origSpan? := ← getRef)
+        if descending?.isNone && cName != "aesop" then
+          let text := stageSuggestionFallback stage.name ++ stageCloserSuggestion cName
+          addSuggestion tk { suggestion := text } (origSpan? := ← getRef)
         return
   original.restore
   throwError "obvious?: no alternative closed the goal"
