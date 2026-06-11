@@ -73,19 +73,22 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
     #[dslView, lctxView]
   return wrap #[figHtml, debugPanel]
 
-/-- Post-hoc hook: save ONE figure widget at the proof body's start,
-inferred from the theorem signature. Called either when no baseIR
-exists (no figure block at all) or when `construction { infer }` puts
-the infer marker into baseIR — in both cases ProgressiveFigure has
-already decided this is the proof-state path, so we don't re-check. -/
+private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
+  let html : Html := Html.element "div"
+    #[("style", Json.str "padding: 0.5em; background: #fdf6e3; color: #073642; font-family: monospace; font-size: 0.85em;")]
+    #[Html.text msg]
+  Widget.savePanelWidgetInfo
+    (hash HtmlDisplayPanel.javascript)
+    (return Json.mkObj [("html", Atlas.htmlToJson html)])
+    stx
+
 def saveTheoremFigure (_kind _num : String) (declName : Name) (seq : Syntax) :
     TacticM Unit := do
+  traceMsg s!"[stf] enter declName={declName}" seq
   let env ← getEnv
   let theoremTy : Option Expr := (env.find? declName).map (·.type)
+  traceMsg s!"[stf] theoremTy.isSome={theoremTy.isSome}" seq
   try
-    -- Open the theorem's binders as fresh fvars so the classifier sees
-    -- A/B/C/etc. as Points (and any premise like Angle V X Z gets
-    -- matched by the Pi telescoping in matchPi).
     let html ← match theoremTy with
       | none => withMainContext do
         let goalTy ← (← getMainGoal).getType
@@ -100,10 +103,13 @@ def saveTheoremFigure (_kind _num : String) (declName : Name) (seq : Syntax) :
           let debug := geometry.proofFigure.debug.get (← getOptions)
           let lctxStr ← if debug then formatLCtx else pure ""
           renderConstructionHtml c lctxStr debug
+    traceMsg s!"[stf] html built, saving widget" seq
     Widget.savePanelWidgetInfo
       (hash HtmlDisplayPanel.javascript)
       (return Json.mkObj [("html", Atlas.htmlToJson html)])
       seq
-  catch _ => pure ()
+    traceMsg s!"[stf] widget saved OK" seq
+  catch e =>
+    traceMsg s!"[stf] EXCEPTION: {← e.toMessageData.toString}" seq
 
 end Geometry.Construction.IncrementalProofFigure
