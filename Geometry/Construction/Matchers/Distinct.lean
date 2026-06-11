@@ -14,7 +14,8 @@ open Figures.Construction.ProofState
 @[proof_state_matcher 0]
 def matchDistinct : Matcher := fun e => do
   match (← instantiateMVars e).getAppFnArgs with
-  | (`Geometry.Theory.Distinct, #[s, _n]) =>
+  -- `Distinct {α : Type*} (s : Finset α) (n : ℕ)` → 3 args.
+  | (`Geometry.Theory.Distinct, #[_α, s, _n]) =>
     let some pts ← readFinsetPoints s | return none
     return some #[assertN "distinct" pts]
   | _ => return none
