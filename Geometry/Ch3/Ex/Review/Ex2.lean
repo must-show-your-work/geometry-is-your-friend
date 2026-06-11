@@ -35,14 +35,14 @@ atlas commentary := by
   "
   notes "Most of these are covered elsewhere, this just gangs the results to a complex"
 
-  figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B D
-      assert between B C D
-      construct segAD := segment A D
-    }
+  -- figure := by
+    -- construction {
+      -- exists A B C D : Point
+      -- assert distinct A B C D
+      -- assert between A B D
+      -- assert between B C D
+      -- construct segAD := segment A D
+    -- }
 
 atlas exercise 3.Review.2.c "Given B-C-D and A-B-D, then A-B-C and A-C-D"
   (BCD : B - C - D := by assumption) (ABD : A - B - D := by assumption) :

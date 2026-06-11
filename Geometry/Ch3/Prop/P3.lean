@@ -33,17 +33,17 @@ atlas commentary := by
   name "Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D"
   preface "Given A - B - C and A - C - D, then B - C - D and A - B - D (see Figure 3.9)"
 
-  figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      construct mainLine := line_through A D
-      assert between A C D
-      assert between A B C
-    }
-    title "Prop 3.3.i — setup"
-    index 1
-    caption "A, B, C, D are collinear in order (A-B-C and A-C-D given). The proof picks an off-line point E and uses line EC; those appear as auxiliary constructions in the proof body."
+  -- figure := by
+    -- construction {
+      -- exists A B C D : Point
+      -- assert distinct A B C D
+      -- construct mainLine := line_through A D
+      -- assert between A C D
+      -- assert between A B C
+    -- }
+    -- title "Prop 3.3.i — setup"
+    -- index 1
+    -- caption "A, B, C, D are collinear in order (A-B-C and A-C-D given). The proof picks an off-line point E and uses line EC; those appear as auxiliary constructions in the proof body."
 
 atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C and A-C-D"
   : (A - B - C) ∧ (A - C - D) -> B - C - D := by
@@ -178,18 +178,18 @@ a version of it optimized for tersity in the context of Lean. I think it reads a
 intuitive argument that the author makes into a bunch of type theoretic dust, which isn't my favorite thing in the
 world."
 
-  figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B C
-      assert between A C D
-      assert between A B D
-      construct segAD := segment A D
-    }
-    title "Proposition 3.3 (ii)"
-    index 1
-    caption "From A-B-C and A-C-D follows A-B-D — all four points appear collinear with B between A and D."
+  -- figure := by
+    -- construction {
+      -- exists A B C D : Point
+      -- assert distinct A B C D
+      -- assert between A B C
+      -- assert between A C D
+      -- assert between A B D
+      -- construct segAD := segment A D
+    -- }
+    -- title "Proposition 3.3 (ii)"
+    -- index 1
+    -- caption "From A-B-C and A-C-D follows A-B-D — all four points appear collinear with B between A and D."
 
 atlas proposition 3.3.ii "Betweenness from shared outer pair: A-B-D from A-B-C and A-C-D"
   : (A - B - C) ∧ (A - C - D) -> A - B - D := by
@@ -218,18 +218,18 @@ atlas commentary := by
   name "Corollary: A-B-D from chained betweenness A-B-C and B-C-D"
   preface "Corollary, Given A-B-C and B-C-D, then A-B-D..."
 
-  figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B C
-      assert between B C D
-      assert between A B D
-      construct segAD := segment A D
-    }
-    title "Corollary 3.3 (i)"
-    index 1
-    caption "Shifted chain A-B-C and B-C-D yields A-B-D — order is A, B, C, D on the line."
+  -- figure := by
+    -- construction {
+      -- exists A B C D : Point
+      -- assert distinct A B C D
+      -- assert between A B C
+      -- assert between B C D
+      -- assert between A B D
+      -- construct segAD := segment A D
+    -- }
+    -- title "Corollary 3.3 (i)"
+    -- index 1
+    -- caption "Shifted chain A-B-C and B-C-D yields A-B-D — order is A, B, C, D on the line."
 
 atlas corollary 3.3.i "Corollary: A-B-D from chained betweenness A-B-C and B-C-D"
   : (A - B - C) ∧ (B - C - D) -> A - B - D := by
@@ -257,18 +257,18 @@ atlas commentary := by
   name "Corollary: A-C-D from chained betweenness A-B-C and B-C-D"
   preface "and A-C-D"
 
-  figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B C
-      assert between B C D
-      assert between A C D
-      construct segAD := segment A D
-    }
-    title "Corollary 3.3 (ii)"
-    index 1
-    caption "Companion to 3.3.i: same chain also gives A-C-D."
+  -- figure := by
+    -- construction {
+      -- exists A B C D : Point
+      -- assert distinct A B C D
+      -- assert between A B C
+      -- assert between B C D
+      -- assert between A C D
+      -- construct segAD := segment A D
+    -- }
+    -- title "Corollary 3.3 (ii)"
+    -- index 1
+    -- caption "Companion to 3.3.i: same chain also gives A-C-D."
 
 atlas corollary 3.3.ii "Corollary: A-C-D from chained betweenness A-B-C and B-C-D"
   : (A - B - C) ∧ (B - C - D) -> A - C - D := by

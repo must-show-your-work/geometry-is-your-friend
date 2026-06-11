@@ -15,16 +15,16 @@ atlas commentary := by
   name "Distinct non-parallel lines share a unique point (direct proof)"
   preface "If `l` and `m` are distinct lines that are not parallel, then `l` and `m` have a unique point in common"
 
-  figure := by
-    construction {
-      exists X : Point
-      exists L M : Line
-      assert incident X L
-      assert incident X M
-    }
-    title "Proposition 2.1 (direct)"
-    index 1
-    caption "Two distinct non-parallel lines L and M meet at the unique point X."
+  -- figure := by
+    -- construction {
+      -- exists X : Point
+      -- exists L M : Line
+      -- assert incident X L
+      -- assert incident X M
+    -- }
+    -- title "Proposition 2.1 (direct)"
+    -- index 1
+    -- caption "Two distinct non-parallel lines L and M meet at the unique point X."
 
 atlas alternate 2.1 "Distinct non-parallel lines share a unique point (direct proof)"
   {L M : Line} :
@@ -54,16 +54,16 @@ atlas commentary := by
   name "Distinct non-parallel lines share a unique point"
   preface "A corrolary of the main theorem that is more useful since it uses the syntax directly."
 
-  figure := by
-    construction {
-      exists X : Point
-      exists L M : Line
-      assert incident X L
-      assert incident X M
-    }
-    title "Proposition 2.1"
-    index 1
-    caption "Distinct non-parallel lines meet at exactly one point."
+  -- figure := by
+    -- construction {
+      -- exists X : Point
+      -- exists L M : Line
+      -- assert incident X L
+      -- assert incident X M
+    -- }
+    -- title "Proposition 2.1"
+    -- index 1
+    -- caption "Distinct non-parallel lines meet at exactly one point."
 
 atlas proposition 2.1 "Distinct non-parallel lines share a unique point"
   (LneM : L ≠ M) (LnoparM : L ∦ M) : ∃! X : Point, L intersects M at X := by
