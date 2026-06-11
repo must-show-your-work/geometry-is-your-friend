@@ -16,17 +16,17 @@ atlas commentary := by
   name "Every line has at least one point not on it"
   preface "For every line, there is at least one point not lying on it."
 
-  figure := by
-    construction {
-      exists A B P : Point
-      exists L : Line
-      assert distinct A B P
-      assert incident A L
-      assert incident B L
-    }
-    title "Proposition 2.3"
-    index 1
-    caption "Line L carries A and B; the third point P sits off L."
+  -- figure := by
+    -- construction {
+      -- exists A B P : Point
+      -- exists L : Line
+      -- assert distinct A B P
+      -- assert incident A L
+      -- assert incident B L
+    -- }
+    -- title "Proposition 2.3"
+    -- index 1
+    -- caption "Line L carries A and B; the third point P sits off L."
 
 atlas proposition 2.3 "Every line has at least one point not on it"
   : ∀ L : Line, ∃ P : Point, (P off L) := by
