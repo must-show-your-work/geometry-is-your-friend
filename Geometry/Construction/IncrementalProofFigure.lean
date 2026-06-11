@@ -59,11 +59,11 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
   let scene ← Figures.Construction.Lowering.lowerM c
     (canvasW := 1280) (canvasH := 720)
   let svgStr : String := Figures.Renderable.render scene
-  let figHtml ← match Atlas.SvgParser.parse svgStr with
-    | .ok h => pure h
-    | .error _ => pure (Html.text "(no SVG)")
+  let (figHtml, parseInfo) ← match Atlas.SvgParser.parse svgStr with
+    | .ok h => pure (h, s!"SVG ok ({svgStr.length} bytes)")
+    | .error msg => pure (Html.text s!"(no SVG: {msg})", s!"SVG parse error: {msg}")
   if !debug then return wrap #[figHtml]
-  let dslView  := debugBlock s!"DSL ({c.stmts.size} stmts)" (DSL.printConstruction c)
+  let dslView  := debugBlock s!"DSL ({c.stmts.size} stmts) — {parseInfo}" (DSL.printConstruction c)
   let lctxView := debugBlock "LCtx" lctxStr
   let debugPanel : Html := Html.element "div"
     #[("style", Json.str "text-align: left; max-width: 1280px; margin: 0 auto;")]
