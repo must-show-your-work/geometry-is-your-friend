@@ -26,7 +26,8 @@ syntax (name := proofFigureTac) "proof_figure" : tactic
 open Lean Meta Elab.Tactic ProofWidgets in
 elab_rules : tactic
   | `(tactic| proof_figure) => withMainContext do
-    let ctor ← FromProofState.extract
+    let goalTy ← (← getMainGoal).getType
+    let ctor ← FromProofState.extract (goalTy := some goalTy)
     let svgStr : String := Figures.Renderable.render
       (Lowering.lower ctor (canvasW := 1280) (canvasH := 720))
     let figHtml ← match Atlas.SvgParser.parse svgStr with
