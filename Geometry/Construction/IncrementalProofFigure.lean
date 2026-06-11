@@ -82,34 +82,22 @@ private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
     (return Json.mkObj [("html", Atlas.htmlToJson html)])
     stx
 
-def saveTheoremFigure (_kind _num : String) (declName : Name) (seq : Syntax) :
-    TacticM Unit := do
-  traceMsg s!"[stf] enter declName={declName}" seq
-  let env ← getEnv
-  let theoremTy : Option Expr := (env.find? declName).map (·.type)
-  traceMsg s!"[stf] theoremTy.isSome={theoremTy.isSome}" seq
+def saveTheoremFigure (_kind _num : String) (_declName : Name) (seq : Syntax)
+    (initialGoalTy : Expr) : TacticM Unit := do
   try
-    let html ← match theoremTy with
-      | none => withMainContext do
-        let goalTy ← (← getMainGoal).getType
-        let c ← FromProofState.extract (goalTy := some goalTy)
-        let debug := geometry.proofFigure.debug.get (← getOptions)
-        let lctxStr ← if debug then formatLCtx else pure ""
-        renderConstructionHtml c lctxStr debug
-      | some thmTy =>
-        forallTelescope thmTy fun _ conclusion => do
-          let c ← FromProofState.extract
-            (goalTy := some conclusion) (theoremTy := some thmTy)
-          let debug := geometry.proofFigure.debug.get (← getOptions)
-          let lctxStr ← if debug then formatLCtx else pure ""
-          renderConstructionHtml c lctxStr debug
-    traceMsg s!"[stf] html built, saving widget" seq
+    -- The proof body has finished by the time this hook fires, so we
+    -- can't look up `getMainGoal`. Atlas captured the goal type at the
+    -- start (= the conclusion after Pi binders are introduced as fvars
+    -- in the proof context's LCtx) and threaded it through.
+    let html ← do
+      let c ← FromProofState.extract (goalTy := some initialGoalTy)
+      let debug := geometry.proofFigure.debug.get (← getOptions)
+      let lctxStr ← if debug then formatLCtx else pure ""
+      renderConstructionHtml c lctxStr debug
     Widget.savePanelWidgetInfo
       (hash HtmlDisplayPanel.javascript)
       (return Json.mkObj [("html", Atlas.htmlToJson html)])
       seq
-    traceMsg s!"[stf] widget saved OK" seq
-  catch e =>
-    traceMsg s!"[stf] EXCEPTION: {← e.toMessageData.toString}" seq
+  catch _ => pure ()
 
 end Geometry.Construction.IncrementalProofFigure

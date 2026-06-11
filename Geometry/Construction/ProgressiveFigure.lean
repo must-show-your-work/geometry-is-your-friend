@@ -188,20 +188,15 @@ private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
     stx
 
 def saveProgressiveFigures
-    (kind num : String) (declName : Name) (seq : Syntax) :
+    (kind num : String) (declName : Name) (seq : Syntax) (initialGoalTy : Expr) :
     TacticM Unit := do
   let env ← getEnv
-  traceMsg s!"[hook] saveProgressiveFigures kind={kind} num={num} declName={declName}" seq
   let some baseExpr := Atlas.baseIRExprFor env kind num
-    | traceMsg s!"[hook] no baseIR → saveTheoremFigure" seq
-      IncrementalProofFigure.saveTheoremFigure kind num declName seq
-  traceMsg s!"[hook] baseIR found, evaling" seq
+    | IncrementalProofFigure.saveTheoremFigure kind num declName seq initialGoalTy
   let base ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
     (mkConst ``Figures.Construction.DSL.Construction) baseExpr
-  traceMsg s!"[hook] base.stmts.size={base.stmts.size} isInfer={base.isInfer}" seq
   if base.isInfer then
-    traceMsg s!"[hook] isInfer=true → saveTheoremFigure" seq
-    IncrementalProofFigure.saveTheoremFigure kind num declName seq
+    IncrementalProofFigure.saveTheoremFigure kind num declName seq initialGoalTy
     return
   let addenda := addendaFor env declName
   let fileMap ← getFileMap
