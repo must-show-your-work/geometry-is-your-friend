@@ -86,7 +86,11 @@ def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
   try
     withMainContext do
       let goalTy ← (← getMainGoal).getType
-      let c ← FromProofState.extract (goalTy := some goalTy)
+      let theoremTy ← match ← Lean.Elab.Term.getDeclName? with
+        | some n => pure ((← getEnv).find? n |>.map (·.type))
+        | none   => pure none
+      let c ← FromProofState.extract
+        (goalTy := some goalTy) (theoremTy := theoremTy)
       let debug := geometry.proofFigure.debug.get (← getOptions)
       let lctxStr ← if debug then formatLCtx else pure ""
       let html ← renderConstructionHtml c lctxStr debug

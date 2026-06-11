@@ -23,11 +23,15 @@ namespace Geometry.Construction
 
 syntax (name := proofFigureTac) "proof_figure" : tactic
 
-open Lean Meta Elab.Tactic ProofWidgets in
+open Lean Meta Elab Elab.Tactic ProofWidgets in
 elab_rules : tactic
   | `(tactic| proof_figure) => withMainContext do
     let goalTy ← (← getMainGoal).getType
-    let ctor ← FromProofState.extract (goalTy := some goalTy)
+    let theoremTy ← match ← Lean.Elab.Term.getDeclName? with
+      | some n => pure ((← getEnv).find? n |>.map (·.type))
+      | none   => pure none
+    let ctor ← FromProofState.extract
+      (goalTy := some goalTy) (theoremTy := theoremTy)
     let scene ← Figures.Construction.Lowering.lowerM ctor
       (canvasW := 1280) (canvasH := 720)
     let svgStr : String := Figures.Renderable.render scene
