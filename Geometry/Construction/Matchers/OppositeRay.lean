@@ -23,7 +23,7 @@ open Lean Meta
 open Figures.Construction.DSL
 open Figures.Construction.ProofState
 
-@[proof_state_matcher 0]
+@[proof_state_matcher 50]
 def matchNotOppositeRay : Matcher := fun e => do
   match (← instantiateMVars e).getAppFnArgs with
   | (``Not, #[inner]) =>
