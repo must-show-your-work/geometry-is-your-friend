@@ -25,13 +25,16 @@ def unexpandOppositeRay : Lean.PrettyPrinter.Unexpander
 
 -- `Not (OppositeRay A B C)` shows as `ray A B is not opposite ray A C`
 -- (uses the syntactic "not" word, not the `¬` prefix). Composes with
--- the OppositeRay unexpander above — by the time Not's unexpander
--- runs, the inner has already been rewritten to the ray-notation form,
--- and we just inject "not" before "opposite".
+-- the OppositeRay unexpander above — by the time Not's unexpander runs,
+-- the inner has already been rewritten to the ray-notation form, and
+-- we just inject "not" before "opposite".
 @[app_unexpander Not]
 def unexpandNotOppositeRay : Lean.PrettyPrinter.Unexpander
-  | `($_ (ray $A:ident $B:ident is opposite ray $C:ident $D:ident)) =>
-      `(ray $A $B is not opposite ray $C $D)
+  | `($_ $inner) =>
+    match inner with
+    | `(ray $A:ident $B:ident is opposite ray $C:ident $D:ident) =>
+        `(ray $A $B is not opposite ray $C $D)
+    | _ => throw ()
   | _ => throw ()
 
 -- p18, 'An "angle with vertex A" is a point A together with distinct, non-opposite rays AB and AC (called the _sides_
