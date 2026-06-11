@@ -27,19 +27,52 @@ namespace Geometry.Construction.IncrementalProofFigure
 
 open Lean Elab Tactic Meta ProofWidgets Server
 
-private def wrap (h : Html) : Html :=
+private def debugBlock (title : String) (body : String) : Html :=
+  Html.element "details"
+    #[("style", Json.str "margin: 0.25em 0; font-family: monospace; font-size: 0.8em;")]
+    #[ Html.element "summary"
+         #[("style", Json.str "cursor: pointer; color: #586e75;")]
+         #[Html.text title]
+     , Html.element "pre"
+         #[("style", Json.str "margin: 0.25em 0 0; padding: 0.5em; background: #fdf6e3; color: #073642; white-space: pre-wrap;")]
+         #[Html.text body] ]
+
+/-- Format the LCtx as one line per non-implementation-detail decl:
+`name : type`. Used in the proof-state debug overlay so we can see what
+`extract` had to work with at each step. -/
+private def formatLCtx : MetaM String := do
+  let lctx ← getLCtx
+  let mut out : Array String := #[]
+  for d in lctx do
+    if d.isImplementationDetail then continue
+    let ty ← Meta.ppExpr (← instantiateMVars d.type)
+    out := out.push s!"{d.userName} : {ty}"
+  return String.intercalate "\n" out.toList
+
+private def wrap (h : Html) (debug : Html) : Html :=
   Html.element "div"
     #[("style", Json.str "text-align: center; margin: 0.5em 0;")]
-    #[h]
+    #[h, debug]
 
-private def renderConstructionHtml (c : DSL.Construction) : MetaM Html := do
+private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String) :
+    MetaM Html := do
   let positions := Lowering.solvePositions c
   let svgStr : String := Figures.Renderable.render
     (Lowering.lower c (canvasW := 1280) (canvasH := 720)
       (cachedPositions := some positions))
+  let dslStr := DSL.printConstruction c
+  let dslView := debugBlock s!"DSL ({c.stmts.size} stmts)" dslStr
+  let lctxView := debugBlock "LCtx" lctxStr
+  let debug : Html := Html.element "div"
+    #[("style", Json.str "text-align: left; max-width: 1280px; margin: 0 auto;")]
+    #[dslView, lctxView]
   match Atlas.SvgParser.parse svgStr with
-  | .ok h => return wrap h
-  | .error msg => throwError s!"proof-state figure: SVG parse failed: {msg}"
+  | .ok h => return wrap h debug
+  | .error _ =>
+    -- Parse failed — still show the debug info so we can see WHY there
+    -- was no figure (e.g. extract produced nothing → Lowering produced
+    -- an empty SVG that the parser rejected).
+    return wrap (Html.text "(no SVG)") debug
 
 /-- Per-step hook implementation: fires BEFORE each tactic step.
 Skips if the DSL path owns this target. Otherwise reads the current
@@ -51,7 +84,8 @@ def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
   try
     withMainContext do
       let c ← FromProofState.extract
-      let html ← renderConstructionHtml c
+      let lctxStr ← formatLCtx
+      let html ← renderConstructionHtml c lctxStr
       Widget.savePanelWidgetInfo
         (hash HtmlDisplayPanel.javascript)
         (return Json.mkObj [("html", Atlas.htmlToJson html)])
