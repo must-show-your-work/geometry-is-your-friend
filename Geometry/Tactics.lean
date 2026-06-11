@@ -21,9 +21,12 @@ import Mathlib.Data.List.Basic
 -- atlas command elaborates.
 import Atlas
 
--- Installs the composite figure hook: DSL path first, proof-state
--- fallback for theorems without a `construction { … }` block.
-import Geometry.Construction.FigureHookDispatch
+-- Figure widget hooks. DSL path and proof-state path register on
+-- separate Atlas refs (post-hoc vs per-step), so importing both is
+-- enough — their `initialize` blocks wire them up. Theorems with a
+-- `construction { … }` figure go DSL; theorems without go proof-state.
+import Geometry.Construction.ProgressiveFigure
+import Geometry.Construction.IncrementalProofFigure
 
 /-- Simp set for `obvious` — see `Geometry/Theory/Axioms.lean` for the
     macro that uses it. Tag chapter-by-chapter as you encounter
