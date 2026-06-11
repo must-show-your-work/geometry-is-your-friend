@@ -34,14 +34,13 @@ register_option geometry.proofFigure.debug : Bool := {
 }
 
 private def debugBlock (title : String) (body : String) : Html :=
-  Html.element "details"
-    #[("open", Json.bool true),
-      ("style", Json.str "margin: 0.25em 0; font-family: monospace; font-size: 0.8em;")]
-    #[ Html.element "summary"
-         #[("style", Json.str "cursor: pointer; color: #586e75;")]
+  Html.element "div"
+    #[("style", Json.str "margin: 0.25em 0; font-family: monospace; font-size: 0.8em;")]
+    #[ Html.element "div"
+         #[("style", Json.str "color: #586e75; padding: 0 0 0.15em 0.25em;")]
          #[Html.text title]
      , Html.element "pre"
-         #[("style", Json.str "margin: 0.25em 0 0; padding: 0.5em; background: #fdf6e3; color: #073642; white-space: pre-wrap;")]
+         #[("style", Json.str "margin: 0; padding: 0.5em; background: #fdf6e3; color: #073642; white-space: pre-wrap;")]
          #[Html.text body] ]
 
 /-- Format the LCtx as one line per non-implementation-detail decl:
