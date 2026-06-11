@@ -28,6 +28,17 @@ def readPointName? (e : Expr) : MetaM (Option Lean.Name) := do
     return some decl.userName
   return none
 
+/-- Is `e` an fvar whose declared type is `Geometry.Theory.Line`?
+Returns the userName if yes. -/
+def readLineName? (e : Expr) : MetaM (Option Lean.Name) := do
+  let e ← instantiateMVars e
+  unless e.isFVar do return none
+  let decl ← e.fvarId!.getDecl
+  let ty ← instantiateMVars decl.type
+  if ty.isConstOf `Geometry.Theory.Line then
+    return some decl.userName
+  return none
+
 /-- Read a list of Exprs as Point names; all-or-nothing. -/
 def readPointArgs (es : Array Expr) : MetaM (Option (Array String)) := do
   let mut out : Array String := #[]
