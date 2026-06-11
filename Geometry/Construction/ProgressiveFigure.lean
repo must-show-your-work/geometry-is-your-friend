@@ -183,10 +183,10 @@ def saveProgressiveFigures
     TacticM Unit := do
   let env ← getEnv
   let some baseExpr := Atlas.baseIRExprFor env kind num
-    | -- No DSL base — delegate to the proof-state walker over the
-      -- populated InfoTree, which catches macro-internal positions
-      -- (clearly / by_contra! / etc.) that the syntactic walker misses.
-      IncrementalProofFigure.saveInfoTreeFigures kind num declName seq
+    | -- No DSL base — save one proof-state-derived figure at the
+      -- seq's start. Per-step incremental updates are tracked as
+      -- #102 / #103.
+      IncrementalProofFigure.saveTheoremFigure kind num declName seq
   let base ← unsafe Meta.evalExpr DSL.Construction
     (mkConst ``DSL.Construction) baseExpr
   let addenda := addendaFor env declName

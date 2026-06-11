@@ -1,15 +1,18 @@
 /-
-Geometry/Construction/IncrementalProofFigure.lean — post-hoc figure
-widget for proof-state-driven figures.
+Geometry/Construction/IncrementalProofFigure.lean — figure-per-theorem
+widget derived from the theorem signature.
 
-After `evalTacticSeq` completes inside `with_atlas_panels`, walk the
-populated InfoTree to find every `TacticInfo` node — including those
-inside macro expansions (`clearly`, `by_contra!`, etc.). For each, save
-a panel widget at the tactic's SURFACE source position with the figure
-derived from that step's `goalsBefore` LocalContext.
+For targets WITHOUT a hand-authored `figure := by construction { … }`
+block, save ONE panel widget at the proof body's start position
+showing the figure inferred from the theorem's full type (Pi binders
++ conclusion). The figure stays the same throughout the proof body —
+it illustrates what the theorem CLAIMS, not what's currently in scope.
 
-This replaces the earlier per-step pre-hook, which couldn't see inside
-macros because the macro hadn't expanded yet when the hook fired.
+Incremental per-step updates were explored and shelved (see tasks
+#102 / #103): the per-step pre-hook can't see hypothesis-introducing
+macros' internals, and the post-hoc InfoTree walker doesn't have
+populated trees at this vantage point. The figure-per-theorem
+primitive is what works today.
 
 Set `set_option geometry.proofFigure.debug true` to render DSL + LCtx
 overlays under each figure for diagnosing matcher coverage.
@@ -27,7 +30,7 @@ open Lean Elab Tactic Meta ProofWidgets Server
 
 register_option geometry.proofFigure.debug : Bool := {
   defValue := false
-  descr    := "Render DSL + LCtx debug overlays under each inferred proof-state figure."
+  descr    := "Render DSL + LCtx debug overlays under the inferred proof-state figure."
 }
 
 private def debugBlock (title : String) (body : String) : Html :=
@@ -70,53 +73,36 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
     #[dslView, lctxView]
   return wrap #[figHtml, debugPanel]
 
-/-- Per-step hook: fires BEFORE each tactic step inside
-`with_atlas_panels` with live TacticM state (current LCtx = entering
-state for the step). Saves a figure widget at the step's source
-position.
-
-KNOWN LIMITATION: this hook fires at the OUTER step level. For
-hypothesis-introducing macros (`clearly`, `by_contra!`, etc.), the
-macro hasn't expanded yet at fire time, so hypotheses the macro
-introduces internally won't appear in the figure within the macro body.
-The post-hoc InfoTree approach would catch these but the trees aren't
-populated at the hook's vantage point (verified 2026-06-11 — trees=N
-but tacticInfos=0). Macro-internal figures stay out of scope until
-either Lean exposes per-step state during elab, or we re-architect via
-command-level post-elab hooks. -/
-def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
-  let env ← getEnv
-  if (Atlas.baseIRExprFor env kind num).isSome then return
-  try
-    withMainContext do
-      let goalTy ← (← getMainGoal).getType
-      let theoremTy ← match ← Lean.Elab.Term.getDeclName? with
-        | some n => pure ((← getEnv).find? n |>.map (·.type))
-        | none   => pure none
-      let c ← FromProofState.extract
-        (goalTy := some goalTy) (theoremTy := theoremTy)
-      let debug := geometry.proofFigure.debug.get (← getOptions)
-      let lctxStr ← if debug then formatLCtx else pure ""
-      let html ← renderConstructionHtml c lctxStr debug
-      Widget.savePanelWidgetInfo
-        (hash HtmlDisplayPanel.javascript)
-        (return Json.mkObj [("html", Atlas.htmlToJson html)])
-        stx
-  catch _ => pure ()
-
-initialize do
-  Atlas.Refs.figureProgressionPerStepHookRef.set perStepHook
-
-/-- Post-hoc fallback: tries an InfoTree walk but the trees aren't
-populated at this vantage point so it's currently a no-op. Kept as the
-dispatch entry from `ProgressiveFigure` for the day the architecture
-supports it. -/
-def saveInfoTreeFigures (kind num : String) (_declName : Name) (_seq : Syntax) :
+/-- Post-hoc hook: save ONE figure widget at the proof body's start,
+inferred from the theorem signature. -/
+def saveTheoremFigure (kind num : String) (declName : Name) (seq : Syntax) :
     TacticM Unit := do
   let env ← getEnv
+  -- Hand-authored DSL figures handled by ProgressiveFigure.
   if (Atlas.baseIRExprFor env kind num).isSome then return
-  -- TODO(#100 followup): when Lean exposes mid-elab TacticInfos, walk
-  -- them here to catch macro-internal positions.
-  pure ()
+  let theoremTy : Option Expr := (env.find? declName).map (·.type)
+  try
+    -- Open the theorem's binders as fresh fvars so the classifier sees
+    -- A/B/C/etc. as Points (and any premise like Angle V X Z gets
+    -- matched by the Pi telescoping in matchPi).
+    let html ← match theoremTy with
+      | none => withMainContext do
+        let goalTy ← (← getMainGoal).getType
+        let c ← FromProofState.extract (goalTy := some goalTy)
+        let debug := geometry.proofFigure.debug.get (← getOptions)
+        let lctxStr ← if debug then formatLCtx else pure ""
+        renderConstructionHtml c lctxStr debug
+      | some thmTy =>
+        forallTelescope thmTy fun _ conclusion => do
+          let c ← FromProofState.extract
+            (goalTy := some conclusion) (theoremTy := some thmTy)
+          let debug := geometry.proofFigure.debug.get (← getOptions)
+          let lctxStr ← if debug then formatLCtx else pure ""
+          renderConstructionHtml c lctxStr debug
+    Widget.savePanelWidgetInfo
+      (hash HtmlDisplayPanel.javascript)
+      (return Json.mkObj [("html", Atlas.htmlToJson html)])
+      seq
+  catch _ => pure ()
 
 end Geometry.Construction.IncrementalProofFigure
