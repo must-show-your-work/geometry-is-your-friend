@@ -27,7 +27,7 @@ macro_rules (kind := oppositeRayNotation)
 -- there such a thing as a "zero angle." We eliminated those expressions because most of the assertions we will make
 -- about angles do not apply to them.'
 def Angle (A B C : Point) : Prop :=
-  distinct A B C ∧ ray A B is not opposite ray A C
+  (ray A B : Set Point) ≠ ray A C ∧ ray A B is not opposite ray A C
 
 -- `∠ B A C` reads as Greenberg writes it: the middle letter is the vertex.
 -- The def has vertex first, so the macro extracts the middle and reorders.

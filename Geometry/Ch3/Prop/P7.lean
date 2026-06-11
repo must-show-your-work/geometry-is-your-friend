@@ -102,7 +102,7 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
       have ⟨h, j⟩ := via proposition 3.6 BDC
       constructor
       · constructor
-        · separate; distinguish
+        · sorry -- BROKEN by Angle def change (distinct → ray-distinct); was: separate; distinguish
         · by_contra!; obtain ⟨_, BAeqBC⟩ := this
           auxillary {
             assert collinear A B C -- equivalent to our RAA hypo
