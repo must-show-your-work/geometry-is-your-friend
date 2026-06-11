@@ -188,15 +188,18 @@ private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
     stx
 
 def saveProgressiveFigures
-    (kind num : String) (declName : Name) (seq : Syntax) (initialGoalTy : Expr) :
+    (kind num : String) (declName : Name) (seq : Syntax)
+    (initialGoalTy : Expr) (initialMVar : MVarId) :
     TacticM Unit := do
   let env ← getEnv
   let some baseExpr := Atlas.baseIRExprFor env kind num
-    | IncrementalProofFigure.saveTheoremFigure kind num declName seq initialGoalTy
+    | IncrementalProofFigure.saveTheoremFigure kind num declName seq
+        initialGoalTy initialMVar
   let base ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
     (mkConst ``Figures.Construction.DSL.Construction) baseExpr
   if base.isInfer then
-    IncrementalProofFigure.saveTheoremFigure kind num declName seq initialGoalTy
+    IncrementalProofFigure.saveTheoremFigure kind num declName seq
+      initialGoalTy initialMVar
     return
   let addenda := addendaFor env declName
   let fileMap ← getFileMap

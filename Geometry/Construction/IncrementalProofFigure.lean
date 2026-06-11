@@ -83,13 +83,13 @@ private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
     stx
 
 def saveTheoremFigure (_kind _num : String) (_declName : Name) (seq : Syntax)
-    (initialGoalTy : Expr) : TacticM Unit := do
+    (initialGoalTy : Expr) (initialMVar : MVarId) : TacticM Unit := do
   try
-    -- The proof body has finished by the time this hook fires, so we
-    -- can't look up `getMainGoal`. Atlas captured the goal type at the
-    -- start (= the conclusion after Pi binders are introduced as fvars
-    -- in the proof context's LCtx) and threaded it through.
-    let html ← do
+    -- Restore the LCtx as it was at proof entry (binder fvars in scope)
+    -- via the snapshotted mvar's context. `getLCtx` inside `extract`
+    -- then walks all the theorem's premises (distinct, between,
+    -- incidence hypotheses, etc.).
+    let html ← initialMVar.withContext do
       let c ← FromProofState.extract (goalTy := some initialGoalTy)
       let debug := geometry.proofFigure.debug.get (← getOptions)
       let lctxStr ← if debug then formatLCtx else pure ""
