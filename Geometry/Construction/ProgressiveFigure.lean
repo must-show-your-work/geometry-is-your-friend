@@ -187,6 +187,14 @@ def saveProgressiveFigures
       -- seq's start. Per-step incremental updates are tracked as
       -- #102 / #103.
       IncrementalProofFigure.saveTheoremFigure kind num declName seq
+  -- Opt-in: `construction { infer }` lowers to a Construction whose
+  -- only stmt is the infer marker. Detect it and route to proof-state
+  -- so title/caption metadata coexist with proof-state inference.
+  let inferOnly ← unsafe Meta.evalExpr DSL.Construction
+    (mkConst ``DSL.Construction) baseExpr
+  if inferOnly.isInfer then
+    IncrementalProofFigure.saveTheoremFigure kind num declName seq
+    return
   let base ← unsafe Meta.evalExpr DSL.Construction
     (mkConst ``DSL.Construction) baseExpr
   let addenda := addendaFor env declName
