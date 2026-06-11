@@ -43,15 +43,42 @@ partial def classify (ty : Expr) : MetaM (Array Stmt) := do
       | other => other
   | _ => return #[]
 
-/-- Walk the current `LocalContext`; emit a `DSL.Construction` that
-mirrors what the user could have hand-written as a `construction { … }`
-block to describe the proof state. -/
-def extract : MetaM Construction := do
+/-- Classify a *goal* type. Splits `Iff p q` into both sides (the
+figure should reflect the configuration the theorem describes, and an
+iff's two sides describe the same configuration). Pi binders are
+ignored — those vars get introduced via `intro` and surface in the
+LCtx walk. Other shapes fall through to the regular classifier (which
+handles registry hits + structural And/Not). -/
+partial def classifyGoal (ty : Expr) : MetaM (Array Stmt) := do
+  let ty ← instantiateMVars ty
+  match ty.getAppFnArgs with
+  | (``Iff, #[l, r]) =>
+    return (← classifyGoal l) ++ (← classifyGoal r)
+  | _ => classify ty
+
+/-- Walk the current `LocalContext` (+ optionally the current goal
+type) and emit a `DSL.Construction` mirroring what the user could have
+hand-written as a `construction { … }` block. The figure illustrates
+the theorem, not the proof state — so passing the goal lets us pick up
+constraints that aren't in scope yet but ARE in the conclusion (notably
+the other half of an iff while you're proving one direction). -/
+def extract (goalTy : Option Expr := none) : MetaM Construction := do
   let lctx ← getLCtx
   let mut points : Std.HashSet String := {}
   let mut pointOrder : Array String := #[]
   let mut asserts : Array Stmt := #[]
   let mut seenStmt : Std.HashSet String := {}
+  -- Helper to merge a stmt batch with dedup.
+  let pushStmts (asserts : Array Stmt) (seen : Std.HashSet String)
+      (batch : Array Stmt) : Array Stmt × Std.HashSet String := Id.run do
+    let mut a := asserts
+    let mut s := seen
+    for stmt in batch do
+      let key := printStmt stmt
+      if s.contains key then continue
+      s := s.insert key
+      a := a.push stmt
+    return (a, s)
   for decl in lctx do
     if decl.isImplementationDetail then continue
     let ty ← instantiateMVars decl.type
@@ -61,11 +88,15 @@ def extract : MetaM Construction := do
         points := points.insert n
         pointOrder := pointOrder.push n
     else
-      for s in (← classify ty) do
-        let key := printStmt s
-        if seenStmt.contains key then continue
-        seenStmt := seenStmt.insert key
-        asserts := asserts.push s
+      let (a', s') := pushStmts asserts seenStmt (← classify ty)
+      asserts := a'
+      seenStmt := s'
+  -- Layer the goal on top — its facts are what the theorem CLAIMS, not
+  -- what's currently in scope. Iff splits via `classifyGoal`.
+  if let some g := goalTy then
+    let (a', s') := pushStmts asserts seenStmt (← classifyGoal g)
+    asserts := a'
+    seenStmt := s'
   let existsStmts : Array Stmt := if pointOrder.isEmpty then #[]
     else #[.«exists» pointOrder "Point"]
   return ⟨existsStmts ++ asserts⟩

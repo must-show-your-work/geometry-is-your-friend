@@ -83,7 +83,8 @@ def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
   if (Atlas.baseIRExprFor env kind num).isSome then return
   try
     withMainContext do
-      let c ← FromProofState.extract
+      let goalTy ← (← getMainGoal).getType
+      let c ← FromProofState.extract (goalTy := some goalTy)
       let lctxStr ← formatLCtx
       let html ← renderConstructionHtml c lctxStr
       Widget.savePanelWidgetInfo
