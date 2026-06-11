@@ -16,7 +16,9 @@ def matchBetween : Matcher := fun e => do
   match (← instantiateMVars e).getAppFnArgs with
   | (`Geometry.Theory.Between, #[a, b, c]) =>
     let some args ← readPointArgs #[a, b, c] | return none
-    return some #[assertN "between" args]
+    -- A Between implies collinearity of all three. Emit collinear too
+    -- so the constraint graph + synthesis can put all three on a line.
+    return some #[assertN "between" args, assertN "collinear" args]
   | _ => return none
 
 end Geometry.Construction.Matchers
