@@ -70,57 +70,53 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
     #[dslView, lctxView]
   return wrap #[figHtml, debugPanel]
 
-/-- Walk the populated InfoTrees and save a figure widget at each
-TacticInfo's source position. Called POST-HOC after `evalTacticSeq`
-finishes so the trees include macro-internal steps. -/
-def saveInfoTreeFigures (kind num : String) (declName : Name) (seq : Syntax) :
-    TacticM Unit := do
+/-- Per-step hook: fires BEFORE each tactic step inside
+`with_atlas_panels` with live TacticM state (current LCtx = entering
+state for the step). Saves a figure widget at the step's source
+position.
+
+KNOWN LIMITATION: this hook fires at the OUTER step level. For
+hypothesis-introducing macros (`clearly`, `by_contra!`, etc.), the
+macro hasn't expanded yet at fire time, so hypotheses the macro
+introduces internally won't appear in the figure within the macro body.
+The post-hoc InfoTree approach would catch these but the trees aren't
+populated at the hook's vantage point (verified 2026-06-11 — trees=N
+but tacticInfos=0). Macro-internal figures stay out of scope until
+either Lean exposes per-step state during elab, or we re-architect via
+command-level post-elab hooks. -/
+def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
   let env ← getEnv
   if (Atlas.baseIRExprFor env kind num).isSome then return
-  let theoremTy : Option Expr := (env.find? declName).map (·.type)
-  let fileMap ← getFileMap
-  let trees := (← getInfoState).trees.toArray
-  let infos := trees.foldl (init := (#[] : Array (ContextInfo × TacticInfo)))
-    fun acc t =>
-      t.foldInfo (init := acc) fun ctx info acc' =>
-        match info with
-        | .ofTacticInfo ti => acc'.push (ctx, ti)
-        | _ => acc'
-  -- Always emit a diagnostic widget at the seq's start so we can see
-  -- whether this hook even fires and how many tactic infos were found.
-  let diagText : String :=
-    s!"saveInfoTreeFigures: trees={trees.size} tacticInfos={infos.size}"
-  let diagHtml : Html := Html.element "div"
-    #[("style", Json.str "padding: 0.5em; background: #fdf6e3; color: #073642; font-family: monospace; font-size: 0.85em;")]
-    #[Html.text diagText]
-  Widget.savePanelWidgetInfo
-    (hash HtmlDisplayPanel.javascript)
-    (return Json.mkObj [("html", Atlas.htmlToJson diagHtml)])
-    seq
-  let mut seenLines : Std.HashSet Nat := {}
-  for (ctx, ti) in infos do
-    let some pos := ti.stx.getPos? | continue
-    let line := fileMap.toPosition pos |>.line
-    if seenLines.contains line then continue
-    seenLines := seenLines.insert line
-    let some goal := ti.goalsBefore.head? | continue
-    let htmlOpt? ← try
-      let html ← ctx.runMetaM {} do
-        goal.withContext do
-          let goalTy ← goal.getType
-          let c ← FromProofState.extract
-            (goalTy := some goalTy) (theoremTy := theoremTy)
-          let debug := geometry.proofFigure.debug.get (← getOptions)
-          let lctxStr ← if debug then formatLCtx else pure ""
-          renderConstructionHtml c lctxStr debug
-      pure (some html)
-    catch _ => pure none
-    match htmlOpt? with
-    | some html =>
+  try
+    withMainContext do
+      let goalTy ← (← getMainGoal).getType
+      let theoremTy ← match ← Lean.Elab.Term.getDeclName? with
+        | some n => pure ((← getEnv).find? n |>.map (·.type))
+        | none   => pure none
+      let c ← FromProofState.extract
+        (goalTy := some goalTy) (theoremTy := theoremTy)
+      let debug := geometry.proofFigure.debug.get (← getOptions)
+      let lctxStr ← if debug then formatLCtx else pure ""
+      let html ← renderConstructionHtml c lctxStr debug
       Widget.savePanelWidgetInfo
         (hash HtmlDisplayPanel.javascript)
         (return Json.mkObj [("html", Atlas.htmlToJson html)])
-        ti.stx
-    | none => pure ()
+        stx
+  catch _ => pure ()
+
+initialize do
+  Atlas.Refs.figureProgressionPerStepHookRef.set perStepHook
+
+/-- Post-hoc fallback: tries an InfoTree walk but the trees aren't
+populated at this vantage point so it's currently a no-op. Kept as the
+dispatch entry from `ProgressiveFigure` for the day the architecture
+supports it. -/
+def saveInfoTreeFigures (kind num : String) (_declName : Name) (_seq : Syntax) :
+    TacticM Unit := do
+  let env ← getEnv
+  if (Atlas.baseIRExprFor env kind num).isSome then return
+  -- TODO(#100 followup): when Lean exposes mid-elab TacticInfos, walk
+  -- them here to catch macro-internal positions.
+  pure ()
 
 end Geometry.Construction.IncrementalProofFigure
