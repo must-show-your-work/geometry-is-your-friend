@@ -74,12 +74,13 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
   return wrap #[figHtml, debugPanel]
 
 /-- Post-hoc hook: save ONE figure widget at the proof body's start,
-inferred from the theorem signature. -/
-def saveTheoremFigure (kind num : String) (declName : Name) (seq : Syntax) :
+inferred from the theorem signature. Called either when no baseIR
+exists (no figure block at all) or when `construction { infer }` puts
+the infer marker into baseIR — in both cases ProgressiveFigure has
+already decided this is the proof-state path, so we don't re-check. -/
+def saveTheoremFigure (_kind _num : String) (declName : Name) (seq : Syntax) :
     TacticM Unit := do
   let env ← getEnv
-  -- Hand-authored DSL figures handled by ProgressiveFigure.
-  if (Atlas.baseIRExprFor env kind num).isSome then return
   let theoremTy : Option Expr := (env.find? declName).map (·.type)
   try
     -- Open the theorem's binders as fresh fvars so the classifier sees
