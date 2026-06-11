@@ -51,15 +51,17 @@ shapes — same as what `separate`/`distinct`'s elaborator produces. -/
 private partial def readFinsetPoints (e : Expr) : MetaM (Option (Array String)) := do
   let e ← instantiateMVars e
   match e.getAppFnArgs with
+  -- `@Insert.insert α γ inst a s` — 5 args. Element at index 3, tail at 4.
   | (``Insert.insert, args) =>
-    if args.size ≥ 4 then
-      let some n ← readPointName? args[2]! | return none
-      let some rest ← readFinsetPoints args[3]! | return none
+    if args.size ≥ 5 then
+      let some n ← readPointName? args[3]! | return none
+      let some rest ← readFinsetPoints args[4]! | return none
       return some (#[n.toString] ++ rest)
     return none
+  -- `@Singleton.singleton α γ inst a` — 4 args. Element at index 3.
   | (``Singleton.singleton, args) =>
-    if args.size ≥ 3 then
-      let some n ← readPointName? args[2]! | return none
+    if args.size ≥ 4 then
+      let some n ← readPointName? args[3]! | return none
       return some #[n.toString]
     return none
   | _ => return none
@@ -114,11 +116,20 @@ private partial def classifyType (ty : Expr) : MetaM (Array Stmt) := do
   | (``And, #[l, r]) =>
     return (← classifyType l) ++ (← classifyType r)
   | (``Not, #[inner]) =>
-    -- `B off ray A C` etc. Wrap each emitted constraint with a "¬" head.
-    let inner ← classifyType inner
-    return inner.map fun s => match s with
-      | .assert (.app head args) _ => .assert (.app "¬" [.app head args]) ""
-      | other => other
+    -- Special-case `¬OppositeRay V X Z`: emit `noncollinear V X Z` rather
+    -- than `¬oppositeRay` (which the DSL doesn't recognize). Greenberg's
+    -- `Angle V X Z = Distinct {V,X,Z} ∧ ¬OppositeRay V X Z`, and the
+    -- noncollinearity of V/X/Z is the geometric content for figure layout.
+    match inner.getAppFnArgs with
+    | (`Geometry.Theory.OppositeRay, #[v, x, z]) =>
+      let some args ← readPointArgs #[v, x, z] | return #[]
+      return #[assertN "noncollinear" args]
+    | _ =>
+      -- `B off ray A C` etc. Wrap each emitted constraint with a "¬" head.
+      let inner ← classifyType inner
+      return inner.map fun s => match s with
+        | .assert (.app head args) _ => .assert (.app "¬" [.app head args]) ""
+        | other => other
   | _ => return #[]
 
 /-- Walk the current `LocalContext`; emit a `DSL.Construction` that
@@ -126,17 +137,26 @@ mirrors what the user could have hand-written as a `construction { … }`
 block to describe the proof state. -/
 def extract : MetaM Construction := do
   let lctx ← getLCtx
-  let mut points : Array String := #[]
+  let mut points : Std.HashSet String := {}
+  let mut pointOrder : Array String := #[]
   let mut asserts : Array Stmt := #[]
+  let mut seenStmt : Std.HashSet String := {}
   for decl in lctx do
     if decl.isImplementationDetail then continue
     let ty ← instantiateMVars decl.type
     if ty.isConstOf `Geometry.Theory.Point then
-      points := points.push decl.userName.toString
+      let n := decl.userName.toString
+      if !points.contains n then
+        points := points.insert n
+        pointOrder := pointOrder.push n
     else
-      asserts := asserts ++ (← classifyType ty)
-  let existsStmts : Array Stmt := if points.isEmpty then #[]
-    else #[.«exists» points "Point"]
+      for s in (← classifyType ty) do
+        let key := printStmt s
+        if seenStmt.contains key then continue
+        seenStmt := seenStmt.insert key
+        asserts := asserts.push s
+  let existsStmts : Array Stmt := if pointOrder.isEmpty then #[]
+    else #[.«exists» pointOrder "Point"]
   return ⟨existsStmts ++ asserts⟩
 
 end Geometry.Construction.FromProofState
