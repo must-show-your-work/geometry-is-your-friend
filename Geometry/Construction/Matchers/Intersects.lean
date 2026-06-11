@@ -1,13 +1,14 @@
 /-
 Geometry/Construction/Matchers/Intersects.lean — match
-`L intersects M at X` (i.e. `Geometry.Theory.Intersects L M X`) and
-emit constraints that pin X onto both shapes.
+`L intersects M at X` (`Geometry.Theory.Intersects L M X`) and the bare
+`L intersects M` (`Geometry.Theory.IntersectsSome L M`).
 
-For figure purposes: `X` lies on the line `L` AND on whatever shape
-`M` is (segment, line, ray). We emit:
-- `assert incident X L`
-- An on-shape annotation for M's shape via per-case sub-matchers
-  (segment / line_through / ray)
+Both emit a `construct` for the shape `M` (segment / line_through /
+ray) so the shape is VISIBLE in the figure, plus on-shape constraints
+when an explicit intersection point is known. Without the construct
+emission, hypotheses like `L intersects segment A B at X` would put
+constraints on A, B, X but no segment would actually be drawn —
+because nothing in the proof state constructs it.
 -/
 
 import Figures.Construction.ProofState
@@ -19,6 +20,41 @@ open Lean Meta
 open Figures.Construction.DSL
 open Figures.Construction.ProofState
 
+/-- Given a shape expression (segment/ray/line_through), produce the
+`construct <name> := <head> A B` stmt that makes it visible, plus the
+synthesized construct name. Returns `none` if the shape head isn't
+recognized. -/
+private def shapeConstruct (shapeExpr : Expr) :
+    MetaM (Option (Stmt × String × String × String)) := do
+  match shapeExpr.getAppFnArgs with
+  | (`Geometry.Theory.Segment.between, #[a, b]) =>
+    let some na ← readPointName? a | return none
+    let some nb ← readPointName? b | return none
+    let name := s!"seg_{na}_{nb}"
+    return some (.construct name (.app "segment" [.name na.toString, .name nb.toString]),
+                 "segment", na.toString, nb.toString)
+  | (`Geometry.Theory.LineThrough.through, #[a, b]) =>
+    let some na ← readPointName? a | return none
+    let some nb ← readPointName? b | return none
+    let name := lineAnchor na.toString nb.toString
+    return some (.construct name (.app "line_through" [.name na.toString, .name nb.toString]),
+                 "line_through", na.toString, nb.toString)
+  | (`Geometry.Theory.Ray.from_, #[a, b]) =>
+    let some na ← readPointName? a | return none
+    let some nb ← readPointName? b | return none
+    let name := s!"ray_{na}_{nb}"
+    return some (.construct name (.app "ray" [.name na.toString, .name nb.toString]),
+                 "ray", na.toString, nb.toString)
+  | _ => return none
+
+/-- The point-on-shape assert for X on the constructed shape. -/
+private def onShapeAssert (shapeKind aStr bStr xStr : String) : Stmt :=
+  match shapeKind with
+  | "segment" => assertN "on_segment" #[xStr, aStr, bStr]
+  | "line_through" => assertN "incident" #[xStr, lineAnchor aStr bStr]
+  | "ray" => assertN "on_ray" #[xStr, aStr, bStr]
+  | _ => assertN "incident" #[xStr, aStr]
+
 @[proof_state_matcher 50]
 def matchIntersectsAt : Matcher := fun e => do
   match (← instantiateMVars e).getAppFnArgs with
@@ -27,25 +63,29 @@ def matchIntersectsAt : Matcher := fun e => do
     let some nPoint ← readPointName? pointExpr | return none
     let xStr := nPoint.toString
     let lStr := nLine.toString
-    -- Build a per-shape stmt for X-on-M based on M's head.
-    let onShape ← match shapeExpr.getAppFnArgs with
-      | (`Geometry.Theory.Segment.between, #[a, b]) =>
-        let some na ← readPointName? a | pure none
-        let some nb ← readPointName? b | pure none
-        pure (some (assertN "on_segment" #[xStr, na.toString, nb.toString]))
-      | (`Geometry.Theory.LineThrough.through, #[a, b]) =>
-        let some na ← readPointName? a | pure none
-        let some nb ← readPointName? b | pure none
-        let lineName := lineAnchor na.toString nb.toString
-        pure (some (assertN "incident" #[xStr, lineName]))
-      | (`Geometry.Theory.Ray.from_, #[a, b]) =>
-        let some na ← readPointName? a | pure none
-        let some nb ← readPointName? b | pure none
-        pure (some (assertN "on_ray" #[xStr, na.toString, nb.toString]))
-      | _ => pure none
-    let mut stmts : Array Stmt := #[assertN "incident" #[xStr, lStr]]
-    if let some s := onShape then stmts := stmts.push s
-    return some stmts
+    let some (constructStmt, kind, aStr, bStr) ← shapeConstruct shapeExpr
+      | return none
+    return some #[
+      constructStmt,
+      assertN "incident" #[xStr, lStr],
+      onShapeAssert kind aStr bStr xStr,
+    ]
+  | _ => return none
+
+@[proof_state_matcher 50]
+def matchIntersectsSome : Matcher := fun e => do
+  match (← instantiateMVars e).getAppFnArgs with
+  | (`Geometry.Theory.IntersectsSome, #[lineExpr, shapeExpr])
+  | (`Geometry.Theory.Intersects, #[lineExpr, shapeExpr]) =>
+    -- No explicit intersection point — just make the shape visible
+    -- and (if line is named) ensure the line exists.
+    let some (constructStmt, _, _, _) ← shapeConstruct shapeExpr
+      | return none
+    -- If the first arg is a fvar Line, emit nothing else; otherwise
+    -- include a placeholder line (best-effort).
+    if (← readLineName? lineExpr).isSome then
+      return some #[constructStmt]
+    return some #[constructStmt]
   | _ => return none
 
 end Geometry.Construction.Matchers
