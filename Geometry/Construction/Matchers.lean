@@ -12,3 +12,4 @@ import Geometry.Construction.Matchers.Collinear
 import Geometry.Construction.Matchers.OppositeRay
 import Geometry.Construction.Matchers.LineMembership
 import Geometry.Construction.Matchers.Angle
+import Geometry.Construction.Matchers.RaysDistinct
