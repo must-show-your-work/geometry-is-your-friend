@@ -20,12 +20,34 @@ open Lean Meta
 open Figures.Construction.DSL
 open Figures.Construction.ProofState
 
+/-- Walk through possible coercion wrappers to find the inner
+shape-constructor application. Useful because `intersects segment A B`
+elaborates with a Segment→Line coercion around `Segment.between A B`. -/
+private partial def unwrapToShape (e : Expr) : Expr :=
+  match e.getAppFnArgs with
+  | (`Geometry.Theory.Segment.between, _)
+  | (`Geometry.Theory.LineThrough.through, _)
+  | (`Geometry.Theory.Ray.from_, _)
+  | (`Geometry.Theory.Extension.past, _) => e
+  | (_, args) =>
+    -- Try each arg recursively; first match wins. Coercions typically
+    -- wrap their target in the last arg.
+    args.foldr (init := e) fun arg acc =>
+      let recurse := unwrapToShape arg
+      match recurse.getAppFnArgs with
+      | (`Geometry.Theory.Segment.between, _)
+      | (`Geometry.Theory.LineThrough.through, _)
+      | (`Geometry.Theory.Ray.from_, _)
+      | (`Geometry.Theory.Extension.past, _) => recurse
+      | _ => acc
+
 /-- Given a shape expression (segment/ray/line_through), produce the
 `construct <name> := <head> A B` stmt that makes it visible, plus the
-synthesized construct name. Returns `none` if the shape head isn't
-recognized. -/
+synthesized construct name. Unwraps coercions. Returns `none` if the
+shape head isn't recognized. -/
 private def shapeConstruct (shapeExpr : Expr) :
     MetaM (Option (Stmt × String × String × String)) := do
+  let shapeExpr := unwrapToShape shapeExpr
   match shapeExpr.getAppFnArgs with
   | (`Geometry.Theory.Segment.between, #[a, b]) =>
     let some na ← readPointName? a | return none
