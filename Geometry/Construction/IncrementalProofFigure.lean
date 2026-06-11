@@ -35,7 +35,8 @@ register_option geometry.proofFigure.debug : Bool := {
 
 private def debugBlock (title : String) (body : String) : Html :=
   Html.element "details"
-    #[("style", Json.str "margin: 0.25em 0; font-family: monospace; font-size: 0.8em;")]
+    #[("open", Json.bool true),
+      ("style", Json.str "margin: 0.25em 0; font-family: monospace; font-size: 0.8em;")]
     #[ Html.element "summary"
          #[("style", Json.str "cursor: pointer; color: #586e75;")]
          #[Html.text title]
