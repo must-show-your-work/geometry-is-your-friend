@@ -47,7 +47,12 @@ def matchOnRay : Matcher := fun e => do
     let some p ← readPointName? elt | return none
     let some na ← readPointName? a | return none
     let some nb ← readPointName? b | return none
-    return some #[assertN "on_ray" #[p.toString, na.toString, nb.toString]]
+    let aStr := na.toString
+    let bStr := nb.toString
+    return some #[
+      .construct s!"ray_{aStr}_{bStr}" (.app "ray" [.name aStr, .name bStr]),
+      assertN "on_ray" #[p.toString, aStr, bStr],
+    ]
   | _ => return none
 
 @[proof_state_matcher 0]
@@ -58,7 +63,12 @@ def matchOnSegment : Matcher := fun e => do
     let some p ← readPointName? elt | return none
     let some na ← readPointName? a | return none
     let some nb ← readPointName? b | return none
-    return some #[assertN "on_segment" #[p.toString, na.toString, nb.toString]]
+    let aStr := na.toString
+    let bStr := nb.toString
+    return some #[
+      .construct s!"seg_{aStr}_{bStr}" (.app "segment" [.name aStr, .name bStr]),
+      assertN "on_segment" #[p.toString, aStr, bStr],
+    ]
   | _ => return none
 
 end Geometry.Construction.Matchers
