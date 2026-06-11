@@ -25,6 +25,7 @@ import Geometry.Construction.Syntax
 import Geometry.Construction.Lowering
 import Geometry.Construction.Cache
 import Geometry.Construction.AtlasField
+import Geometry.Construction.IncrementalProofFigure
 import ProofWidgets.Component.HtmlDisplay
 
 namespace Geometry.Construction
@@ -181,7 +182,11 @@ def saveProgressiveFigures
     (kind num : String) (declName : Name) (seq : Syntax) :
     TacticM Unit := do
   let env ← getEnv
-  let some baseExpr := Atlas.baseIRExprFor env kind num | return
+  let some baseExpr := Atlas.baseIRExprFor env kind num
+    | -- No DSL base — delegate to the proof-state walker over the
+      -- populated InfoTree, which catches macro-internal positions
+      -- (clearly / by_contra! / etc.) that the syntactic walker misses.
+      IncrementalProofFigure.saveInfoTreeFigures kind num declName seq
   let base ← unsafe Meta.evalExpr DSL.Construction
     (mkConst ``DSL.Construction) baseExpr
   let addenda := addendaFor env declName
