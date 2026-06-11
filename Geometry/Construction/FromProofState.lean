@@ -1,24 +1,19 @@
 /-
-Geometry/Construction/FromProofState.lean — walk the LocalContext into
-a `DSL.Construction`.
+Geometry/Construction/FromProofState.lean — walk LCtx + goal + theorem
+type into a `DSL.Construction`.
 
-The actual Type→Stmt translation lives in `Figures.Construction.ProofState`'s
-open registry of matchers (one matcher per Prop family). This file
-hosts:
-1. The driver: walk the LCtx, classify each non-Point local, dedup, emit.
-2. A small structural fallback for `And`-conjunctions and generic `Not`
-   wrapping — these don't fit "single Prop" matchers but are common
-   enough to handle here. Specific Not patterns (e.g., `¬OppositeRay`)
-   live as registry entries and supersede the generic Not fallback.
-
-Domain matchers live in `Geometry/Construction/Matchers/`; the
-aggregator there imports each one so its `@[proof_state_matcher]`
-registration runs at module-init.
+All Type→Stmt translation goes through the open registry hosted in
+`Figures.Construction.ProofState`. Both geometric matchers (Between,
+Distinct, Collinear, Angle, …) and structural decompositions (And,
+Iff, Not, Pi) are registered there — geometric in giyf, logical in
+figures. This file just drives the LCtx walk and aggregates results
+with dedup.
 -/
 
 import Lean
 import Figures.Construction.DSL
 import Figures.Construction.ProofState
+import Figures.Construction.Matchers.Logical
 import Geometry.Construction.Matchers
 
 namespace Geometry.Construction.FromProofState
@@ -26,49 +21,34 @@ namespace Geometry.Construction.FromProofState
 open Lean Meta
 open Figures.Construction.DSL
 
-/-- Classify a Prop-type into a list of stmts. Tries the registry
-first; falls through to structural handling of `And` and generic
-`Not` (each emitted stmt gets wrapped with a `¬` head). -/
-partial def classify (ty : Expr) : MetaM (Array Stmt) := do
+/-- Classify any Expr (Prop or Type) via the registry. Returns `#[]`
+when no matcher claims it. -/
+def classify (ty : Expr) : MetaM (Array Stmt) := do
   let ty ← instantiateMVars ty
-  if let some result ← Figures.Construction.ProofState.classify ty then
-    return result
-  match ty.getAppFnArgs with
-  | (``And, #[l, r]) =>
-    return (← classify l) ++ (← classify r)
-  | (``Not, #[inner]) =>
-    let inner ← classify inner
-    return inner.map fun s => match s with
-      | .assert (.app head args) _ => .assert (.app "¬" [.app head args]) ""
-      | other => other
-  | _ => return #[]
-
-/-- Classify a *goal* type. Splits `Iff p q` into both sides (the
-figure should reflect the configuration the theorem describes, and an
-iff's two sides describe the same configuration). Pi binders are
-ignored — those vars get introduced via `intro` and surface in the
-LCtx walk. Other shapes fall through to the regular classifier (which
-handles registry hits + structural And/Not). -/
-partial def classifyGoal (ty : Expr) : MetaM (Array Stmt) := do
-  let ty ← instantiateMVars ty
-  match ty.getAppFnArgs with
-  | (``Iff, #[l, r]) =>
-    return (← classifyGoal l) ++ (← classifyGoal r)
-  | _ => classify ty
+  return (← Figures.Construction.ProofState.classify ty).getD #[]
 
 /-- Walk the current `LocalContext` (+ optionally the current goal
-type) and emit a `DSL.Construction` mirroring what the user could have
-hand-written as a `construction { … }` block. The figure illustrates
-the theorem, not the proof state — so passing the goal lets us pick up
-constraints that aren't in scope yet but ARE in the conclusion (notably
-the other half of an iff while you're proving one direction). -/
-def extract (goalTy : Option Expr := none) : MetaM Construction := do
+type + the full theorem type) and emit a `DSL.Construction` mirroring
+what the user could have hand-written as a `construction { … }` block.
+
+The figure illustrates the THEOREM, not the proof state. Three
+sources contribute, all dispatched through the same registry:
+
+- LCtx — hypotheses currently in scope.
+- `goalTy` — the current main goal; picks up constraints from the
+  conclusion that aren't in LCtx yet.
+- `theoremTy` — the FULL theorem type with Pi binders intact; picks
+  up constraints from PREMISES that have since been destructured out
+  of the LCtx (e.g. an `Angle V X Z` parameter that `obtain` broke up).
+  Without this, the figure loses content as the proof advances; with
+  it, the figure stays stable across the whole proof body. -/
+def extract (goalTy : Option Expr := none) (theoremTy : Option Expr := none) :
+    MetaM Construction := do
   let lctx ← getLCtx
   let mut points : Std.HashSet String := {}
   let mut pointOrder : Array String := #[]
   let mut asserts : Array Stmt := #[]
   let mut seenStmt : Std.HashSet String := {}
-  -- Helper to merge a stmt batch with dedup.
   let pushStmts (asserts : Array Stmt) (seen : Std.HashSet String)
       (batch : Array Stmt) : Array Stmt × Std.HashSet String := Id.run do
     let mut a := asserts
@@ -91,10 +71,12 @@ def extract (goalTy : Option Expr := none) : MetaM Construction := do
       let (a', s') := pushStmts asserts seenStmt (← classify ty)
       asserts := a'
       seenStmt := s'
-  -- Layer the goal on top — its facts are what the theorem CLAIMS, not
-  -- what's currently in scope. Iff splits via `classifyGoal`.
   if let some g := goalTy then
-    let (a', s') := pushStmts asserts seenStmt (← classifyGoal g)
+    let (a', s') := pushStmts asserts seenStmt (← classify g)
+    asserts := a'
+    seenStmt := s'
+  if let some tt := theoremTy then
+    let (a', s') := pushStmts asserts seenStmt (← classify tt)
     asserts := a'
     seenStmt := s'
   let existsStmts : Array Stmt := if pointOrder.isEmpty then #[]
