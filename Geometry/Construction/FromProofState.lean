@@ -45,8 +45,10 @@ sources contribute, all dispatched through the same registry:
 def extract (goalTy : Option Expr := none) (theoremTy : Option Expr := none) :
     MetaM Construction := do
   let lctx ← getLCtx
-  let mut points : Std.HashSet String := {}
+  let mut pointSeen : Std.HashSet String := {}
   let mut pointOrder : Array String := #[]
+  let mut lineSeen : Std.HashSet String := {}
+  let mut lineOrder : Array String := #[]
   let mut asserts : Array Stmt := #[]
   let mut seenStmt : Std.HashSet String := {}
   let pushStmts (asserts : Array Stmt) (seen : Std.HashSet String)
@@ -64,9 +66,14 @@ def extract (goalTy : Option Expr := none) (theoremTy : Option Expr := none) :
     let ty ← instantiateMVars decl.type
     if ty.isConstOf `Geometry.Theory.Point then
       let n := decl.userName.toString
-      if !points.contains n then
-        points := points.insert n
+      if !pointSeen.contains n then
+        pointSeen := pointSeen.insert n
         pointOrder := pointOrder.push n
+    else if ty.isConstOf `Geometry.Theory.Line then
+      let n := decl.userName.toString
+      if !lineSeen.contains n then
+        lineSeen := lineSeen.insert n
+        lineOrder := lineOrder.push n
     else
       let (a', s') := pushStmts asserts seenStmt (← classify ty)
       asserts := a'
@@ -79,8 +86,11 @@ def extract (goalTy : Option Expr := none) (theoremTy : Option Expr := none) :
     let (a', s') := pushStmts asserts seenStmt (← classify tt)
     asserts := a'
     seenStmt := s'
-  let existsStmts : Array Stmt := if pointOrder.isEmpty then #[]
-    else #[.«exists» pointOrder "Point"]
+  let mut existsStmts : Array Stmt := #[]
+  if !pointOrder.isEmpty then
+    existsStmts := existsStmts.push (.«exists» pointOrder "Point")
+  if !lineOrder.isEmpty then
+    existsStmts := existsStmts.push (.«exists» lineOrder "Line")
   return ⟨existsStmts ++ asserts⟩
 
 end Geometry.Construction.FromProofState
