@@ -1,21 +1,18 @@
 /-
-Geometry/Construction/IncrementalProofFigure.lean — per-tactic-step
-figure widget derived from the proof state.
+Geometry/Construction/IncrementalProofFigure.lean — post-hoc figure
+widget for proof-state-driven figures.
 
-Registers `Atlas.Refs.figureProgressionPerStepHookRef`. The hook fires
-BEFORE each tactic step inside `with_atlas_panels` with live TacticM
-state (current LCtx = entering state for the step). For targets WITHOUT
-a DSL-authored `construction { … }` figure, the hook extracts a
-Construction from the LCtx + goal, lowers + renders, and saves a panel
-widget at the step's syntax position.
+After `evalTacticSeq` completes inside `with_atlas_panels`, walk the
+populated InfoTree to find every `TacticInfo` node — including those
+inside macro expansions (`clearly`, `by_contra!`, etc.). For each, save
+a panel widget at the tactic's SURFACE source position with the figure
+derived from that step's `goalsBefore` LocalContext.
 
-Targets with a DSL figure skip this hook entirely — the post-hoc DSL
-path in `ProgressiveFigure` already covers them.
+This replaces the earlier per-step pre-hook, which couldn't see inside
+macros because the macro hadn't expanded yet when the hook fired.
 
-Set `set_option geometry.proofFigure.debug true` (per-file or per-decl)
-to see the inferred DSL + LCtx overlays under each figure — useful when
-diagnosing matcher coverage. Default `false` keeps production renderings
-(atlas serve, GH Pages) clean.
+Set `set_option geometry.proofFigure.debug true` to render DSL + LCtx
+overlays under each figure for diagnosing matcher coverage.
 -/
 
 import Geometry.Construction.FromProofState
@@ -43,9 +40,6 @@ private def debugBlock (title : String) (body : String) : Html :=
          #[("style", Json.str "margin: 0; padding: 0.5em; background: #fdf6e3; color: #073642; white-space: pre-wrap;")]
          #[Html.text body] ]
 
-/-- Format the LCtx as one line per non-implementation-detail decl:
-`name : type`. Used in the proof-state debug overlay so we can see what
-`extract` had to work with at each step. -/
 private def formatLCtx : MetaM String := do
   let lctx ← getLCtx
   let mut out : Array String := #[]
@@ -76,31 +70,52 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
     #[dslView, lctxView]
   return wrap #[figHtml, debugPanel]
 
-/-- Per-step hook implementation: fires BEFORE each tactic step.
-Skips if the DSL path owns this target. Otherwise reads the current
-LCtx, extracts a Construction, renders, saves a widget at the step's
-position. -/
-def perStepHook (kind num : String) (stx : Syntax) : TacticM Unit := do
+/-- Walk the populated InfoTrees and save a figure widget at each
+TacticInfo's source position. Called POST-HOC after `evalTacticSeq`
+finishes so the trees include macro-internal steps. -/
+def saveInfoTreeFigures (kind num : String) (declName : Name) (_seq : Syntax) :
+    TacticM Unit := do
   let env ← getEnv
+  -- DSL-figured targets are handled by the ProgressiveFigure post-hoc
+  -- hook; skip here.
   if (Atlas.baseIRExprFor env kind num).isSome then return
-  try
-    withMainContext do
-      let goalTy ← (← getMainGoal).getType
-      let theoremTy ← match ← Lean.Elab.Term.getDeclName? with
-        | some n => pure ((← getEnv).find? n |>.map (·.type))
-        | none   => pure none
-      let c ← FromProofState.extract
-        (goalTy := some goalTy) (theoremTy := theoremTy)
-      let debug := geometry.proofFigure.debug.get (← getOptions)
-      let lctxStr ← if debug then formatLCtx else pure ""
-      let html ← renderConstructionHtml c lctxStr debug
+  let theoremTy : Option Expr := (env.find? declName).map (·.type)
+  let fileMap ← getFileMap
+  let trees := (← getInfoState).trees.toArray
+  -- Collect every TacticInfo node across all trees, paired with its
+  -- enclosing ContextInfo.
+  let infos := trees.foldl (init := (#[] : Array (ContextInfo × TacticInfo)))
+    fun acc t =>
+      t.foldInfo (init := acc) fun ctx info acc' =>
+        match info with
+        | .ofTacticInfo ti => acc'.push (ctx, ti)
+        | _ => acc'
+  -- Dedup by source line: chained leaf tactics on one line should
+  -- only emit one widget at that line.
+  let mut seenLines : Std.HashSet Nat := {}
+  for (ctx, ti) in infos do
+    let some pos := ti.stx.getPos? | continue
+    let line := fileMap.toPosition pos |>.line
+    if seenLines.contains line then continue
+    seenLines := seenLines.insert line
+    let some goal := ti.goalsBefore.head? | continue
+    let htmlOpt? ← try
+      let html ← ctx.runMetaM {} do
+        goal.withContext do
+          let goalTy ← goal.getType
+          let c ← FromProofState.extract
+            (goalTy := some goalTy) (theoremTy := theoremTy)
+          let debug := geometry.proofFigure.debug.get (← getOptions)
+          let lctxStr ← if debug then formatLCtx else pure ""
+          renderConstructionHtml c lctxStr debug
+      pure (some html)
+    catch _ => pure none
+    match htmlOpt? with
+    | some html =>
       Widget.savePanelWidgetInfo
         (hash HtmlDisplayPanel.javascript)
         (return Json.mkObj [("html", Atlas.htmlToJson html)])
-        stx
-  catch _ => pure ()
-
-initialize do
-  Atlas.Refs.figureProgressionPerStepHookRef.set perStepHook
+        ti.stx
+    | none => pure ()
 
 end Geometry.Construction.IncrementalProofFigure
