@@ -16,8 +16,11 @@ open Lake DSL
 require verso from git
   "https://github.com/leanprover/verso.git" @ "c004fc5a02584e08def4bfe5c0632d7e208efb58"
 
-require atlas from git
-  "https://github.com/must-show-your-work/atlas" @ "main"
+-- ITERATING ON L_FULL SOLVER: use local atlas + figures while figures'
+-- rules / matchers are still churning. Revert to git remote once the
+-- pipeline settles. See task #100 in shed memory.
+require atlas from "../atlas"
+require figures from "../figures"
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 
