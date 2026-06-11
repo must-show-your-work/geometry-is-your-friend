@@ -62,10 +62,9 @@ private def wrap (children : Array Html) : Html :=
 
 private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
     (debug : Bool) : MetaM Html := do
-  let positions := Lowering.solvePositions c
-  let svgStr : String := Figures.Renderable.render
-    (Lowering.lower c (canvasW := 1280) (canvasH := 720)
-      (cachedPositions := some positions))
+  let scene ← Figures.Construction.Lowering.lowerM c
+    (canvasW := 1280) (canvasH := 720)
+  let svgStr : String := Figures.Renderable.render scene
   let figHtml ← match Atlas.SvgParser.parse svgStr with
     | .ok h => pure h
     | .error _ => pure (Html.text "(no SVG)")

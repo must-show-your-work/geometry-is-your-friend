@@ -28,8 +28,9 @@ elab_rules : tactic
   | `(tactic| proof_figure) => withMainContext do
     let goalTy ← (← getMainGoal).getType
     let ctor ← FromProofState.extract (goalTy := some goalTy)
-    let svgStr : String := Figures.Renderable.render
-      (Lowering.lower ctor (canvasW := 1280) (canvasH := 720))
+    let scene ← Figures.Construction.Lowering.lowerM ctor
+      (canvasW := 1280) (canvasH := 720)
+    let svgStr : String := Figures.Renderable.render scene
     let figHtml ← match Atlas.SvgParser.parse svgStr with
       | .ok h => pure h
       | .error msg => throwError s!"proof_figure: SVG parse failed: {msg}"
