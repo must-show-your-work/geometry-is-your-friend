@@ -73,25 +73,30 @@ private def renderConstructionHtml (c : DSL.Construction) (lctxStr : String)
 /-- Walk the populated InfoTrees and save a figure widget at each
 TacticInfo's source position. Called POST-HOC after `evalTacticSeq`
 finishes so the trees include macro-internal steps. -/
-def saveInfoTreeFigures (kind num : String) (declName : Name) (_seq : Syntax) :
+def saveInfoTreeFigures (kind num : String) (declName : Name) (seq : Syntax) :
     TacticM Unit := do
   let env ← getEnv
-  -- DSL-figured targets are handled by the ProgressiveFigure post-hoc
-  -- hook; skip here.
   if (Atlas.baseIRExprFor env kind num).isSome then return
   let theoremTy : Option Expr := (env.find? declName).map (·.type)
   let fileMap ← getFileMap
   let trees := (← getInfoState).trees.toArray
-  -- Collect every TacticInfo node across all trees, paired with its
-  -- enclosing ContextInfo.
   let infos := trees.foldl (init := (#[] : Array (ContextInfo × TacticInfo)))
     fun acc t =>
       t.foldInfo (init := acc) fun ctx info acc' =>
         match info with
         | .ofTacticInfo ti => acc'.push (ctx, ti)
         | _ => acc'
-  -- Dedup by source line: chained leaf tactics on one line should
-  -- only emit one widget at that line.
+  -- Always emit a diagnostic widget at the seq's start so we can see
+  -- whether this hook even fires and how many tactic infos were found.
+  let diagText : String :=
+    s!"saveInfoTreeFigures: trees={trees.size} tacticInfos={infos.size}"
+  let diagHtml : Html := Html.element "div"
+    #[("style", Json.str "padding: 0.5em; background: #fdf6e3; color: #073642; font-family: monospace; font-size: 0.85em;")]
+    #[Html.text diagText]
+  Widget.savePanelWidgetInfo
+    (hash HtmlDisplayPanel.javascript)
+    (return Json.mkObj [("html", Atlas.htmlToJson diagHtml)])
+    seq
   let mut seenLines : Std.HashSet Nat := {}
   for (ctx, ti) in infos do
     let some pos := ti.stx.getPos? | continue
