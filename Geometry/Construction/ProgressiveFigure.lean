@@ -190,13 +190,11 @@ def saveProgressiveFigures
   -- Opt-in: `construction { infer }` lowers to a Construction whose
   -- only stmt is the infer marker. Detect it and route to proof-state
   -- so title/caption metadata coexist with proof-state inference.
-  let inferOnly ← unsafe Meta.evalExpr DSL.Construction
-    (mkConst ``DSL.Construction) baseExpr
-  if inferOnly.isInfer then
+  let base ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
+    (mkConst ``Figures.Construction.DSL.Construction) baseExpr
+  if base.isInfer then
     IncrementalProofFigure.saveTheoremFigure kind num declName seq
     return
-  let base ← unsafe Meta.evalExpr DSL.Construction
-    (mkConst ``DSL.Construction) baseExpr
   let addenda := addendaFor env declName
   let fileMap ← getFileMap
   let scopes := collectScopes seq
