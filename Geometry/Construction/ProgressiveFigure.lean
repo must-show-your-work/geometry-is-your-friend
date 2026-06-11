@@ -178,21 +178,29 @@ private def renderAuxHtml (base addendum : DSL.Construction) :
 
 /-- Hook implementation: for each tactic line in `seq`, save a panel
 widget showing the cumulative figure at that line. -/
+private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
+  let html : Html := Html.element "div"
+    #[("style", Json.str "padding: 0.5em; background: #fdf6e3; color: #073642; font-family: monospace; font-size: 0.85em;")]
+    #[Html.text msg]
+  Widget.savePanelWidgetInfo
+    (hash HtmlDisplayPanel.javascript)
+    (return Json.mkObj [("html", Atlas.htmlToJson html)])
+    stx
+
 def saveProgressiveFigures
     (kind num : String) (declName : Name) (seq : Syntax) :
     TacticM Unit := do
   let env ← getEnv
+  traceMsg s!"[hook] saveProgressiveFigures kind={kind} num={num} declName={declName}" seq
   let some baseExpr := Atlas.baseIRExprFor env kind num
-    | -- No DSL base — save one proof-state-derived figure at the
-      -- seq's start. Per-step incremental updates are tracked as
-      -- #102 / #103.
+    | traceMsg s!"[hook] no baseIR → saveTheoremFigure" seq
       IncrementalProofFigure.saveTheoremFigure kind num declName seq
-  -- Opt-in: `construction { infer }` lowers to a Construction whose
-  -- only stmt is the infer marker. Detect it and route to proof-state
-  -- so title/caption metadata coexist with proof-state inference.
+  traceMsg s!"[hook] baseIR found, evaling" seq
   let base ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
     (mkConst ``Figures.Construction.DSL.Construction) baseExpr
+  traceMsg s!"[hook] base.stmts.size={base.stmts.size} isInfer={base.isInfer}" seq
   if base.isInfer then
+    traceMsg s!"[hook] isInfer=true → saveTheoremFigure" seq
     IncrementalProofFigure.saveTheoremFigure kind num declName seq
     return
   let addenda := addendaFor env declName
