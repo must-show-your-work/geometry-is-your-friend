@@ -32,9 +32,15 @@ def matchOnLineThrough : Matcher := fun e => do
     let some nb ← readPointName? b | return none
     let some nc ← readPointName? c | return none
     let lineName := lineAnchor nb.toString nc.toString
+    -- The line_through construct is a CONSTRAINT anchor — without
+    -- marking it hidden, it would also render as a visible full line
+    -- across the canvas, overlapping any rays emitted from `P on ray …`
+    -- disjuncts. Better: mark it hidden so the constraint applies but
+    -- the figure shows only the asserted rays / dashed collinearity.
     return some #[
       .construct lineName (.app "line_through"
         [.name nb.toString, .name nc.toString]),
+      assertN "hidden" #[lineName],
       assertN "incident" #[d.toString, lineName]
     ]
   | _ => return none
