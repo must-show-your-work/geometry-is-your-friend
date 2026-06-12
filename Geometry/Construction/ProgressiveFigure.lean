@@ -25,6 +25,8 @@ import Geometry.Construction.Syntax
 import Geometry.Construction.Lowering
 import Geometry.Construction.Cache
 import Geometry.Construction.AtlasField
+import Geometry.Construction.IncrementalProofFigure
+import Geometry.Construction.FromProofState
 import ProofWidgets.Component.HtmlDisplay
 
 namespace Geometry.Construction
@@ -135,36 +137,56 @@ private def wrap (h : Html) : Html :=
     #[("style", Json.str "text-align: center; margin: 0.5em 0;")]
     #[h]
 
-/-- Look up cached positions for `c`; on miss, run the solver, cache
-the result, and return the freshly-solved positions. -/
+/-- Look up cached positions for `c`; on miss, run the Rigidity-based
+solver, cache the result, and return the freshly-solved positions. -/
 private def cachedSolve (c : DSL.Construction) :
     TermElabM (Array (Figures.Name × Figures.Pos2)) := do
   let env ← getEnv
   match Cache.lookup env c with
   | some v => return v
   | none =>
-    let positions := Lowering.solvePositions c
+    let positions ← Figures.Construction.Lowering.solvePositionsM c
     Cache.store c positions
     return positions
 
+/-- Optional debug overlay (DSL + LCtx) appended below the figure when
+`geometry.proofFigure.debug` is on. `lctxStr` empty ⇒ no LCtx block. -/
+private def withDebug (figHtml : Html) (c : DSL.Construction)
+    (parseInfo lctxStr : String) (debug : Bool) : Html :=
+  if !debug then figHtml else
+    let dslView := IncrementalProofFigure.debugBlock
+      s!"DSL ({c.stmts.size} stmts) — {parseInfo}" (DSL.printConstruction c)
+    let lctxView := IncrementalProofFigure.debugBlock "LCtx" lctxStr
+    let debugPanel : Html := Html.element "div"
+      #[("style", Json.str "text-align: left; max-width: 1280px; margin: 0 auto;")]
+      #[dslView, lctxView]
+    Html.element "div"
+      #[("style", Json.str "text-align: center; margin: 0.5em 0;")]
+      #[figHtml, debugPanel]
+
 /-- Render a `Construction` to a wrapped Html block (centered, with
 margin) for embedding in the InfoView. Uses `Geometry.Construction.Cache`
-to skip the solver on re-elabs of the same construction. -/
-private def renderConstructionHtml (c : DSL.Construction) :
+to skip the solver on re-elabs of the same construction. `lctxStr` is
+appended as a debug overlay when non-empty. -/
+private def renderConstructionHtml (c : DSL.Construction)
+    (lctxStr : String := "") (debug : Bool := false) :
     TermElabM Html := do
   let positions ← cachedSolve c
   let svgStr : String := Figures.Renderable.render
     (Lowering.lower c (canvasW := 1280) (canvasH := 720)
       (cachedPositions := some positions))
   match Atlas.SvgParser.parse svgStr with
-  | .ok h => return wrap h
+  | .ok h =>
+    let parseInfo := s!"SVG ok ({svgStr.length} bytes)"
+    return withDebug (wrap h) c parseInfo lctxStr debug
   | .error msg => throwError s!"progressive figure: SVG parse failed: {msg}"
 
 /-- Same as `renderConstructionHtml` but for a base+addendum pair so
 addendum constructs render with dashed style. Cache key is the
 concatenation of base + addendum stmts via `lowerAuxiliary`'s
 internal `combined` construction. -/
-private def renderAuxHtml (base addendum : DSL.Construction) :
+private def renderAuxHtml (base addendum : DSL.Construction)
+    (lctxStr : String := "") (debug : Bool := false) :
     TermElabM Html := do
   let combined : DSL.Construction := { stmts := base.stmts ++ addendum.stmts }
   let positions ← cachedSolve combined
@@ -172,23 +194,65 @@ private def renderAuxHtml (base addendum : DSL.Construction) :
     (Lowering.lowerAuxiliary base addendum (canvasW := 1280) (canvasH := 720)
       (cachedPositions := some positions))
   match Atlas.SvgParser.parse svgStr with
-  | .ok h => return wrap h
+  | .ok h =>
+    let parseInfo := s!"SVG ok ({svgStr.length} bytes)"
+    return withDebug (wrap h) combined parseInfo lctxStr debug
   | .error msg => throwError s!"progressive figure: SVG parse failed: {msg}"
 
 /-- Hook implementation: for each tactic line in `seq`, save a panel
 widget showing the cumulative figure at that line. -/
-private def saveProgressiveFigures
-    (kind num : String) (declName : Name) (seq : Syntax) :
+private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
+  let html : Html := Html.element "div"
+    #[("style", Json.str "padding: 0.5em; background: #fdf6e3; color: #073642; font-family: monospace; font-size: 0.85em;")]
+    #[Html.text msg]
+  Widget.savePanelWidgetInfo
+    (hash HtmlDisplayPanel.javascript)
+    (return Json.mkObj [("html", Atlas.htmlToJson html)])
+    stx
+
+def saveProgressiveFigures
+    (kind num : String) (declName : Name) (seq : Syntax)
+    (initialGoalTy : Expr) (initialMVar : MVarId) :
     TacticM Unit := do
   let env ← getEnv
-  -- Look up the base IR Expr by (kind, num) and evaluate as a
-  -- Construction value. Per-target keying means corollaries without
-  -- their own `construction { … }` get no base (and therefore no
-  -- figure widgets) — no leakage from neighboring theorems.
   let some baseExpr := Atlas.baseIRExprFor env kind num | return
-  let base ← unsafe Meta.evalExpr DSL.Construction
-    (mkConst ``DSL.Construction) baseExpr
+  let baseExprEvaled ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
+    (mkConst ``Figures.Construction.DSL.Construction) baseExpr
   let addenda := addendaFor env declName
+  -- User stmts the author put in the figure block alongside `infer`
+  -- (e.g. `construction { infer; exists D : Point; ... }`). Append to
+  -- the inferred construction so the author can layer extra structure
+  -- on the inference without abandoning the auto-extraction.
+  let userStmts : Array Figures.Construction.DSL.Stmt :=
+    if baseExprEvaled.isInfer then
+      baseExprEvaled.stmts.filter fun s => match s with
+        | .assert (.app "__infer__" _) _ => false
+        | _ => true
+    else
+      #[]
+  -- Infer-marker base with NO auxillaries: nothing for the progressive
+  -- loop to track — render once via saveTheoremFigure (single static
+  -- widget, preserves the debug-overlay path).
+  if baseExprEvaled.isInfer ∧ addenda.isEmpty then
+    IncrementalProofFigure.saveTheoremFigure kind num declName seq
+      initialGoalTy initialMVar userStmts
+    return
+  -- For an infer base WITH auxillaries, replace base with the
+  -- proof-state-inferred construction (+ user stmts) so the auxillary
+  -- stack overlays on top of the same shapes.
+  let base ←
+    if baseExprEvaled.isInfer then
+      let inferred ← initialMVar.withContext do
+        FromProofState.extract (goalTy := some initialGoalTy)
+      pure { stmts := inferred.stmts ++ userStmts :
+        Figures.Construction.DSL.Construction }
+    else
+      pure baseExprEvaled
+  let debug := IncrementalProofFigure.geometry.proofFigure.debug.get (← getOptions)
+  let lctxStr ← if debug ∧ baseExprEvaled.isInfer then
+    initialMVar.withContext IncrementalProofFigure.formatLCtx
+  else
+    pure ""
   let fileMap ← getFileMap
   let scopes := collectScopes seq
   let steps := collectStepSyntax seq
@@ -210,11 +274,11 @@ private def saveProgressiveFigures
       inScope scopes fileMap a.line line
     let figHtml ←
       if activeAddenda.isEmpty then
-        renderConstructionHtml base
+        renderConstructionHtml base lctxStr debug
       else
         let combinedStmts := activeAddenda.foldl
           (fun acc a => acc ++ a.addendum.stmts) #[]
-        renderAuxHtml base { stmts := combinedStmts }
+        renderAuxHtml base { stmts := combinedStmts } lctxStr debug
     -- Concatenate descriptions from the active addenda — each
     -- `auxillary "desc" { … }` contributes a small italic caption
     -- under the figure. Empty list ⇒ no captions, no extra DOM.

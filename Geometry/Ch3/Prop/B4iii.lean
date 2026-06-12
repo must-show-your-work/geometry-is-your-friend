@@ -27,15 +27,8 @@ FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument.
 
   figure := by
     construction {
-      exists A B C X : Point
-      exists L : Line
-      assert distinct A B C
-      assert between A X B
-      assert incident X L
+      infer
       focus L
-      construct segAB := segment A B
-      construct segBC := segment B C
-      construct segAC := segment A C
     }
     title "Corollary B.4 (iii)"
     index 1

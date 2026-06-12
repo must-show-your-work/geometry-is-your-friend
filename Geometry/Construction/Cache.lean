@@ -44,8 +44,14 @@ History:
   requires `margin` clearance instead of just "correct sign"
 - v7: projection order reversed — halfPlane runs before intersect2, so `between`
   + `incident` correctly snaps to AB ∩ L using halfPlane-corrected positions.
+- v8: Rigidity-pipeline introductions — CollinearOrder (global ordering for
+  chained betweenness groups), offLineApex (free joints placed perpendicular
+  to a connected collinear group at the group's max-distance midpoint),
+  focus annotation honored as a rotation pass. Pre-v8 entries cached pre-
+  CollinearOrder positions for 3.3.i-style chained betweens that the new
+  pipeline lays out differently.
 -/
-def solverVersion : Nat := 7
+def solverVersion : Nat := 8
 
 structure Key where
   version : Nat

@@ -351,11 +351,5 @@ elab_rules : tactic
             rw [$rwArgs,*])))
 
 
--- EXAMPLES and TESTS
-
-example {α : Type*} [DecidableEq α] (A B : α) (_h : distinct A B) : True := True.intro
-example {α : Type*} [DecidableEq α] (A B C : α) (_h : distinct A B C) : True := True.intro
-
-
 end Distinct
 end Geometry.Theory

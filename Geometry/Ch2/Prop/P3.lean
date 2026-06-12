@@ -18,11 +18,7 @@ atlas commentary := by
 
   figure := by
     construction {
-      exists A B P : Point
-      exists L : Line
-      assert distinct A B P
-      assert incident A L
-      assert incident B L
+      infer
     }
     title "Proposition 2.3"
     index 1

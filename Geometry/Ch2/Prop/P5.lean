@@ -13,7 +13,6 @@ namespace Geometry.Ch2.Prop
 open Geometry.Theory
 open Atlas
 
-
 atlas commentary := by
   via proposition 2.5
   page 71
@@ -21,12 +20,7 @@ atlas commentary := by
   preface "For every point P, there are at least two distinct lines through P"
 
   figure := by
-    construction {
-      exists P : Point
-      exists L M : Line
-      assert incident P L
-      assert incident P M
-    }
+    construction { infer }
     title "Proposition 2.5"
     index 1
     caption "Through any P there pass at least two distinct lines L and M."
