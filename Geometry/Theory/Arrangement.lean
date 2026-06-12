@@ -1,5 +1,6 @@
 import Mathlib.Data.List.Basic
 import Geometry.Theory.Axioms
+import Geometry.Theory.Arrangement.Lattice
 import Geometry.Tactics
 
 import Geometry.Ch3.Prop.P3
@@ -378,6 +379,7 @@ def elabArrangementTac : Tactic := fun stx => match stx with
 inductive ArrFact where
   | bet (proof : Expr) (a b c : Expr) : ArrFact
   | arr (proof : Expr) (pts : Array Expr) : ArrFact
+deriving Inhabited
 
 def ArrFact.proof : ArrFact → Expr
   | .bet p _ _ _ => p
@@ -847,6 +849,185 @@ def elabArranging : Tactic := fun stx => match stx with
                     (auto-pattern from branch shape not yet implemented)"
       | _, _ =>
         throwError "arranging: multiple branch hypotheses not yet supported"
+  | _ => throwUnsupportedSyntax
+
+/-! ## `organize!` lattice driver
+
+Sweeps the provided Between facts (plus any `_ ≠ _` proofs needed by
+split lemmas), computes all valid linear extensions of the induced
+partial order on the points, and introduces the result as a single
+`Arrangement` hypothesis (unique extension), a disjunction of
+`Arrangement`s (multiple extensions), or — in future — derives False
+(cycle).
+
+Currently supports:
+- Unique-extension case (any `n ≤ 7` covered by `buildArrangement`).
+- 4-point 2-extension case via lemmas 3.0.11 (shared-left) / 3.0.12
+  (shared-outer).
+
+Other configurations error explicitly; a recursive general builder
+covering them is a follow-up phase. -/
+
+/-- userName of a Point fvar, or `?` placeholder. -/
+private def pointName (e : Expr) : MetaM String := do
+  match e with
+  | .fvar fid => return (← fid.getUserName).toString
+  | _         => return "?"
+
+/-- Auto-name `arr<root><sink>` — root = alphabetically-first
+in-degree-0 node, sink = alphabetically-first out-degree-0 node.
+Falls back to `arr` if either is empty (shouldn't happen for valid
+input). -/
+private def computeArrName (pool : Array Expr) (edges : Array (Nat × Nat)) :
+    MetaM String := do
+  let n := pool.size
+  let mut inDeg : Array Nat := Array.replicate n 0
+  let mut outDeg : Array Nat := Array.replicate n 0
+  let mut seenEdges : Array (Nat × Nat) := #[]
+  for e in edges do
+    if !seenEdges.contains e then
+      seenEdges := seenEdges.push e
+      outDeg := outDeg.set! e.1 (outDeg[e.1]! + 1)
+      inDeg := inDeg.set! e.2 (inDeg[e.2]! + 1)
+  let mut rootNames : Array String := #[]
+  let mut sinkNames : Array String := #[]
+  for i in [:n] do
+    if inDeg[i]! == 0 then rootNames := rootNames.push (← pointName pool[i]!)
+    if outDeg[i]! == 0 then sinkNames := sinkNames.push (← pointName pool[i]!)
+  if rootNames.isEmpty ∨ sinkNames.isEmpty then return "arr"
+  let rootName := (rootNames.qsort (· < ·))[0]!
+  let sinkName := (sinkNames.qsort (· < ·))[0]!
+  return s!"arr{rootName}{sinkName}"
+
+/-- Find `a ≠ b` in `ineqs`, applying `.symm` if needed. -/
+private def findIneq (ineqs : Array Expr) (a b : Expr) : MetaM (Option Expr) := do
+  for ineq in ineqs do
+    let ineqTy ← inferType ineq
+    match ineqTy.getAppFnArgs with
+    | (``Ne, #[_, x, y]) =>
+      if (← isDefEq x a) ∧ (← isDefEq y b) then return some ineq
+      if (← isDefEq x b) ∧ (← isDefEq y a) then
+        return some (← mkAppM ``Ne.symm #[ineq])
+    | _ => pure ()
+  return none
+
+/-- 4-point 2-extension dispatch — detect shared-left or shared-outer
+configuration and apply lemma 3.0.11 or 3.0.12. -/
+private def dispatch4PtSplit (pool : Array Expr) (perFactIdx : Array (Array Nat))
+    (facts : Array ArrFact) (ineqs : Array Expr) : MetaM Expr := do
+  unless facts.size == 2 do
+    throwError "organize!: 4-pt split expects exactly 2 Betweens"
+  let .bet h1 _ _ _ := facts[0]!
+    | throwError "organize!: 4-pt split requires Betweens (got Arrangement)"
+  let .bet h2 _ _ _ := facts[1]!
+    | throwError "organize!: 4-pt split requires Betweens (got Arrangement)"
+  let idx1 := perFactIdx[0]!
+  let idx2 := perFactIdx[1]!
+  let (a1, b1, c1) := (idx1[0]!, idx1[1]!, idx1[2]!)
+  let (a2, b2, c2) := (idx2[0]!, idx2[1]!, idx2[2]!)
+  if a1 == a2 ∧ b1 == b2 then
+    -- Shared-LEFT: 3.0.11 (A-B-C, A-B-P, C ≠ P).
+    let cExpr := pool[c1]!
+    let pExpr := pool[c2]!
+    let some cNeP ← findIneq ineqs cExpr pExpr
+      | throwError m!"organize!: shared-left split needs `{cExpr} ≠ {pExpr}`"
+    let lem ← lookupAtlasConst "lemma" "3.0.11"
+    mkAppM lem #[h1, h2, cNeP]
+  else if a1 == a2 ∧ c1 == c2 then
+    -- Shared-OUTER: 3.0.12 (A-B-C, A-P-C, P ≠ B).
+    let bExpr := pool[b1]!
+    let pExpr := pool[b2]!
+    let some pNeB ← findIneq ineqs pExpr bExpr
+      | throwError m!"organize!: shared-outer split needs `{pExpr} ≠ {bExpr}`"
+    let lem ← lookupAtlasConst "lemma" "3.0.12"
+    mkAppM lem #[h1, h2, pNeB]
+  else
+    throwError m!"organize!: 4-pt config ranks ({idx1}, {idx2}) not recognized as shared-left or shared-outer"
+
+/-- Core lattice driver. Builds + introduces an Arrangement hypothesis
+(unique extension), an Arrangement-disjunction (2-ext / 4-pt), or
+errors. `nameOverride = none` ⇒ auto-name via `computeArrName`. -/
+def runOrganizeLattice (facts : Array ArrFact) (ineqs : Array Expr)
+    (nameOverride : Option Name) (goal : MVarId) : TacticM Unit := do
+  goal.withContext do
+    if facts.isEmpty then
+      throwError "organize!: requires at least one Between or Arrangement"
+    let mut pool : Array Expr := #[]
+    let mut perFactIdx : Array (Array Nat) := #[]
+    for f in facts do
+      let mut idxs : Array Nat := #[]
+      for p in f.points do
+        let (k, newPool) ← addPoint pool p
+        pool := newPool
+        idxs := idxs.push k
+      perFactIdx := perFactIdx.push idxs
+    let n := pool.size
+    if n > Lattice.maxArrangementSize then
+      throwError m!"organize!: n={n} exceeds CoeDep cap {Lattice.maxArrangementSize}"
+    let mut edges : Array (Nat × Nat) := #[]
+    for idxs in perFactIdx do
+      for i in [:idxs.size - 1] do
+        edges := edges.push (idxs[i]!, idxs[i+1]!)
+    let extensions ← match Lattice.enumLinearExtensions n edges with
+      | .ok exts   => pure exts
+      | .error msg => throwError m!"organize!: {msg}"
+    if extensions.isEmpty then
+      throwError "organize!: cycle in betweenness constraints (False derivation TODO)"
+    let arrName ← match nameOverride with
+      | some n => pure n
+      | none   => pure (Name.mkSimple (← computeArrName pool edges))
+    if extensions.size == 1 then
+      let order := extensions[0]!
+      let mut rank : Array Nat := Array.replicate n 0
+      for k in [:n] do
+        rank := rank.set! order[k]! k
+      let factRanks := perFactIdx.map (·.map (rank[·]!))
+      let arrProof ← buildArrangement facts factRanks n
+      let arrType ← inferType arrProof
+      let g' ← goal.assert arrName arrType arrProof
+      let (_, g') ← g'.intro1P
+      replaceMainGoal [g']
+    else if extensions.size == 2 ∧ n == 4 ∧ facts.size == 2 then
+      let proof ← dispatch4PtSplit pool perFactIdx facts ineqs
+      let arrType ← inferType proof
+      let g' ← goal.assert arrName arrType proof
+      let (_, g') ← g'.intro1P
+      replaceMainGoal [g']
+    else
+      throwError m!"organize!: config (n={n}, extensions={extensions.size}, facts={facts.size}) not yet supported"
+
+/-- `organize! <facts>* (as <ident>)?` — sweep Between / Arrangement
+hypotheses plus optional `_ ≠ _` proofs and introduce the maximal
+arrangement.
+
+Examples:
+- `organize! ABC ABP CneP` introduces `arrAC : Arr [A,B,C,P] ∨ Arr [A,B,P,C]`.
+- `organize! ABC BCD` introduces `arrAD : Arrangement [A,B,C,D]`.
+- `organize! ABC APC PneB as foo` introduces `foo` instead of `arrAC`.
+-/
+syntax (name := organizeBangTac)
+  "organize!" (ppSpace colGt term:max)* (" as " ident)? : tactic
+
+@[tactic organizeBangTac]
+def elabOrganizeBang : Tactic := fun stx => match stx with
+  | `(tactic| organize! $hs* $[as $name?]?) => do
+    let goal ← getMainGoal
+    goal.withContext do
+      let mut facts : Array ArrFact := #[]
+      let mut ineqs : Array Expr := #[]
+      for h in hs do
+        let hExpr ← Term.elabTerm h none
+        Term.synthesizeSyntheticMVarsNoPostponing
+        if let some f ← parseArrFact hExpr then
+          facts := facts.push f
+        else
+          let hTy ← instantiateMVars (← inferType hExpr)
+          if hTy.isAppOfArity ``Ne 3 then
+            ineqs := ineqs.push hExpr
+          else
+            throwError m!"organize!: cannot parse `{h}` as Between, Arrangement, or `_ ≠ _`"
+      let nameOverride := name?.map (·.getId)
+      runOrganizeLattice facts ineqs nameOverride goal
   | _ => throwUnsupportedSyntax
 
 end Geometry.Theory.Arrangement
