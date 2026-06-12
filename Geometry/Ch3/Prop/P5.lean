@@ -51,7 +51,7 @@ atlas corollary 3.5 "[If A-B-C then ...], and AB intersects BC at B"
   ext P; constructor
   · intro ⟨PinAB, PinBC⟩
     rcases PinAB with APB | PeqA | PeqB
-    · have APBC : A - P - B - C := by organize ABC APB
+    · have APBC : A - P - B - C := by organize! ABC APB
       have PoffBC : P off segment B C := via lemma 2.0.27 APBC
       contradiction
     · rw [PeqA] at ABC
