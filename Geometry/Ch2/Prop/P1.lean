@@ -9,8 +9,6 @@ open Set
 open Geometry.Theory
 open Atlas
 
-set_option geometry.proofFigure.debug true
-
 atlas commentary := by
   via alternate 2.1
   page 71

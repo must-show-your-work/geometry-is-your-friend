@@ -10,8 +10,6 @@ open Atlas
 
 namespace Geometry.Ch2.Prop
 
-set_option geometry.proofFigure.debug true
-
 atlas commentary := by
   via proposition 2.3
   page 71
