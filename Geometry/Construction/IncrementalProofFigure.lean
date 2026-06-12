@@ -82,15 +82,21 @@ private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
     (return Json.mkObj [("html", Atlas.htmlToJson html)])
     stx
 
+/-- `userStmts` are stmts the author wrote alongside `infer` in the
+figure block (e.g. an extra `exists D : Point` to give the inferred
+figure additional structure). They're appended to the proof-state
+extraction. -/
 def saveTheoremFigure (_kind _num : String) (_declName : Name) (seq : Syntax)
-    (initialGoalTy : Expr) (initialMVar : MVarId) : TacticM Unit := do
+    (initialGoalTy : Expr) (initialMVar : MVarId)
+    (userStmts : Array DSL.Stmt := #[]) : TacticM Unit := do
   try
     -- Restore the LCtx as it was at proof entry (binder fvars in scope)
     -- via the snapshotted mvar's context. `getLCtx` inside `extract`
     -- then walks all the theorem's premises (distinct, between,
     -- incidence hypotheses, etc.).
     let html ← initialMVar.withContext do
-      let c ← FromProofState.extract (goalTy := some initialGoalTy)
+      let inferred ← FromProofState.extract (goalTy := some initialGoalTy)
+      let c : DSL.Construction := { stmts := inferred.stmts ++ userStmts }
       let debug := geometry.proofFigure.debug.get (← getOptions)
       let lctxStr ← if debug then formatLCtx else pure ""
       renderConstructionHtml c lctxStr debug

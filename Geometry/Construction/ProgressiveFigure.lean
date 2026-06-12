@@ -221,20 +221,33 @@ def saveProgressiveFigures
   let baseExprEvaled ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
     (mkConst ``Figures.Construction.DSL.Construction) baseExpr
   let addenda := addendaFor env declName
+  -- User stmts the author put in the figure block alongside `infer`
+  -- (e.g. `construction { infer; exists D : Point; ... }`). Append to
+  -- the inferred construction so the author can layer extra structure
+  -- on the inference without abandoning the auto-extraction.
+  let userStmts : Array Figures.Construction.DSL.Stmt :=
+    if baseExprEvaled.isInfer then
+      baseExprEvaled.stmts.filter fun s => match s with
+        | .assert (.app "__infer__" _) _ => false
+        | _ => true
+    else
+      #[]
   -- Infer-marker base with NO auxillaries: nothing for the progressive
   -- loop to track — render once via saveTheoremFigure (single static
   -- widget, preserves the debug-overlay path).
   if baseExprEvaled.isInfer ∧ addenda.isEmpty then
     IncrementalProofFigure.saveTheoremFigure kind num declName seq
-      initialGoalTy initialMVar
+      initialGoalTy initialMVar userStmts
     return
   -- For an infer base WITH auxillaries, replace base with the
-  -- proof-state-inferred construction so the auxillary stack overlays
-  -- on top of the same shapes the theorem signature implies.
+  -- proof-state-inferred construction (+ user stmts) so the auxillary
+  -- stack overlays on top of the same shapes.
   let base ←
     if baseExprEvaled.isInfer then
-      initialMVar.withContext do
+      let inferred ← initialMVar.withContext do
         FromProofState.extract (goalTy := some initialGoalTy)
+      pure { stmts := inferred.stmts ++ userStmts :
+        Figures.Construction.DSL.Construction }
     else
       pure baseExprEvaled
   let debug := IncrementalProofFigure.geometry.proofFigure.debug.get (← getOptions)
