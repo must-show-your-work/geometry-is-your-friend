@@ -215,9 +215,7 @@ def saveProgressiveFigures
     (initialGoalTy : Expr) (initialMVar : MVarId) :
     TacticM Unit := do
   let env ← getEnv
-  let some baseExpr := Atlas.baseIRExprFor env kind num
-    | IncrementalProofFigure.saveTheoremFigure kind num declName seq
-        initialGoalTy initialMVar
+  let some baseExpr := Atlas.baseIRExprFor env kind num | return
   let baseExprEvaled ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
     (mkConst ``Figures.Construction.DSL.Construction) baseExpr
   let addenda := addendaFor env declName
