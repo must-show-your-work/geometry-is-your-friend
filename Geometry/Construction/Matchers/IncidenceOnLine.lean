@@ -29,27 +29,32 @@ private def memArgs? (e : Expr) : MetaM (Option (Expr × Expr)) := do
     return some (args[4]!, args[3]!)
   | _ => return none
 
+/-- Extract the Line fvar from a container expression. The container
+might be `Line.toSet L` (when the `Membership Point Line` instance was
+inlined during elaboration) or just `L` directly (when the instance
+remains a typeclass arg). -/
+private def containerToLine? (container : Expr) : MetaM (Option Lean.Name) := do
+  let lineExpr :=
+    match container.getAppFnArgs with
+    | (`Geometry.Theory.Line.toSet, #[L]) => L
+    | _ => container
+  readLineName? lineExpr
+
 @[proof_state_matcher 10]
 def matchOnLine : Matcher := fun e => do
   let some (elt, container) ← memArgs? e | return none
-  match container.getAppFnArgs with
-  | (`Geometry.Theory.Line.toSet, #[lineExpr]) =>
-    let some p ← readPointName? elt | return none
-    let some l ← readLineName? lineExpr | return none
-    return some #[assertN "incident" #[p.toString, l.toString]]
-  | _ => return none
+  let some p ← readPointName? elt | return none
+  let some l ← containerToLine? container | return none
+  return some #[assertN "incident" #[p.toString, l.toString]]
 
 @[proof_state_matcher 10]
 def matchOffLine : Matcher := fun e => do
   match (← instantiateMVars e).getAppFnArgs with
   | (``Not, #[inner]) =>
     let some (elt, container) ← memArgs? inner | return none
-    match container.getAppFnArgs with
-    | (`Geometry.Theory.Line.toSet, #[lineExpr]) =>
-      let some p ← readPointName? elt | return none
-      let some l ← readLineName? lineExpr | return none
-      return some #[assertN "off" #[p.toString, l.toString]]
-    | _ => return none
+    let some p ← readPointName? elt | return none
+    let some l ← containerToLine? container | return none
+    return some #[assertN "off" #[p.toString, l.toString]]
   | _ => return none
 
 end Geometry.Construction.Matchers

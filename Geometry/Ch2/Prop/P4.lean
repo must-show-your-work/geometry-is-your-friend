@@ -10,23 +10,19 @@ namespace Geometry.Ch2.Prop
 open Geometry.Theory
 open Atlas
 
+set_option geometry.proofFigure.debug true
+
 atlas commentary := by
   via proposition 2.4
   page 71
   name "Every point has at least one line not through it"
   preface "For every point, there is at least one line not passing through it."
 
-  -- figure := by
-    -- construction {
-      -- exists A B P : Point
-      -- exists L : Line
-      -- assert distinct A B P
-      -- assert incident A L
-      -- assert incident B L
-    -- }
-    -- title "Proposition 2.4"
-    -- index 1
-    -- caption "Given a point P, line L (carrying A and B) misses P."
+  figure := by
+    construction { infer }
+    title "Proposition 2.4"
+    index 1
+    caption "Given a point P, line L (carrying A and B) misses P."
 
 atlas proposition 2.4 "Every point has at least one line not through it"
   (P : Point) : ∃ L : Line, (P off L) := by
