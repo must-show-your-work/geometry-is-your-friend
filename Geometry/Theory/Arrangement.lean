@@ -1170,4 +1170,122 @@ atlas lemma 3.0.10 "Inner-pair trichotomy: from A-B-C and A-P-C, either A-P-B, P
 macro_rules (kind := obviousArrangement)
   | `(tactic| obvious_arrangement) => `(tactic| organize_auto)
 
+/-! ## Arrangement-disjunction lemmas
+
+When two Between facts leave the linear order on four points
+ambiguous, the lattice has exactly two valid extensions. The
+following lemmas package the B.3 trichotomy + branch elimination
++ Arrangement construction for the two canonical 4-point
+configurations: shared-LEFT pair (3.0.11) and shared-OUTER pair
+(3.0.12, lifting 3.0.10 from a Between trichotomy to an Arrangement
+disjunction). The `organize!` driver in Phase 3 will dispatch to
+these. -/
+
+atlas commentary := by
+  via lemma 3.0.11
+  name "Shared-left split: A-B-C ∧ A-B-P (∧ C≠P) → Arr[A,B,C,P] ∨ Arr[A,B,P,C]"
+  preface ""
+  notes "Two Betweens sharing their LEFT pair (A and B). The third point's relative
+position to the fourth is the lattice's only ambiguity, so the partial order
+admits two linear extensions: [A,B,C,P] (P past C) and [A,B,P,C] (P between B
+and C). Proof invokes axiom B-3 on {B, C, P} for the trichotomy, builds each
+non-degenerate Arrangement via 3.0.8/3.0.9, and discharges the impossible
+C-B-P case by nested B-3 on {A, C, P}."
+
+  figure := by
+    construction {
+      exists A B C P : Point
+      assert distinct A B C P
+      assert between A B C
+      assert between A B P
+      construct segAC := segment A C
+      construct segAP := segment A P
+    }
+
+atlas lemma 3.0.11 "Shared-left split: A-B-C ∧ A-B-P ∧ C≠P → Arr[A,B,C,P] ∨ Arr[A,B,P,C]"
+  {A B C P : Point} (h₁ : A - B - C) (h₂ : A - B - P) (CneP : C ≠ P) :
+    Arrangement [A, B, C, P] ∨ Arrangement [A, B, P, C] := by
+  obtain ⟨distinctABC, colABC, _⟩ := via axiom B.1 h₁
+  obtain ⟨distinctABP, colABP, _⟩ := via axiom B.1 h₂
+  have AneB : A ≠ B := by distinguish
+  have AneC : A ≠ C := by distinguish
+  have AneP : A ≠ P := by distinguish
+  have BneC : B ≠ C := by distinguish
+  have BneP : B ≠ P := by distinguish
+  have distinctBCP : distinct B C P := by
+    refine ⟨?_⟩
+    rw [Finset.card_insert_of_notMem (by simp [BneC, BneP]),
+        Finset.card_insert_of_notMem (by simp [CneP]),
+        Finset.card_singleton]
+  have hSameLine : colABP.line = colABC.line := by
+    apply via lemma 2.0.2 AneB
+    exact ⟨colABP.mem A, colABC.mem A, colABP.mem B, colABC.mem B⟩
+  have colBCP : collinear B C P := by
+    refine ⟨colABC.line, ?_⟩
+    intro q hq
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hq
+    rcases hq with hqB | hqC | hqP
+    · rw [hqB]; exact colABC.mem B
+    · rw [hqC]; exact colABC.mem C
+    · rw [hqP, ← hSameLine]; exact colABP.mem P
+  rcases via axiom B.3 B C P ⟨distinctBCP, colBCP⟩ with
+    ⟨BCP, _, _⟩ | ⟨_, CBP, _⟩ | ⟨_, _, BPC⟩
+  · left; exact via lemma 3.0.8 h₁ BCP
+  · exfalso
+    have distinctACP : distinct A C P := by
+      refine ⟨?_⟩
+      rw [Finset.card_insert_of_notMem (by simp [AneC, AneP]),
+          Finset.card_insert_of_notMem (by simp [CneP]),
+          Finset.card_singleton]
+    have colACP : collinear A C P := by
+      refine ⟨colABC.line, ?_⟩
+      intro q hq
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hq
+      rcases hq with hqA | hqC | hqP
+      · rw [hqA]; exact colABC.mem A
+      · rw [hqC]; exact colABC.mem C
+      · rw [hqP, ← hSameLine]; exact colABP.mem P
+    rcases via axiom B.3 A C P ⟨distinctACP, colACP⟩ with
+      ⟨ACP, _, _⟩ | ⟨_, CAP, _⟩ | ⟨_, _, APC⟩
+    · -- A-C-P: derive B-C-P via prop 3.3.i (ABC, ACP); contradicts CBP via 1.0.18.
+      have BCP' : B - C - P := via proposition 3.3.i ⟨h₁, ACP⟩
+      exact via lemma 1.0.18 ⟨CBP, BCP'⟩
+    · -- C-A-P: apply 3.0.10's trichotomy on (CBP, CAP) → C-A-B ∨ A=B ∨ B-A-P; all impossible.
+      rcases via lemma 3.0.10 CBP CAP with CAB | AeqB | BAP
+      · exact via lemma 1.0.20 ⟨h₁, CAB⟩
+      · exact AneB AeqB
+      · exact via lemma 1.0.18 ⟨h₂, BAP⟩
+    · -- A-P-C: derive B-P-C via prop 3.3.i (ABP, APC); CPB = BPC.symm contradicts CBP via 1.0.19.
+      have BPC' : B - P - C := via proposition 3.3.i ⟨h₂, APC⟩
+      exact via lemma 1.0.19 ⟨CBP, BPC'.symm⟩
+  · right; exact via lemma 3.0.9 h₁ BPC
+
+atlas commentary := by
+  via lemma 3.0.12
+  name "Shared-outer split: A-B-C ∧ A-P-C ∧ P≠B → Arr[A,P,B,C] ∨ Arr[A,B,P,C]"
+  preface ""
+  notes "Lifts lemma 3.0.10's Between trichotomy `(A-P-B) ∨ (P=B) ∨ (B-P-C)` to a
+disjunction of full Arrangements. Each non-degenerate branch packages the
+known Betweens into the appropriate 4-arrangement via 3.0.8."
+
+  figure := by
+    construction {
+      exists A P B C : Point
+      assert distinct A P B C
+      assert between A P B
+      assert between A B C
+      construct segAC := segment A C
+    }
+
+atlas lemma 3.0.12 "Shared-outer split: A-B-C ∧ A-P-C ∧ P≠B → Arr[A,P,B,C] ∨ Arr[A,B,P,C]"
+  {A B C P : Point} (h₁ : A - B - C) (h₂ : A - P - C) (PneB : P ≠ B) :
+    Arrangement [A, P, B, C] ∨ Arrangement [A, B, P, C] := by
+  rcases via lemma 3.0.10 h₁ h₂ with APB | PeqB | BPC
+  · -- A-P-B branch: Arr[A,P,B,C] via 3.0.8(APB, P-B-C); P-B-C derived from APB+h₁.
+    have PBC' : P - B - C := via proposition 3.3.i ⟨APB, h₁⟩
+    left; exact via lemma 3.0.8 APB PBC'
+  · exact (PneB PeqB).elim
+  · -- B-P-C branch: Arr[A,B,P,C] via 3.0.9(h₁, BPC).
+    right; exact via lemma 3.0.9 h₁ BPC
+
 end Geometry.Theory
