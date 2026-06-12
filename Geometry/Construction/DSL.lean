@@ -1,42 +1,18 @@
-import Figures
+/-
+Geometry/Construction/DSL.lean — re-export shim.
+
+The IR types (`Stmt`, `Construction`) and their pretty-printers moved
+to `Figures.Construction.DSL` so the figures package can host the
+proof-state matcher registry alongside the types it returns. Consumers
+of giyf code keep using `Geometry.Construction.DSL.X` through this
+shim; over time we may migrate import sites directly to
+`Figures.Construction.DSL` and retire this file.
+-/
+
+import Figures.Construction.DSL
 
 namespace Geometry.Construction.DSL
 
-open Figures
-
-inductive Stmt where
-  | «exists»  (names : Array Name) (sort : Name) : Stmt
-  | assert    (claim : ConstraintExpr) (description : String := "") : Stmt
-  | construct (name : Name) (expr : ConstraintExpr) : Stmt
-  deriving Repr, Inhabited
-
-structure Construction where
-  stmts : Array Stmt
-  deriving Repr, Inhabited
-
-
-private partial def exprToString : ConstraintExpr → String
-  | .name n   => n
-  | .num k    => toString k
-  | .app f [] => f
-  | .app f args =>
-    let parts := args.map fun a => match a with
-      | .app _ [] | .name _ | .num _ => exprToString a
-      | _ => "(" ++ exprToString a ++ ")"
-    f ++ " " ++ String.intercalate " " parts
-
-def printStmt : Stmt → String
-  | .«exists» names sort =>
-    "exists " ++ String.intercalate " " names.toList ++ " : " ++ sort
-  | .assert claim "" =>
-    "assert " ++ exprToString claim
-  | .assert claim desc =>
-    "assert " ++ exprToString claim ++ "    -- " ++ desc
-  | .construct name expr =>
-    "construct " ++ name ++ " := " ++ exprToString expr
-
-def printConstruction (c : Construction) : String :=
-  String.intercalate "\n" (c.stmts.toList.map printStmt)
-
+export Figures.Construction.DSL (Stmt Construction printStmt printConstruction)
 
 end Geometry.Construction.DSL
