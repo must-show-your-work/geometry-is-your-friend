@@ -26,6 +26,7 @@ import Geometry.Construction.Lowering
 import Geometry.Construction.Cache
 import Geometry.Construction.AtlasField
 import Geometry.Construction.IncrementalProofFigure
+import Geometry.Construction.FromProofState
 import ProofWidgets.Component.HtmlDisplay
 
 namespace Geometry.Construction
@@ -136,15 +137,15 @@ private def wrap (h : Html) : Html :=
     #[("style", Json.str "text-align: center; margin: 0.5em 0;")]
     #[h]
 
-/-- Look up cached positions for `c`; on miss, run the solver, cache
-the result, and return the freshly-solved positions. -/
+/-- Look up cached positions for `c`; on miss, run the Rigidity-based
+solver, cache the result, and return the freshly-solved positions. -/
 private def cachedSolve (c : DSL.Construction) :
     TermElabM (Array (Figures.Name × Figures.Pos2)) := do
   let env ← getEnv
   match Cache.lookup env c with
   | some v => return v
   | none =>
-    let positions := Lowering.solvePositions c
+    let positions ← Figures.Construction.Lowering.solvePositionsM c
     Cache.store c positions
     return positions
 
@@ -195,13 +196,25 @@ def saveProgressiveFigures
   let some baseExpr := Atlas.baseIRExprFor env kind num
     | IncrementalProofFigure.saveTheoremFigure kind num declName seq
         initialGoalTy initialMVar
-  let base ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
+  let baseExprEvaled ← unsafe Meta.evalExpr Figures.Construction.DSL.Construction
     (mkConst ``Figures.Construction.DSL.Construction) baseExpr
-  if base.isInfer then
+  let addenda := addendaFor env declName
+  -- Infer-marker base with NO auxillaries: nothing for the progressive
+  -- loop to track — render once via saveTheoremFigure (single static
+  -- widget, preserves the debug-overlay path).
+  if baseExprEvaled.isInfer ∧ addenda.isEmpty then
     IncrementalProofFigure.saveTheoremFigure kind num declName seq
       initialGoalTy initialMVar
     return
-  let addenda := addendaFor env declName
+  -- For an infer base WITH auxillaries, replace base with the
+  -- proof-state-inferred construction so the auxillary stack overlays
+  -- on top of the same shapes the theorem signature implies.
+  let base ←
+    if baseExprEvaled.isInfer then
+      initialMVar.withContext do
+        FromProofState.extract (goalTy := some initialGoalTy)
+    else
+      pure baseExprEvaled
   let fileMap ← getFileMap
   let scopes := collectScopes seq
   let steps := collectStepSyntax seq
