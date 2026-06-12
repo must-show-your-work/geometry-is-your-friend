@@ -33,7 +33,7 @@ register_option geometry.proofFigure.debug : Bool := {
   descr    := "Render DSL + LCtx debug overlays under the inferred proof-state figure."
 }
 
-private def debugBlock (title : String) (body : String) : Html :=
+def debugBlock (title : String) (body : String) : Html :=
   Html.element "div"
     #[("style", Json.str "margin: 0.25em 0; font-family: monospace; font-size: 0.8em;")]
     #[ Html.element "div"
@@ -43,7 +43,7 @@ private def debugBlock (title : String) (body : String) : Html :=
          #[("style", Json.str "margin: 0; padding: 0.5em; background: #fdf6e3; color: #073642; white-space: pre-wrap;")]
          #[Html.text body] ]
 
-private def formatLCtx : MetaM String := do
+def formatLCtx : MetaM String := do
   let lctx ← getLCtx
   let mut out : Array String := #[]
   for d in lctx do

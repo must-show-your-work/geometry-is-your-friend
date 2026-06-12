@@ -149,24 +149,44 @@ private def cachedSolve (c : DSL.Construction) :
     Cache.store c positions
     return positions
 
+/-- Optional debug overlay (DSL + LCtx) appended below the figure when
+`geometry.proofFigure.debug` is on. `lctxStr` empty ⇒ no LCtx block. -/
+private def withDebug (figHtml : Html) (c : DSL.Construction)
+    (parseInfo lctxStr : String) (debug : Bool) : Html :=
+  if !debug then figHtml else
+    let dslView := IncrementalProofFigure.debugBlock
+      s!"DSL ({c.stmts.size} stmts) — {parseInfo}" (DSL.printConstruction c)
+    let lctxView := IncrementalProofFigure.debugBlock "LCtx" lctxStr
+    let debugPanel : Html := Html.element "div"
+      #[("style", Json.str "text-align: left; max-width: 1280px; margin: 0 auto;")]
+      #[dslView, lctxView]
+    Html.element "div"
+      #[("style", Json.str "text-align: center; margin: 0.5em 0;")]
+      #[figHtml, debugPanel]
+
 /-- Render a `Construction` to a wrapped Html block (centered, with
 margin) for embedding in the InfoView. Uses `Geometry.Construction.Cache`
-to skip the solver on re-elabs of the same construction. -/
-private def renderConstructionHtml (c : DSL.Construction) :
+to skip the solver on re-elabs of the same construction. `lctxStr` is
+appended as a debug overlay when non-empty. -/
+private def renderConstructionHtml (c : DSL.Construction)
+    (lctxStr : String := "") (debug : Bool := false) :
     TermElabM Html := do
   let positions ← cachedSolve c
   let svgStr : String := Figures.Renderable.render
     (Lowering.lower c (canvasW := 1280) (canvasH := 720)
       (cachedPositions := some positions))
   match Atlas.SvgParser.parse svgStr with
-  | .ok h => return wrap h
+  | .ok h =>
+    let parseInfo := s!"SVG ok ({svgStr.length} bytes)"
+    return withDebug (wrap h) c parseInfo lctxStr debug
   | .error msg => throwError s!"progressive figure: SVG parse failed: {msg}"
 
 /-- Same as `renderConstructionHtml` but for a base+addendum pair so
 addendum constructs render with dashed style. Cache key is the
 concatenation of base + addendum stmts via `lowerAuxiliary`'s
 internal `combined` construction. -/
-private def renderAuxHtml (base addendum : DSL.Construction) :
+private def renderAuxHtml (base addendum : DSL.Construction)
+    (lctxStr : String := "") (debug : Bool := false) :
     TermElabM Html := do
   let combined : DSL.Construction := { stmts := base.stmts ++ addendum.stmts }
   let positions ← cachedSolve combined
@@ -174,7 +194,9 @@ private def renderAuxHtml (base addendum : DSL.Construction) :
     (Lowering.lowerAuxiliary base addendum (canvasW := 1280) (canvasH := 720)
       (cachedPositions := some positions))
   match Atlas.SvgParser.parse svgStr with
-  | .ok h => return wrap h
+  | .ok h =>
+    let parseInfo := s!"SVG ok ({svgStr.length} bytes)"
+    return withDebug (wrap h) combined parseInfo lctxStr debug
   | .error msg => throwError s!"progressive figure: SVG parse failed: {msg}"
 
 /-- Hook implementation: for each tactic line in `seq`, save a panel
@@ -215,6 +237,11 @@ def saveProgressiveFigures
         FromProofState.extract (goalTy := some initialGoalTy)
     else
       pure baseExprEvaled
+  let debug := IncrementalProofFigure.geometry.proofFigure.debug.get (← getOptions)
+  let lctxStr ← if debug ∧ baseExprEvaled.isInfer then
+    initialMVar.withContext IncrementalProofFigure.formatLCtx
+  else
+    pure ""
   let fileMap ← getFileMap
   let scopes := collectScopes seq
   let steps := collectStepSyntax seq
@@ -236,11 +263,11 @@ def saveProgressiveFigures
       inScope scopes fileMap a.line line
     let figHtml ←
       if activeAddenda.isEmpty then
-        renderConstructionHtml base
+        renderConstructionHtml base lctxStr debug
       else
         let combinedStmts := activeAddenda.foldl
           (fun acc a => acc ++ a.addendum.stmts) #[]
-        renderAuxHtml base { stmts := combinedStmts }
+        renderAuxHtml base { stmts := combinedStmts } lctxStr debug
     -- Concatenate descriptions from the active addenda — each
     -- `auxillary "desc" { … }` contributes a small italic caption
     -- under the figure. Empty list ⇒ no captions, no extra DOM.
