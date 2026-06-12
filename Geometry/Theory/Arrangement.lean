@@ -1030,6 +1030,71 @@ def elabOrganizeBang : Tactic := fun stx => match stx with
       runOrganizeLattice facts ineqs nameOverride goal
   | _ => throwUnsupportedSyntax
 
+/-! ## `arr_cases` — case-split an Arrangement disjunction
+
+Takes a hypothesis of type `Arr [...] ∨ Arr [...] ∨ ...` and emits
+`rcases` with auto-named branches derived from each list literal:
+`Arr [A,B,C,P]` → branch identifier `ABCP`. The per-branch state has
+the specific `Arrangement [...]` hypothesis bound to that name; from
+there `CoeDep` auto-discharges any `Between` goal projected from it.
+
+Distinct from `Geometry.Theory.by_exhaustion` (in `Tactics/`) which
+handles Finset membership splits; the two are conceptual cousins but
+operate on disjoint input shapes. -/
+
+/-- Flatten a right-associated `Or` tree into its leaves. -/
+private partial def collectOrLeaves (ty : Expr) : MetaM (Array Expr) := do
+  let ty ← whnf ty
+  if ty.isAppOfArity ``Or 2 then
+    let left  := ty.getArg! 0
+    let right := ty.getArg! 1
+    let restLeaves ← collectOrLeaves right
+    return #[left] ++ restLeaves
+  else
+    return #[ty]
+
+/-- Concatenated userNames of an `Arrangement [...]` leaf — e.g.
+`Arr [A,B,C,P]` ↦ `ABCP`. Non-Arrangement leaves get a `_` name. -/
+private def arrangementLeafName (ty : Expr) : MetaM Name := do
+  let ty ← whnf ty
+  unless ty.isAppOfArity ``Geometry.Theory.Arrangement 1 do
+    return Name.mkSimple "_"
+  let listExpr := ty.getArg! 0
+  let some pts := listExprToArray listExpr | return Name.mkSimple "_"
+  let mut nm := ""
+  for p in pts do
+    nm := nm ++ (← pointName p)
+  return Name.mkSimple nm
+
+/-- Build an `rcases` pattern from an Or-tree of Arrangements. -/
+private def buildArrDisjPattern (ty : Expr) :
+    MetaM (TSyntax `Lean.Parser.Tactic.rcasesPatLo) := do
+  let leaves ← collectOrLeaves ty
+  let mut pats : Array (TSyntax `rcasesPat) := #[]
+  for leaf in leaves do
+    let nm ← arrangementLeafName leaf
+    let id := mkIdent nm
+    let pat : TSyntax `rcasesPat ← `(rcasesPat| $id:ident)
+    pats := pats.push pat
+  `(Lean.Parser.Tactic.rcasesPatLo| $pats:rcasesPat|*)
+
+/-- `arr_cases <hyp>` — `rcases` over the Or-tree shape of `<hyp>`
+with auto-named branches (`Arr [A,B,C,P]` → `ABCP`). -/
+syntax (name := arrCasesTac) "arr_cases" ppSpace colGt term : tactic
+
+@[tactic arrCasesTac]
+def elabArrCases : Tactic := fun stx => match stx with
+  | `(tactic| arr_cases $h:term) => do
+    let goal ← getMainGoal
+    goal.withContext do
+      let hExpr ← Term.elabTerm h none
+      Term.synthesizeSyntheticMVarsNoPostponing
+      let hTy ← instantiateMVars (← inferType hExpr)
+      let pat ← buildArrDisjPattern hTy
+      let tgt ← `(Lean.Parser.Tactic.elimTarget| $h:term)
+      evalTactic (← `(tactic| rcases $tgt with $pat))
+  | _ => throwUnsupportedSyntax
+
 end Geometry.Theory.Arrangement
 
 namespace Geometry.Theory
