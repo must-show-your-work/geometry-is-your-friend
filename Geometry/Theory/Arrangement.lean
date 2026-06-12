@@ -16,125 +16,54 @@ open Geometry.Ch3.Prop
 open Geometry.Ch3.Ex
 open Atlas
 
--- NOTE: This is a mostly vibed syntax for now; the underlying theory is something like "If you take the natural
--- generalization of betweenness you get ordered lists of points. If you have a bunch of betweenness conditions, there 
--- is some set of implied possible 'arrangements' of those points, and you might be able to deduce (via B-3 and 
--- other similar facts) a bunch of other betweenness conditions that can be useful."
---
--- Practically there are a bunch of problems with it right now, owing to the nature of vibecoding.
---
--- 1. It has trouble constructing the initial arrangement without a good amount of handholding and an arcane API. This
--- is mitigated presently through the `obvious` tactic which is itself a kitchen sink that needs working.
--- 2. you end up with a lot of proofs that are essentially "Here are all the possible arrangements under the current
--- Betweenness assumptions, rcases over them" which could be much more ergonomic.
--- 3. If you have a B condition like A-B-C and C-B-Q, you currently can't automatically derive `A-Q-B-C ∨ Q-A-B-C` which
--- are the two valid arrangements of those B conditions via any means I"ve tried. Nor a situation like `A-B-C, A-Q-B`
--- giving `A-Q-B-C`
---
--- All this before we get into congruity and managing that information on top of this.
---
--- The goal of this should be the following:
---
--- A tactic like 'arranging all points' which looks at the current proofstate and finds
--- 1. all points + all b conditions + all collinearity conditions (without b cons already present) + all
--- distinctness/inequality conditions
--- 2. gangs points into groups by collinearity
--- 3. for each group, creates a hypo with all valid arrangements on it. if there are multiple valid arrangments, it
--- creates a disjunction hypo that can be rcased over
---
--- a second tactic / extension of `by_exhaustion` which takes a arrangement disjunction and creates autonamed cases for
--- each. So if you have the a hypo like `h : A-B-C-D ∨ A-C-B-D` then `by_exhaustion h` gives two cases with hypos named
--- ABCD and ACBD
---
--- a tactic `arrange h into bcon` that takes an arrangement hypo and coerces it down to the relevant betweenness
--- condition. with the extension of `into <explicit condition>`. Works similar to `forgetting`. when you run it, it
--- tries to `obvious` the goal after running; this makes it ergonomic to prove linepart conditions.
---
--- that would turn P 3.6, in particular, from something like:
---
-/-
-      · have : A - B - C - P ∨ A - B - P - C := by sorry
-        rcases this with ABCP | ABPC
-        · have : A - C - P := by arrangement ABCP
-          obvious
-        · have : A - P - C := by arrangement ABPC
--/
--- to something like:
-/-
-      · arranging points A B C P with ABCP | ABPC
-        · arrange ABCP into A - C - P
-        · arrange ABPC into A - P - C
--/
--- alternatively, I wouldn't hate if I could do `arrange ABC + BPC into A-B-P` which delegates arrangement construction
--- to a 'sum' operation. This might requre re-axiomatizing betweeness to enumerate all the degenerate cases.
---
--- A-A-A is trivially true and the additive identity.
--- A-B-A is trivially true and implies B=A
--- A-B-C by construction gives distinct and collinear
---
--- A-B-C + X-A-B = X-A-B-C
--- A-B-C + A-X-B = A-X-B-C
--- A-B-C + B-X-C = A-B-X-C
--- A-B-C + B-C-X = A-B-C-X
---
--- any subset of three is a valid betweeness, so naturally if the inputs were proper (not trivial) then we have the
--- property that if we have an arrangement of any order >= 3, it is unique, and all other arrangements on the implied
--- line are false.
---
--- The most common contradiction in geometry is probably 'you have two incompatible total orders on those collinear
--- points, you're only allowed one.'
---
--- this kind of feels group-y? if A-B-C + X-X-X = A-B-C-X ∨ X-A-B-C; (trivially A-B-C + X-Y-X = A-B-C + X-X-X), I
--- suppose A-B-C + X-Y-Z = A-B-C-X-Y-Z ∨ X-Y-Z-A-B-C; we need common-pairs to deduce handedness generally. The
--- general A-B-C... + X-Y-Z with howevermuch overlap is some version of that, though. If there are no point in common,
--- `A + b(A, 0) = b(A,0)-A ∨ A-b(A,0)`; where b(A, n) is the betweenness condition with `n` points in 'common' with `A`,
--- an arbitrary arrangement. for b(A,1) and b(A,2), we have a whole mess of disjunctions though, we can align the two
--- other points relative to the 'anchor' point anywhere in the line. I suppose we need some higher concept to represent
--- this; probably Arrangement is a list of points derived from an internal list of betweenness conditions, and it
--- classifies the set of possible total orderings of those points subject to the betweeness laws. That way it's really
--- just narrowing down and expanding a collection of betweenness conditions and doing the latticework which is starting
--- to explain why it felt group-y. We can use each betweenness to collect stretches of totally ordered points within a
--- line by choosing an arbitrary point as the 'leftmost' point of the line and ordering each point as 'to the left' of
--- another. Each betweeness establishes two such relations. "A - B - C -> A left of B ∧ B left of C". to the left is
--- transitive. it is exclusive. A left of B ∨ B left of A ∧ ¬(A left of B ∧ B left of A).
---
--- This breaks the commutativity of betweenness, but that's okay, we're adopting an arbitrary reference point, we can
--- always re-arrange a betweenness with respect to that point, and in the case of full disjunction, we can just track
--- both sides. (A-B-C + X-Y-Z) with respect to A is exactly two betweenesses -- hmm, it's hard to find a canonical
--- ordering here, if we later get a A-X-Q condition, I think we end up in a case where we still can't break down to that
--- `left of` relation because it requires a fixed reference point.
---
--- So if we're stuck building the lattice by stiching betweennesses together. Then I think we can still rely on the
--- lattice approach, we know there is a total order (or we've found a contradiction which is better, if we can prove
--- multiple total orders with whatever set of assumptions, we've probably finished a proof somewhere). The goal is
--- really to measure how many possible ones we have, and once we're in a reasonable range we just rcases over them. I
--- don't know anything about lattice theory (yet) but on pure chutzpah I believe it seems reasonable to be able to like,
--- enumerate small ones completely, and maybe take a queue from chess and compute a magic hash for them over a small
--- range. We generate up to 7 coedep cases now, i suppose that'd be a target. There is probably something involving
--- whatever passes for primes in lattice theory to find some minimal set of betwixts (easier to type than betweenness).
--- If we assume we need overlapping betwixts for each pair of points, we'd need A-B-C, B-C-D, C-D-E, E-F-G, but in face
--- we only need A-B-C,C-D-E,E-F-G to boil it down to the two mirror cases. In generally I think you can drop one case
--- in four this way. The real win is if the resulting number of possible orderings drops to 0 upon the addition of any
--- condition, indicating a contradiction and probably end of proof.
---
--- I bet that's a thing, a geometry which drop the commutativity consequence from Between.Conseqeuences.
--- in such a geometry you can't be sure that A-B-C iff C-B-A. In this, you'd essentially treat an image and it's mirror
--- as distinct, so you do geometry in the mirror-world and real-world independently. All the theorems are the same, just
--- backwards in mirror world, but I think you lose maybe lemma 1.0.20 (it uses a CAB.symm).
---
---
--- If you have `n` total points in an arrangement, then there are n!/2 arrangements (each and its mirror paired by
--- .symm), if you know 1 betwixt for this, then you fix two relations out of the `n` you need to fully fix the set; 
--- you have to introduce the symmetry manually and map `left of` to `right of` as a commutativity portal kind of thing,
--- but you would have:
---
--- A left of B = B right of A
--- A left of B -> ¬(B left of A)
---
--- A-B-C ↔ A left of B ∧ B left of C
---
--- the .symm on A-B-C would have to propagate to the right-handed chiral option, that gets complicated quickly=
+/-!
+# Arrangement — lattice framework
 
+An `Arrangement [p₀, p₁, …, p_{n-1}]` records that every ordered triple
+of the list is a valid `Between`: `p_i - p_j - p_k` for every
+`0 ≤ i < j < k < n`. It's the formal artifact representing a single
+total order on `n` collinear points; CoeDep instances (sizes 3–7,
+generated by `gen_arrangement_coes_up_to`) auto-project to any
+constituent `Between`, so downstream goals don't have to spell out
+the index extraction.
+
+## Lattice framing
+
+Each `Between A B C` contributes two "left-of" relations (`A<B`,
+`B<C`). A set of `Between`s defines a partial order on its points;
+the valid `Arrangement`s are exactly the linear extensions of that
+partial order.
+
+- **Unique extension** ⇒ one `Arrangement`.
+- **Multiple extensions** ⇒ a *disjunction* of `Arrangement`s — one
+  per extension. (The disjunction width is the lattice's ambiguity.)
+- **Cycle in the DAG** ⇒ inconsistent input ⇒ derives `False`.
+
+## User-facing surface
+
+The lattice surfaces through three tactics:
+
+- **`organize! <facts>* (as <ident>)?`** — sweep `Between` / `Arrangement`
+  hypotheses + optional `_ ≠ _` proofs, compute the lattice, and
+  introduce the result. Unique extension: `Arrangement [...]`.
+  Ambiguous: `Arr [...] ∨ … ∨ Arr [...]`. Hypothesis name auto-derived
+  as `arr<root><sink>` (alphabetically-first source / sink in the
+  partial order) or supplied via `as <ident>`.
+
+- **`arr_cases <hyp>`** — case-split an Or-tree of `Arrangement`s
+  with branch names auto-derived from each list literal
+  (`Arr [A,B,C,P]` → `ABCP`).
+
+- **`arrangement <hyp>`** project a specific `Between` from a known `Arrangement` value when the goal is one of its triples. `CoeDep` covers the implicit case; this tactic forces an explicit triple selection.
+
+The common shape is:
+```
+organize! ABC ABP CneP
+arr_cases arrAC
+case ABCP => …  -- ABCP : Arr [A,B,C,P] in scope; CoeDep gives every triple
+case ABPC => …  -- ABPC : Arr [A,B,P,C] in scope
+```
+-/
 
 structure Arrangement (pts : List Point) : Prop where
   three_plus : pts.length ≥ 3
@@ -899,20 +828,47 @@ private def computeArrName (pool : Array Expr) (edges : Array (Nat × Nat)) :
   let sinkName := (sinkNames.qsort (· < ·))[0]!
   return s!"arr{rootName}{sinkName}"
 
+/-- Extract `(x, y)` from `Ne x y`, `Not (Eq x y)`, or the Pi form
+`Eq x y → False`. `by_cases h : a = b` creates the false branch as
+`Not (Eq a b)`; `clearly` and other tacticals often leave it in the
+unfolded `(_ = _) → False` shape. Accept all three. -/
+private def neArgs? (e : Expr) : MetaM (Option (Expr × Expr)) := do
+  let e ← whnf e
+  match e.getAppFnArgs with
+  | (``Ne, #[_, x, y]) => return some (x, y)
+  | (``Not, #[inner]) =>
+    let inner ← whnf inner
+    match inner.getAppFnArgs with
+    | (``Eq, #[_, x, y]) => return some (x, y)
+    | _ => pure ()
+  | _ => pure ()
+  if e.isForall then
+    let body ← whnf e.bindingBody!
+    if body.isConstOf ``False then
+      let dom ← whnf e.bindingDomain!
+      match dom.getAppFnArgs with
+      | (``Eq, #[_, x, y]) => return some (x, y)
+      | _ => pure ()
+  return none
+
 /-- Find `a ≠ b` in `ineqs`, applying `.symm` if needed. -/
 private def findIneq (ineqs : Array Expr) (a b : Expr) : MetaM (Option Expr) := do
   for ineq in ineqs do
     let ineqTy ← inferType ineq
-    match ineqTy.getAppFnArgs with
-    | (``Ne, #[_, x, y]) =>
+    if let some (x, y) ← neArgs? ineqTy then
       if (← isDefEq x a) ∧ (← isDefEq y b) then return some ineq
       if (← isDefEq x b) ∧ (← isDefEq y a) then
         return some (← mkAppM ``Ne.symm #[ineq])
-    | _ => pure ()
   return none
 
 /-- 4-point 2-extension dispatch — detect shared-left or shared-outer
-configuration and apply lemma 3.0.11 or 3.0.12. -/
+configuration and apply lemma 3.0.11 or 3.0.12. The produced
+disjunction's order tracks the user-supplied fact order: `facts[0]`
+becomes `h1` (its third/middle goes in the left disjunct's
+position), `facts[1]` becomes `h2`. Goal-dispatch handles type
+matching downstream via metavariable unification (no explicit goal)
+or `isDefEq` (explicit goal); when the user wrote the goal with the
+opposite disjunction order, they'd flip the fact order or the goal. -/
 private def dispatch4PtSplit (pool : Array Expr) (perFactIdx : Array (Array Nat))
     (facts : Array ArrFact) (ineqs : Array Expr) : MetaM Expr := do
   unless facts.size == 2 do
@@ -944,35 +900,88 @@ private def dispatch4PtSplit (pool : Array Expr) (perFactIdx : Array (Array Nat)
   else
     throwError m!"organize!: 4-pt config ranks ({idx1}, {idx2}) not recognized as shared-left or shared-outer"
 
+/-- Try every combination of `.symm`-flips on the Between facts. Returns
+the first orientation whose induced DAG is acyclic, together with the
+oriented facts, indices, and computed linear extensions. Without this,
+the user has to manually orient each input — e.g. write `BAP.symm` so
+the edges align — which is busywork the tactic should handle. -/
+private def tryOrientations (facts : Array ArrFact) (perFactIdx : Array (Array Nat))
+    (n : Nat) :
+    MetaM (Array ArrFact × Array (Array Nat) × Array (Array Nat)) := do
+  let mut flippable : Array Nat := #[]
+  for i in [:facts.size] do
+    match facts[i]! with
+    | .bet _ _ _ _ => flippable := flippable.push i
+    | _            => pure ()
+  let nFlip := flippable.size
+  let maxMask : Nat := 1 <<< nFlip
+  for mask in [0 : maxMask] do
+    let mut oFacts := facts
+    let mut oIdxs  := perFactIdx
+    for k in [:nFlip] do
+      if (mask >>> k) % 2 == 1 then
+        let i := flippable[k]!
+        match facts[i]! with
+        | .bet p a b c =>
+          let symmProof ← mkAppM ``Geometry.Theory.Between.symm #[p]
+          oFacts := oFacts.set! i (.bet symmProof c b a)
+          oIdxs  := oIdxs.set! i (perFactIdx[i]!).reverse
+        | _ => pure ()
+    let mut edges : Array (Nat × Nat) := #[]
+    for idxs in oIdxs do
+      for i in [:idxs.size - 1] do
+        edges := edges.push (idxs[i]!, idxs[i+1]!)
+    match Lattice.enumLinearExtensions n edges with
+    | .ok exts =>
+      if !exts.isEmpty then return (oFacts, oIdxs, exts)
+    | .error _ => pure ()
+  return (facts, perFactIdx, #[])
+
 /-- Core lattice driver. Builds + introduces an Arrangement hypothesis
 (unique extension), an Arrangement-disjunction (2-ext / 4-pt), or
-errors. `nameOverride = none` ⇒ auto-name via `computeArrName`. -/
-def runOrganizeLattice (facts : Array ArrFact) (ineqs : Array Expr)
+errors. `nameOverride = none` ⇒ auto-name via `computeArrName`.
+
+Augments the caller-supplied inequalities with every `Ne` / `Not (Eq _)`
+hypothesis in the local context — Joe shouldn't have to spell out
+`PneC` when it's already a hypothesis sitting two lines above the
+call site. -/
+def runOrganizeLattice (origFacts : Array ArrFact) (ineqs : Array Expr)
     (nameOverride : Option Name) (goal : MVarId) : TacticM Unit := do
   goal.withContext do
-    if facts.isEmpty then
+    if origFacts.isEmpty then
       throwError "organize!: requires at least one Between or Arrangement"
+    -- Augment inequalities with LCtx scan.
+    let lctx ← getLCtx
+    let mut allIneqs := ineqs
+    for decl in lctx do
+      if decl.isImplementationDetail then continue
+      let declTy ← instantiateMVars decl.type
+      if (← neArgs? declTy).isSome then
+        allIneqs := allIneqs.push decl.toExpr
+    -- Pool points + per-fact indices.
     let mut pool : Array Expr := #[]
-    let mut perFactIdx : Array (Array Nat) := #[]
-    for f in facts do
+    let mut origIdx : Array (Array Nat) := #[]
+    for f in origFacts do
       let mut idxs : Array Nat := #[]
       for p in f.points do
         let (k, newPool) ← addPoint pool p
         pool := newPool
         idxs := idxs.push k
-      perFactIdx := perFactIdx.push idxs
+      origIdx := origIdx.push idxs
     let n := pool.size
     if n > Lattice.maxArrangementSize then
       throwError m!"organize!: n={n} exceeds CoeDep cap {Lattice.maxArrangementSize}"
+    -- Find an acyclic orientation (try all 2^|Betweens| .symm combinations).
+    let (facts, perFactIdx, extensions) ← tryOrientations origFacts origIdx n
+    if extensions.isEmpty then
+      throwError "organize!: cycle in betweenness constraints under every \
+        .symm orientation (False derivation TODO)"
+    -- Re-derive edges from the chosen orientation (used for arr name).
     let mut edges : Array (Nat × Nat) := #[]
     for idxs in perFactIdx do
       for i in [:idxs.size - 1] do
         edges := edges.push (idxs[i]!, idxs[i+1]!)
-    let extensions ← match Lattice.enumLinearExtensions n edges with
-      | .ok exts   => pure exts
-      | .error msg => throwError m!"organize!: {msg}"
-    if extensions.isEmpty then
-      throwError "organize!: cycle in betweenness constraints (False derivation TODO)"
+    let ineqs := allIneqs
     let arrName ← match nameOverride with
       | some n => pure n
       | none   => pure (Name.mkSimple (← computeArrName pool edges))
@@ -984,15 +993,62 @@ def runOrganizeLattice (facts : Array ArrFact) (ineqs : Array Expr)
       let factRanks := perFactIdx.map (·.map (rank[·]!))
       let arrProof ← buildArrangement facts factRanks n
       let arrType ← inferType arrProof
-      let g' ← goal.assert arrName arrType arrProof
-      let (_, g') ← g'.intro1P
-      replaceMainGoal [g']
+      let goalType ← instantiateMVars (← goal.getType)
+      let goalType ← whnf goalType
+      -- Goal-dispatch 1: built arrangement matches goal type ⇒ assign directly.
+      if ← isDefEq arrType goalType then
+        goal.assign arrProof
+      -- Goal-dispatch 2: goal is `X - Y - Z` (a Between) projected from the
+      -- built arrangement ⇒ assert + `.tri` projection (with `.symm` if
+      -- the ranks are monotonically decreasing). Same shape as legacy
+      -- `organize`'s Between branch.
+      else if let some (gx, gy, gz) := goalType.app3? ``Geometry.Theory.Between then
+        let some ix ← findIndex pool gx
+          | throwError m!"organize!: goal point {gx} not in hypotheses"
+        let some iy ← findIndex pool gy
+          | throwError m!"organize!: goal point {gy} not in hypotheses"
+        let some iz ← findIndex pool gz
+          | throwError m!"organize!: goal point {gz} not in hypotheses"
+        let rx := rank[ix]!
+        let ry := rank[iy]!
+        let rz := rank[iz]!
+        let (i0, i1, i2, reverse) ←
+          if rx < ry ∧ ry < rz then pure (rx, ry, rz, false)
+          else if rx > ry ∧ ry > rz then pure (rz, ry, rx, true)
+          else throwError m!"organize!: goal points not in arrangement order \
+                              (ranks {rx}, {ry}, {rz})"
+        let g' ← goal.assert arrName arrType arrProof
+        let (_, g') ← g'.intro1P
+        replaceMainGoal [g']
+        g'.withContext do
+          let arrIdent := mkIdent arrName
+          let i0Lit := Syntax.mkNumLit (toString i0)
+          let i1Lit := Syntax.mkNumLit (toString i1)
+          let i2Lit := Syntax.mkNumLit (toString i2)
+          let body ← `(($arrIdent).tri $i0Lit $i1Lit $i2Lit
+            (by simp) (by simp) (by simp) (by decide) (by decide))
+          let finalTerm : TSyntax `term ←
+            if reverse then `(($body).symm) else pure body
+          evalTactic (← `(tactic| exact $finalTerm))
+      else
+        let g' ← goal.assert arrName arrType arrProof
+        let (_, g') ← g'.intro1P
+        replaceMainGoal [g']
     else if extensions.size == 2 ∧ n == 4 ∧ facts.size == 2 then
       let proof ← dispatch4PtSplit pool perFactIdx facts ineqs
       let arrType ← inferType proof
-      let g' ← goal.assert arrName arrType proof
-      let (_, g') ← g'.intro1P
-      replaceMainGoal [g']
+      let goalType ← instantiateMVars (← goal.getType)
+      let goalType ← whnf goalType
+      -- The dispatch canonicalizes which fact is h1 vs h2 by alphabetic order
+      -- of the differing point, so the produced disjunction order is
+      -- deterministic and should match the goal when the user wrote
+      -- the disjunction in natural reading order.
+      if ← isDefEq arrType goalType then
+        goal.assign proof
+      else
+        let g' ← goal.assert arrName arrType proof
+        let (_, g') ← g'.intro1P
+        replaceMainGoal [g']
     else
       throwError m!"organize!: config (n={n}, extensions={extensions.size}, facts={facts.size}) not yet supported"
 
@@ -1022,7 +1078,7 @@ def elabOrganizeBang : Tactic := fun stx => match stx with
           facts := facts.push f
         else
           let hTy ← instantiateMVars (← inferType hExpr)
-          if hTy.isAppOfArity ``Ne 3 then
+          if (← neArgs? hTy).isSome then
             ineqs := ineqs.push hExpr
           else
             throwError m!"organize!: cannot parse `{h}` as Between, Arrangement, or `_ ≠ _`"

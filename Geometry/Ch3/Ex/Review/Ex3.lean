@@ -62,7 +62,7 @@ atlas exercise 3.Review.3.a.i "If A-B-C, then AB ⊆ AC"
   ((segment A B : Line) ⊆ (segment A C)) := by
   intro P PonAB
   rcases PonAB with APB | rfl | rfl
-  · have APBC : A - P - B - C := by organize ABC APB
+  · have APBC : A - P - B - C := by organize! ABC APB
     have APC : A - P - C := APBC
     obvious
   all_goals obvious
