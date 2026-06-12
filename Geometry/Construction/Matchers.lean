@@ -15,3 +15,4 @@ import Geometry.Construction.Matchers.Angle
 import Geometry.Construction.Matchers.RaysDistinct
 import Geometry.Construction.Matchers.Intersects
 import Geometry.Construction.Matchers.PointEquality
+import Geometry.Construction.Matchers.IncidenceOnLine

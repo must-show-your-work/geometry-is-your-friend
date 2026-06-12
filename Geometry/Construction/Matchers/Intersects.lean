@@ -85,13 +85,24 @@ def matchIntersectsAt : Matcher := fun e => do
     let some nPoint ← readPointName? pointExpr | return none
     let xStr := nPoint.toString
     let lStr := nLine.toString
-    let some (constructStmt, kind, aStr, bStr) ← shapeConstruct shapeExpr
-      | return none
-    return some #[
-      constructStmt,
-      assertN "incident" #[xStr, lStr],
-      onShapeAssert kind aStr bStr xStr,
-    ]
+    -- Constructor shape (segment / line_through / ray) — emit the
+    -- shape's construct + on-shape assertion.
+    match (← shapeConstruct shapeExpr) with
+    | some (constructStmt, kind, aStr, bStr) =>
+      return some #[
+        constructStmt,
+        assertN "incident" #[xStr, lStr],
+        onShapeAssert kind aStr bStr xStr,
+      ]
+    | none =>
+      -- Fallback: shapeExpr is an fvar Line (e.g. P2.1's `L intersects
+      -- M at X` with M a binder). Both lines already exist via the
+      -- LCtx/Pi walk; just assert X lies on both.
+      let some nShape ← readLineName? shapeExpr | return none
+      return some #[
+        assertN "incident" #[xStr, lStr],
+        assertN "incident" #[xStr, nShape.toString],
+      ]
   | _ => return none
 
 @[proof_state_matcher 50]
