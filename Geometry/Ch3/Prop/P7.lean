@@ -48,25 +48,8 @@ atlas commentary := by
   preface ""
 
   figure := by
-    construction {
-      exists A B C : Point
-      exists D : Point
-      exists L : Line
-      assert distinct A B C
-      assert ¬ collinear A B C
-      construct rayAB := ray A B
-      construct rayAC := ray A C
-      construct lineBC := line B C
-      assert incident D L
-      assert incident B L
-      assert incident C L
-      assert between B D C
-      focus D
-    }
+    construction { infer }
     title "Proposition 3.7"
-    index 1
-    caption ""
-
 
 atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
   { A B C D : Point } (DonBC : D on line B C) (aCAB : ∠ C A B := by assumption) (DonBC : D on line B C := by assumption) :
@@ -75,7 +58,7 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
       use line B C
       intro P PisBCD; by_exhaustion PisBCD
       all_goals obvious
-    obtain ⟨dABC, _⟩ := aCAB
+    obtain ⟨rABnerAC, _⟩ := aCAB
     constructor
     · intro DintCAB
       obtain ⟨aBAC, ACguardsBD, ABguardsCD⟩ := DintCAB
@@ -102,18 +85,13 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
       have ⟨h, j⟩ := via proposition 3.6 BDC
       constructor
       · constructor
-        · sorry -- BROKEN by Angle def change (distinct → ray-distinct); was: separate; distinguish
+        · exact rABnerAC.symm
         · by_contra!; obtain ⟨_, BAeqBC⟩ := this
-          auxillary {
-            assert collinear A B C -- equivalent to our RAA hypo
-          }
           -- rw [<- BAeqBC] at DonBC -- why doesn't this work?
-
           sorry
       · suffices key : ∀ {B C : Point}, B - D - C → (ray A C guards B and D) by
           exact ⟨key BDC, key BDC.symm⟩
         intro B C BDC
-         
         sorry
 
 

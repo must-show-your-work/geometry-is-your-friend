@@ -22,17 +22,15 @@ atlas commentary := by
   preface "For any two points A and B: (i) Ray A B ∩ Ray B A = Segment A B ..."
   notes "I'm inserting this `A ≠ B` condition because the author never clearly states, but definitely implies, that `the ray A A` is degenerate because `A - A - B` and the like are degenerate"
 
-  -- figure := by
-    -- construction {
-      -- exists A B : Point
-      -- assert distinct A B
-      -- construct rayAB := ray A B
-      -- construct rayBA := ray B A
-    -- }
-    -- title "Proposition 3.1 (i)"
-    -- index 1
-    -- caption "The two opposite rays AB and BA overlap exactly on segment AB."
+  figure := by
+    -- FIXME: Inference for this is still a little busted. Doesn't show the rays or any kind of indication of what is
+    -- intended to be shown.
+    construction { infer }
+    title "Proposition 3.1 (i)"
+    index 1
+    caption "The two opposite rays AB and BA overlap exactly on segment AB."
 
+set_option geometry.proofFigure.debug true
 atlas proposition 3.1.i "Two rays from common endpoints intersect in their segment"
   : A ≠ B -> (segment A B : Line) = (ray A B : Line) ∩ (ray B A : Line) := by
   intro AneB

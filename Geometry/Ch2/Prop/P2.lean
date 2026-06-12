@@ -20,18 +20,10 @@ atlas commentary := by
   name "Three distinct lines exist that are not concurrent"
   preface "There exist three distinct lines that are not concurrent."
 
-  -- figure := by
-    -- construction {
-      -- exists A B C : Point
-      -- assert distinct A B C
-      -- assert ¬ collinear A B C
-      -- construct lineAB := line_through A B
-      -- construct lineBC := line_through B C
-      -- construct lineAC := line_through A C
-    -- }
-    -- title "Proposition 2.2"
-    -- index 1
-    -- caption "Three lines through three non-collinear points form a triangle — no common point of concurrence."
+  figure := by
+    construction { infer }
+    title "Proposition 2.2"
+    index 1
 
 atlas proposition 2.2 "Three distinct lines exist that are not concurrent"
   : ∃ L M N : Line, (L ≠ M ∧ M ≠ N ∧ L ≠ N) ∧ ¬Concurrent L M N := by
