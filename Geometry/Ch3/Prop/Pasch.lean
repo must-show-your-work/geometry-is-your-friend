@@ -41,21 +41,26 @@ another side."
   While this dodge is sad, it is the case, and theorems are fortunately numbered separately from propositions, solving our
   possible off-by-one situation. Perhaps our disappointment was worth it after all."
 
+  /- figure := by -/
+  /-   construction { -/
+  /-     exists A B C : Point -/
+  /-     exists X : Point -/
+  /-     exists L : Line -/
+  /-     assert distinct A B C -/
+  /-     assert ¬ collinear A B C -/
+  /-     assert between A X B -/
+  /-     assert incident X L -/
+  /-     construct segAB := segment A B -/
+  /-     construct segBC := segment B C -/
+  /-     construct segAC := segment A C -/
+  /-   } -/
+  /-   title "Pasch's Theorem" -/
+  /-   index 1 -/
+  /-   caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L." -/
+
   figure := by
-    construction {
-      exists A B C : Point
-      exists X : Point
-      exists L : Line
-      assert distinct A B C
-      assert ¬ collinear A B C
-      assert between A X B
-      assert incident X L
-      construct segAB := segment A B
-      construct segBC := segment B C
-      construct segAC := segment A C
-    }
+    construction { infer }
     title "Pasch's Theorem"
-    index 1
     caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L."
 
 atlas theorem 3.0 "Pasch's Theorem"
@@ -76,9 +81,9 @@ atlas theorem 3.0 "Pasch's Theorem"
         · rw [PeqC, SegABeqSegBC]; obvious
       auxillary { assert collinear A B C }
       contradiction
-    clearly L ≠ segment A B := by exact absurd LeqSegAB.symm (via lemma 2.0.12)
-    clearly L ≠ segment A C := by exact absurd LeqSegAC.symm (via lemma 2.0.12)
-    clearly L ≠ segment B C := by exact absurd LeqSegBC.symm (via lemma 2.0.12)
+    clearly L ≠ segment A B := by exact absurd LeqSegAB.symm ( via lemma 2.0.12 )
+    clearly L ≠ segment A C := by exact absurd LeqSegAC.symm ( via lemma 2.0.12 )
+    clearly L ≠ segment B C := by exact absurd LeqSegBC.symm ( via lemma 2.0.12 )
     quoting (1) "Either C lies on L or it does not; if it does, the theorem holds (law the excluded middle)"
     clearly C off L := by
       auxillary { assert incident C L }

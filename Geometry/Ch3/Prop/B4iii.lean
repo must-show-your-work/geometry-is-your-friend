@@ -25,21 +25,14 @@ previous proposition
 
 FIXME: I think I need to drop the avoid hypothesis and do the by_cases argument."
 
-  -- figure := by
-    -- construction {
-      -- exists A B C X : Point
-      -- exists L : Line
-      -- assert distinct A B C
-      -- assert between A X B
-      -- assert incident X L
-      -- focus L
-      -- construct segAB := segment A B
-      -- construct segBC := segment B C
-      -- construct segAC := segment A C
-    -- }
-    -- title "Corollary B.4 (iii)"
-    -- index 1
-    -- caption "L splits AB at X; B and C are on the same side, so A and C end up on opposite sides."
+  figure := by
+    construction {
+      infer
+      focus L
+    }
+    title "Corollary B.4 (iii)"
+    index 1
+    caption "L splits AB at X; B and C are on the same side, so A and C end up on opposite sides."
 
 atlas corollary B.4.iii "Corollary to B-4: splits + guards transitivity"
   (AoffL : A off L := by assumption)
