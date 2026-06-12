@@ -46,4 +46,13 @@ example (A B C P : Point) (ABC : A - B - C) (ABP : A - B - P) (PneC : P ≠ C) :
   organize! ABC ABP PneC
   exact arrAC
 
+/-! ## `arr_cases` — auto-named rcases on Arrangement disjunction -/
+
+example (A B C P : Point) (ABC : A - B - C) (ABP : A - B - P) (CneP : C ≠ P) :
+    Nonempty (Arrangement [A, B, C, P]) ∨ Nonempty (Arrangement [A, B, P, C]) := by
+  organize! ABC ABP CneP
+  arr_cases arrAC
+  · left; exact ⟨ABCP⟩
+  · right; exact ⟨ABPC⟩
+
 end Geometry.Tests.OrganizeBangSmoke
