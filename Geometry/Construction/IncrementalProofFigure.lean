@@ -86,7 +86,7 @@ private def traceMsg (msg : String) (stx : Syntax) : TacticM Unit := do
 figure block (e.g. an extra `exists D : Point` to give the inferred
 figure additional structure). They're appended to the proof-state
 extraction. -/
-def saveTheoremFigure (_kind _num : String) (_declName : Name) (seq : Syntax)
+def saveTheoremFigure (kind num : String) (_declName : Name) (seq : Syntax)
     (initialGoalTy : Expr) (initialMVar : MVarId)
     (userStmts : Array DSL.Stmt := #[]) : TacticM Unit := do
   try
@@ -94,12 +94,27 @@ def saveTheoremFigure (_kind _num : String) (_declName : Name) (seq : Syntax)
     -- via the snapshotted mvar's context. `getLCtx` inside `extract`
     -- then walks all the theorem's premises (distinct, between,
     -- incidence hypotheses, etc.).
-    let html ← initialMVar.withContext do
+    let (html, c, positions, lctxStr, debug) ← initialMVar.withContext do
       let inferred ← FromProofState.extract (goalTy := some initialGoalTy)
       let c : DSL.Construction := { stmts := inferred.stmts ++ userStmts }
       let debug := geometry.proofFigure.debug.get (← getOptions)
       let lctxStr ← if debug then formatLCtx else pure ""
-      renderConstructionHtml c lctxStr debug
+      let positions ←
+        if debug then Figures.Construction.Lowering.solvePositionsM c
+        else pure #[]
+      let html ← renderConstructionHtml c lctxStr debug
+      return (html, c, positions, lctxStr, debug)
+    if debug then
+      let posStr := String.intercalate "\n" (positions.toList.map fun (n, p) =>
+        s!"  {n}: ({p.x}, {p.y})")
+      logInfoAt seq m!"[proofFigure {kind} {num}] DSL:
+{DSL.printConstruction c}
+
+[LCtx]
+{lctxStr}
+
+[positions]
+{posStr}"
     Widget.savePanelWidgetInfo
       (hash HtmlDisplayPanel.javascript)
       (return Json.mkObj [("html", Atlas.htmlToJson html)])
