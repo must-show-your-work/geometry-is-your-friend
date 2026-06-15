@@ -4,6 +4,7 @@ import Mathlib.Data.Set.Insert
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Geometry.Theory.Axioms
+import Geometry.Theory.Angle
 import Geometry.Tactics
 import Geometry.Construction.AtlasField
 import Atlas
@@ -400,5 +401,13 @@ atlas lemma 1.0.20 "Betweenness contradiction: A-B-C cannot coexist with C-A-B"
   · exact nABC ABC
 
 end Betweenness
+
+@[simp, obvious]
+theorem OppositeRay.symm_iff {A B C : Point} :
+    OppositeRay A B C ↔ OppositeRay A C B :=
+  ⟨fun h => ⟨h.1.symm, h.2.symm⟩, fun h => ⟨h.1.symm, h.2.symm⟩⟩
+
+theorem OppositeRay.symm {A B C : Point} (h : OppositeRay A B C) : OppositeRay A C B :=
+  OppositeRay.symm_iff.mp h
 
 end Geometry.Theory
