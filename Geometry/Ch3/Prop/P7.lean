@@ -40,6 +40,7 @@ macro_rules (kind := isInteriorToAngleNotation)
   | `($D:ident is interior to ∠ $X:ident $V:ident $Z:ident) =>
       `(InteriorOf $X $V $Z $D)
 
+
 atlas commentary := by
   via proposition 3.7
   page 115
@@ -71,36 +72,45 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
       clearly B ≠ D := by rw [BeqD] at DoffAB; obvious
       clearly C ≠ D := by rw [CeqD] at DoffAC; obvious
       have dABCD : distinct A B C D := by
-        separate; distinguish; obvious
-      rcases guardConditionBD with rfl | h
+        separate; distinguish;
+        obvious
+        exact CneD
+      rcases guardConditionBD with rfl | BDguard
       · obvious
-      · rcases guardConditionCD with rfl | j
+      · rcases guardConditionCD with rfl | CDguard
         · exfalso; exact absurd DoffAC obvious
         · rcases (via axiom B.3 B C D ⟨dABCD forgetting A, cBCD⟩) with ⟨BCD, _, _⟩ | ⟨_,CBD,_⟩ | ⟨_, _, BDC⟩
           · exfalso; idea "violates the guard condition"
-            have CoffBD : C on line B D := obvious
-            have : (line A C : Line) ≠ line B D := by intro h; rw [h] at DoffAC; exact DoffAC (by obvious)
-            have : (line A C : Line) intersects line B D at C := by
-              sorry
-            have : line A C splits B and D := via lemma 2.0.22 BCD this
-            exact (absurd ACguardsBD) this
+            exact BDguard C (by obvious) (by obvious : C on line A C)
           · exfalso; idea "ibid"
-            have : B on line C D := obvious
-            have : line A B intersects (segment C D : Line) at B := by sorry
-            have : line A B splits C and D := via lemma 2.0.22 CBD this
-            exact (absurd ABguardsCD) this
+            exact CDguard B (by obvious) (by obvious : B on line A B)
           · exact BDC
     · intro BDC
-      idea "construct rays DB and DC and use 3.6"
-      have ⟨h, j⟩ := via proposition 3.6 BDC
+      clearly B off line A C := by sorry
+      clearly D off line A C := by sorry
+      clearly C off segment B D := by sorry
       constructor
       · constructor
+        · separate; distinguish
+        · obvious
+      · constructor
+        · refine ⟨(by assumption), (by assumption), ?_⟩
+          right
+          intro P PonSegBD
+          by_contra! PonAC
+          have BDeqBC : (line B D : Line) = line B C := (via corollary 3.6 BDC).left
+          have PonBD : P on line B D := via lemma 2.0.4 PonSegBD
+          comment "Type shenanigans necessary because lines-as-sets is a leaky thing"
+          change P ∈ (line B D : Line) at PonBD
+          rw [BDeqBC] at PonBD
+          have PeqC : P = C := by 
+            idea "P is on AC and BC, so P = C because intersections are uniqu"
+            have : P ∈ (line A C : Line) ∩ (line B C) := by sorry
+            have : line A C intersects line B C at P := by sorry
+            have : line A C intersects line B C at C := by sorry
+            obvious
+          rw [PeqC] at PonSegBD
+          contradiction
         · sorry
-        · sorry
-      · suffices key : ∀ {B C : Point}, B - D - C → (line A C guards B and D) by
-          exact ⟨key BDC, key BDC.symm⟩
-        intro B C BDC
-        sorry
-
 
 end Geometry.Ch3.Prop

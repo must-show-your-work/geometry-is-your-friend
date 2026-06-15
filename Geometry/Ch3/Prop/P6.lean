@@ -102,4 +102,9 @@ fill them in' kind of thing"
         have : A - B - P := by arrangement this
         obvious
 
+atlas corollary 3.6 "If A - B - C, then AB = AC = BC"
+  { A B C : Point } (ABC : A - B - C := by assumption) :
+  ((line A B : Line) = (line A C)) ∧ ((line A B : Line) = (line B C)) := by
+    sorry
+
 end Geometry.Ch3.Prop
