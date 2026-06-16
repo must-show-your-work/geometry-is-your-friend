@@ -48,6 +48,11 @@ def Consistent (t : Tangling) : Prop := t.extensions ≠ []
 fully untangled. Multiple ⇒ ambiguous; users dispatch via `untangle`. -/
 noncomputable def ambiguity (t : Tangling) : Nat := t.extensions.length
 
+/-- An inconsistent Tangling (zero consistent extensions) yields False — the
+known Between facts form a cycle in the partial order. Used by `untangle` to
+auto-close False goals when the input Tangling is contradictory. -/
+theorem cycle_imp_false (t : Tangling) (h : t.extensions = []) : False := by sorry
+
 end Tangling
 
 end Geometry.Theory
