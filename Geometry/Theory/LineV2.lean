@@ -99,4 +99,25 @@ syntax (name := comparingTac) "comparing" term "and" term : tactic
 macro_rules (kind := comparingTac)
   | `(tactic| comparing $L and $M) => `(tactic| have tri := Line.trichotomy $L $M)
 
+@[simp] theorem mkLine_points {A B : Point} (h : A ≠ B) :
+    (mkLine A B h).tangling.points = {A, B} := rfl
+@[simp] theorem mkLine_leftBound {A B : Point} (h : A ≠ B) :
+    (mkLine A B h).leftBound = none := rfl
+@[simp] theorem mkLine_rightBound {A B : Point} (h : A ≠ B) :
+    (mkLine A B h).rightBound = none := rfl
+
+@[simp] theorem mkRay_points {A B : Point} (h : A ≠ B) :
+    (mkRay A B h).tangling.points = {A, B} := rfl
+@[simp] theorem mkRay_leftBound {A B : Point} (h : A ≠ B) :
+    (mkRay A B h).leftBound = some A := rfl
+@[simp] theorem mkRay_rightBound {A B : Point} (h : A ≠ B) :
+    (mkRay A B h).rightBound = none := rfl
+
+@[simp] theorem mkSegment_points {A B : Point} (h : A ≠ B) :
+    (mkSegment A B h).tangling.points = {A, B} := rfl
+@[simp] theorem mkSegment_leftBound {A B : Point} (h : A ≠ B) :
+    (mkSegment A B h).leftBound = some A := rfl
+@[simp] theorem mkSegment_rightBound {A B : Point} (h : A ≠ B) :
+    (mkSegment A B h).rightBound = some B := rfl
+
 end Geometry.Theory.LineV2
