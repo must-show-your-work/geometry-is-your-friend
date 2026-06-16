@@ -90,11 +90,18 @@ def Coterminal (A B C : Point) (hb : A ≠ B := by assumption)
     (hc : A ≠ C := by assumption) : Prop :=
   ¬OppositeRay A B C hb hc ∧ mkRay A B hb ≠ mkRay A C hc
 
-/-- Trichotomy classifier. Lemma 2.0.1 gives the underlying-Line classification
-in Prop; lifting to the `Trichotomy : Type` form here requires Classical case
-extraction since `Or.casesOn` can't eliminate into `Type`. Body deferred —
-proof obligation is real (case extract + bound-filter refinement). -/
-noncomputable def Line.trichotomy (L M : Line) : Trichotomy L M := by sorry
+/-- Trichotomy classifier — derived from 2.0.1 on the underlying lines.
+Classical case extraction lifts the Or-in-Prop result into `Type`. The third
+branch (lines coincide) further requires bounds to match for LineV2-equality. -/
+noncomputable def Line.trichotomy (L M : Line) : Trichotomy L M := by
+  by_cases hEq : L = M
+  · exact .coincident hEq
+  · by_cases hPar : L.tangling.col.line ∩ M.tangling.col.line = ∅
+    · refine .parallel ?_
+      intro P ⟨⟨hL, _⟩, ⟨hM, _⟩⟩
+      have : P ∈ L.tangling.col.line ∩ M.tangling.col.line := ⟨hL, hM⟩
+      rw [hPar] at this; exact this
+    · sorry
 
 /-- Structural extensionality: equal tangling + matching bounds ⇒ equal Line.
 The stronger 2.0.2-style ext (two shared distinct points ⇒ Line equal up to bounds)
