@@ -20,26 +20,26 @@ open Lean Meta
 open Figures.Construction.DSL
 open Figures.Construction.ProofState
 
-/-- Walk through possible coercion wrappers to find the inner
-shape-constructor application. Useful because `intersects segment A B`
-elaborates with a Segment→Line coercion around `Segment.between A B`. -/
-private partial def unwrapToShape (e : Expr) : Expr :=
+private def isShapeHead (e : Expr) : Bool :=
   match e.getAppFnArgs with
   | (`Geometry.Theory.Segment.between, _)
   | (`Geometry.Theory.LineThrough.through, _)
   | (`Geometry.Theory.Ray.from_, _)
-  | (`Geometry.Theory.Extension.past, _) => e
-  | (_, args) =>
-    -- Try each arg recursively; first match wins. Coercions typically
-    -- wrap their target in the last arg.
+  | (`Geometry.Theory.Extension.past, _)
+  | (`Geometry.Theory.LineV2.mkLine, _)
+  | (`Geometry.Theory.LineV2.mkRay, _)
+  | (`Geometry.Theory.LineV2.mkSegment, _) => true
+  | _ => false
+
+/-- Walk through possible coercion wrappers to find the inner
+shape-constructor application. -/
+private partial def unwrapToShape (e : Expr) : Expr :=
+  if isShapeHead e then e
+  else
+    let (_, args) := e.getAppFnArgs
     args.foldr (init := e) fun arg acc =>
       let recurse := unwrapToShape arg
-      match recurse.getAppFnArgs with
-      | (`Geometry.Theory.Segment.between, _)
-      | (`Geometry.Theory.LineThrough.through, _)
-      | (`Geometry.Theory.Ray.from_, _)
-      | (`Geometry.Theory.Extension.past, _) => recurse
-      | _ => acc
+      if isShapeHead recurse then recurse else acc
 
 /-- Given a shape expression (segment/ray/line_through), produce the
 `construct <name> := <head> A B` stmt that makes it visible, plus the
@@ -48,26 +48,29 @@ shape head isn't recognized. -/
 private def shapeConstruct (shapeExpr : Expr) :
     MetaM (Option (Stmt × String × String × String)) := do
   let shapeExpr := unwrapToShape shapeExpr
-  match shapeExpr.getAppFnArgs with
-  | (`Geometry.Theory.Segment.between, #[a, b]) =>
-    let some na ← readPointName? a | return none
-    let some nb ← readPointName? b | return none
-    let name := s!"seg_{na}_{nb}"
-    return some (.construct name (.app "segment" [.name na.toString, .name nb.toString]),
-                 "segment", na.toString, nb.toString)
-  | (`Geometry.Theory.LineThrough.through, #[a, b]) =>
-    let some na ← readPointName? a | return none
-    let some nb ← readPointName? b | return none
-    let name := lineAnchor na.toString nb.toString
-    return some (.construct name (.app "line_through" [.name na.toString, .name nb.toString]),
-                 "line_through", na.toString, nb.toString)
-  | (`Geometry.Theory.Ray.from_, #[a, b]) =>
-    let some na ← readPointName? a | return none
-    let some nb ← readPointName? b | return none
-    let name := s!"ray_{na}_{nb}"
-    return some (.construct name (.app "ray" [.name na.toString, .name nb.toString]),
-                 "ray", na.toString, nb.toString)
-  | _ => return none
+  let abKind : Option (Expr × Expr × String) := match shapeExpr.getAppFnArgs with
+    | (`Geometry.Theory.Segment.between, #[a, b]) => some (a, b, "segment")
+    | (`Geometry.Theory.LineThrough.through, #[a, b]) => some (a, b, "line_through")
+    | (`Geometry.Theory.Ray.from_, #[a, b]) => some (a, b, "ray")
+    | (`Geometry.Theory.LineV2.mkSegment, args) =>
+      if args.size ≥ 2 then some (args[0]!, args[1]!, "segment") else none
+    | (`Geometry.Theory.LineV2.mkLine, args) =>
+      if args.size ≥ 2 then some (args[0]!, args[1]!, "line_through") else none
+    | (`Geometry.Theory.LineV2.mkRay, args) =>
+      if args.size ≥ 2 then some (args[0]!, args[1]!, "ray") else none
+    | _ => none
+  let some (a, b, kind) := abKind | return none
+  let some na ← readPointName? a | return none
+  let some nb ← readPointName? b | return none
+  let aStr := na.toString
+  let bStr := nb.toString
+  let name := match kind with
+    | "line_through" => lineAnchor aStr bStr
+    | "segment" => s!"seg_{aStr}_{bStr}"
+    | "ray" => s!"ray_{aStr}_{bStr}"
+    | _ => s!"shape_{aStr}_{bStr}"
+  return some (.construct name (.app kind [.name aStr, .name bStr]),
+               kind, aStr, bStr)
 
 /-- The point-on-shape assert for X on the constructed shape. -/
 private def onShapeAssert (shapeKind aStr bStr xStr : String) : Stmt :=
