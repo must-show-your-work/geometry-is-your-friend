@@ -28,6 +28,8 @@ pair if found. -/
 private partial def findRayFrom (e : Expr) : Option (Expr × Expr) :=
   match e.getAppFnArgs with
   | (`Geometry.Theory.Ray.from_, #[a, b]) => some (a, b)
+  | (`Geometry.Theory.LineV2.mkRay, args) =>
+    if args.size ≥ 2 then some (args[0]!, args[1]!) else none
   | (_, args) => args.findSome? findRayFrom
 
 @[proof_state_matcher 50]
