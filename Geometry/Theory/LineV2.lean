@@ -185,7 +185,46 @@ theorem Line.mem_ray {A B P : Point} (h : A ≠ B) :
       · exact via lemma 1.0.18 ⟨btw, hPAB⟩
       · exact via lemma 1.0.20 ⟨btw, hPAB⟩
 theorem Line.mem_segment {A B P : Point} (h : A ≠ B) :
-    P ∈ mkSegment A B h ↔ P = A ∨ P = B ∨ A - P - B := by sorry
+    P ∈ mkSegment A B h ↔ P = A ∨ P = B ∨ A - P - B := by
+  constructor
+  · rintro ⟨hOn, hLeft, hRight⟩
+    have notPAB : ¬ P - A - B := hLeft A rfl B (by simp) h.symm
+    have notABP : ¬ A - B - P := hRight B rfl A (by simp) h
+    rcases (mem_line h).mp ⟨hOn, by simp, by simp⟩ with eq | eq | btw | btw | btw
+    · exact Or.inl eq
+    · exact Or.inr (Or.inl eq)
+    · exact Or.inr (Or.inr btw)
+    · exact absurd btw notABP
+    · exact absurd btw notPAB
+  · intro hyp
+    have hOn : P ∈ (mkSegment A B h).tangling.col.line := by
+      have := (mem_line h).mpr
+        (hyp.imp id (·.imp id Or.inl))
+      exact this.1
+    refine ⟨hOn, ?_, ?_⟩
+    · intro leftP hL otherP hOther hNe hPAB
+      simp only [mkSegment_leftBound, Option.some.injEq] at hL
+      subst hL
+      simp only [mkSegment_points, Finset.mem_insert, Finset.mem_singleton] at hOther
+      rcases hOther with rfl | rfl
+      · exact hNe rfl
+      have d := (via axiom B.1 hPAB).distinct.card_eq
+      rcases hyp with rfl | rfl | btw
+      · simp_all
+      · simp_all
+      · exact via lemma 1.0.18 ⟨btw, hPAB⟩
+    · intro rightP hR otherP hOther hNe hABP
+      simp only [mkSegment_rightBound, Option.some.injEq] at hR
+      subst hR
+      simp only [mkSegment_points, Finset.mem_insert, Finset.mem_singleton] at hOther
+      rcases hOther with rfl | rfl
+      · have d := (via axiom B.1 hABP).distinct.card_eq
+        rcases hyp with rfl | rfl | btw
+        · have : ({P, B, P} : Finset Point) = {P, B} := by ext; simp; tauto
+          rw [this, Finset.card_insert_of_notMem (by simp [h])] at d; simp at d
+        · simp_all
+        · exact via lemma 1.0.19 ⟨btw, hABP⟩
+      · exact hNe rfl
 
 open LeanTeX in
 latex_pp_app_rules (const := Geometry.Theory.LineV2.mkSegment)
