@@ -53,4 +53,11 @@ inductive Trichotomy (L M : Line) : Type where
   | meet (X : Point) (h : ∀ P, (L.contains P ∧ M.contains P) ↔ P = X) : Trichotomy L M
   | coincident  (h : L = M) : Trichotomy L M
 
+/-- L and M share a unique point. -/
+def Intersects (L M : Line) (X : Point) : Prop :=
+  ∀ P, (L.contains P ∧ M.contains P) ↔ P = X
+
+/-- L and M share no points. -/
+def Parallel (L M : Line) : Prop := ∀ P, ¬(L.contains P ∧ M.contains P)
+
 end Geometry.Theory.LineV2
