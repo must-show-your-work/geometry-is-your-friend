@@ -94,12 +94,17 @@ def Coterminal (A B C : Point) (hb : A ≠ B := by assumption)
 value. Proof body is the existing 2.0.1 chain restated; user finishes. -/
 noncomputable def Line.trichotomy (L M : Line) : Trichotomy L M := by sorry
 
-/-- Two lines are equal if two distinct points lie on both and bounds match.
-Source: lemma 2.0.2 reformulated at the LineV2 level. -/
+/-- Structural extensionality: equal tangling + matching bounds ⇒ equal Line.
+The stronger 2.0.2-style ext (two shared distinct points ⇒ Line equal up to bounds)
+isn't provable at this struct-level because the tangling carries identity beyond
+just the underlying point set — different `known` sets give different Lines even
+on the same underlying line. Setoid-style equality is the eventual fix. -/
 theorem Line.ext {L M : Line}
-    (h₂ : ∃ p q, L.contains p ∧ L.contains q ∧ M.contains p ∧ M.contains q ∧ p ≠ q)
+    (ht : L.tangling = M.tangling)
     (hl : L.leftBound = M.leftBound) (hr : L.rightBound = M.rightBound) :
-    L = M := by sorry
+    L = M := by
+  cases L; cases M
+  simp_all
 
 /-- An angle's two leg-lines are distinct — direct projection out of Angle's
 def (replaces the P7-era helper that bridged Set Point via congrArg). -/
