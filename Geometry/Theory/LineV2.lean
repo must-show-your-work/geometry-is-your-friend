@@ -31,18 +31,15 @@ end Line
 
 /-- The unbounded line through two distinct points. -/
 noncomputable def mkLine (A B : Point) (h : A ≠ B := by assumption) : Line :=
-  { tangling := { points := {A, B}, col := via lemma 1.0.5 h, known := ∅ },
-    leftBound := none, rightBound := none }
+  { tangling := Tangling.pair A B h, leftBound := none, rightBound := none }
 
 /-- The ray from A through B, closed at A, unbounded past B. -/
 noncomputable def mkRay (A B : Point) (h : A ≠ B := by assumption) : Line :=
-  { tangling := { points := {A, B}, col := via lemma 1.0.5 h, known := ∅ },
-    leftBound := some A, rightBound := none }
+  { tangling := Tangling.pair A B h, leftBound := some A, rightBound := none }
 
 /-- The closed segment between A and B. -/
 noncomputable def mkSegment (A B : Point) (h : A ≠ B := by assumption) : Line :=
-  { tangling := { points := {A, B}, col := via lemma 1.0.5 h, known := ∅ },
-    leftBound := some A, rightBound := some B }
+  { tangling := Tangling.pair A B h, leftBound := some A, rightBound := some B }
 
 namespace Line
 

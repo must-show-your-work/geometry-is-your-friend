@@ -55,4 +55,8 @@ theorem cycle_imp_false (t : Tangling) (h : t.extensions = []) : False := by sor
 
 end Tangling
 
+/-- A 2-point Tangling — the minimal nontrivial case, no Between facts known. -/
+noncomputable def Tangling.pair (A B : Point) (h : A ≠ B := by assumption) : Tangling :=
+  { points := {A, B}, col := via lemma 1.0.5 h, known := ∅ }
+
 end Geometry.Theory
