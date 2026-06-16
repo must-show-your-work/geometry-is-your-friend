@@ -50,7 +50,7 @@ The lattice surfaces through three tactics:
   as `arr<root><sink>` (alphabetically-first source / sink in the
   partial order) or supplied via `as <ident>`.
 
-- **`arr_cases <hyp>`** — case-split an Or-tree of `Arrangement`s
+- **`untangle <hyp>`** — case-split an Or-tree of `Arrangement`s
   with branch names auto-derived from each list literal
   (`Arr [A,B,C,P]` → `ABCP`).
 
@@ -59,7 +59,7 @@ The lattice surfaces through three tactics:
 The common shape is:
 ```
 organize! ABC ABP CneP
-arr_cases arrAC
+untangle arrAC
 case ABCP => …  -- ABCP : Arr [A,B,C,P] in scope; CoeDep gives every triple
 case ABPC => …  -- ABPC : Arr [A,B,P,C] in scope
 ```
@@ -1086,7 +1086,7 @@ def elabOrganizeBang : Tactic := fun stx => match stx with
       runOrganizeLattice facts ineqs nameOverride goal
   | _ => throwUnsupportedSyntax
 
-/-! ## `arr_cases` — case-split an Arrangement disjunction
+/-! ## `untangle` — case-split an Arrangement disjunction
 
 Takes a hypothesis of type `Arr [...] ∨ Arr [...] ∨ ...` and emits
 `rcases` with auto-named branches derived from each list literal:
@@ -1134,13 +1134,13 @@ private def buildArrDisjPattern (ty : Expr) :
     pats := pats.push pat
   `(Lean.Parser.Tactic.rcasesPatLo| $pats:rcasesPat|*)
 
-/-- `arr_cases <hyp>` — `rcases` over the Or-tree shape of `<hyp>`
+/-- `untangle <hyp>` — `rcases` over the Or-tree shape of `<hyp>`
 with auto-named branches (`Arr [A,B,C,P]` → `ABCP`). -/
-syntax (name := arrCasesTac) "arr_cases" ppSpace colGt term : tactic
+syntax (name := untangleTac) "untangle" ppSpace colGt term : tactic
 
-@[tactic arrCasesTac]
-def elabArrCases : Tactic := fun stx => match stx with
-  | `(tactic| arr_cases $h:term) => do
+@[tactic untangleTac]
+def elabUntangle : Tactic := fun stx => match stx with
+  | `(tactic| untangle $h:term) => do
     let goal ← getMainGoal
     goal.withContext do
       let hExpr ← Term.elabTerm h none
