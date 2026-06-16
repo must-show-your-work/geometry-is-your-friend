@@ -70,6 +70,11 @@ def Angle (A B C : Point) (hb : A ≠ B := by assumption)
     (hc : A ≠ C := by assumption) : Prop :=
   distinct A B C ∧ mkRay A B hb ≠ mkRay A C hc ∧ ¬OppositeRay A B C hb hc
 
+/-- Two rays from the same vertex are coterminal if distinct and not opposite. -/
+def Coterminal (A B C : Point) (hb : A ≠ B := by assumption)
+    (hc : A ≠ C := by assumption) : Prop :=
+  ¬OppositeRay A B C hb hc ∧ mkRay A B hb ≠ mkRay A C hc
+
 /-- Trichotomy classifier instance — lemma 2.0.1's content as a structured
 value. Proof body is the existing 2.0.1 chain restated; user finishes. -/
 noncomputable def Line.trichotomy (L M : Line) : Trichotomy L M := by sorry
