@@ -37,6 +37,7 @@ private def containerToLine? (container : Expr) : MetaM (Option Lean.Name) := do
   let lineExpr :=
     match container.getAppFnArgs with
     | (`Geometry.Theory.Line.toSet, #[L]) => L
+    | (`Geometry.Theory.LineV2.Line.toSet, #[L]) => L
     | _ => container
   readLineName? lineExpr
 
