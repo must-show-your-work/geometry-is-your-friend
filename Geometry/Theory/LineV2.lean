@@ -90,8 +90,10 @@ def Coterminal (A B C : Point) (hb : A ≠ B := by assumption)
     (hc : A ≠ C := by assumption) : Prop :=
   ¬OppositeRay A B C hb hc ∧ mkRay A B hb ≠ mkRay A C hc
 
-/-- Trichotomy classifier instance — lemma 2.0.1's content as a structured
-value. Proof body is the existing 2.0.1 chain restated; user finishes. -/
+/-- Trichotomy classifier. Lemma 2.0.1 gives the underlying-Line classification
+in Prop; lifting to the `Trichotomy : Type` form here requires Classical case
+extraction since `Or.casesOn` can't eliminate into `Type`. Body deferred —
+proof obligation is real (case extract + bound-filter refinement). -/
 noncomputable def Line.trichotomy (L M : Line) : Trichotomy L M := by sorry
 
 /-- Structural extensionality: equal tangling + matching bounds ⇒ equal Line.
