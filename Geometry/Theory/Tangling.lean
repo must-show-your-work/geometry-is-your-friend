@@ -26,6 +26,21 @@ noncomputable def weaveIn (t : Tangling) (P : Point)
     (hcol : Collinear (insert P t.points)) : Tangling :=
   { points := insert P t.points, col := hcol, known := t.known }
 
+open Geometry.Theory.Arrangement.Lattice in
+/-- The linear extensions of `t`'s partial order as ordered point lists. -/
+noncomputable def extensions (t : Tangling) : List (List Point) :=
+  let pts := t.points.toList
+  let n := pts.length
+  let idx : Point → Nat := fun p => pts.idxOf p
+  let edges : Array (Nat × Nat) :=
+    t.known.toList.foldl (init := #[]) fun acc ⟨a, b, c, _⟩ =>
+      (acc.push (idx a, idx b)).push (idx b, idx c)
+  match enumLinearExtensions n edges with
+  | .ok exts =>
+    exts.toList.map fun ext =>
+      ext.toList.filterMap fun i => pts[i]?
+  | .error _ => []
+
 end Tangling
 
 end Geometry.Theory
