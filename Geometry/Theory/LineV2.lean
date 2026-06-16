@@ -44,9 +44,15 @@ noncomputable def mkSegment (A B : Point) (h : A ≠ B := by assumption) : Line 
 
 namespace Line
 
-/-- Membership against the chosen Line via Tangling's Collinear witness; the
-bound filter is a TODO refinement layered on later. -/
-def contains (L : Line) (P : Point) : Prop := P ∈ L.tangling.col.line
+/-- P is on L iff it's on the underlying full line AND inside the bounds:
+not strictly to the left of leftBound (when set), not strictly to the right
+of rightBound (when set). -/
+def contains (L : Line) (P : Point) : Prop :=
+  P ∈ L.tangling.col.line ∧
+  (∀ leftP, L.leftBound = some leftP →
+    ∀ otherP ∈ L.tangling.points, otherP ≠ leftP → ¬ P - leftP - otherP) ∧
+  (∀ rightP, L.rightBound = some rightP →
+    ∀ otherP ∈ L.tangling.points, otherP ≠ rightP → ¬ otherP - rightP - P)
 
 instance : Membership Point Line where mem L P := L.contains P
 
@@ -140,6 +146,8 @@ theorem Line.mem_line {A B P : Point} (h : A ≠ B) :
     P ∈ mkLine A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P ∨ P - A - B := by
   show (mkLine A B h).contains P ↔ _
   unfold Line.contains
+  simp only [mkLine_leftBound, mkLine_rightBound, reduceCtorEq, false_implies,
+    implies_true, and_true]
   set L := (mkLine A B h).tangling.col.line
   have hOnA : A ∈ L := (mkLine A B h).tangling.col.on_line A (by simp)
   have hOnB : B ∈ L := (mkLine A B h).tangling.col.on_line B (by simp)
