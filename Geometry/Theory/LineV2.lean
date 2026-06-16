@@ -156,7 +156,34 @@ theorem Line.mem_line {A B P : Point} (h : A ≠ B) :
   rw [hEq]
   exact LineThrough.mem_coe_line.trans LineThrough.mem_def
 theorem Line.mem_ray {A B P : Point} (h : A ≠ B) :
-    P ∈ mkRay A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P := by sorry
+    P ∈ mkRay A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P := by
+  constructor
+  · rintro ⟨hOn, hLeft, _⟩
+    have notPAB : ¬ P - A - B := hLeft A rfl B (by simp) h.symm
+    rcases (mem_line h).mp ⟨hOn, by simp, by simp⟩ with eq | eq | btw | btw | btw
+    · exact Or.inl eq
+    · exact Or.inr (Or.inl eq)
+    · exact Or.inr (Or.inr (Or.inl btw))
+    · exact Or.inr (Or.inr (Or.inr btw))
+    · exact absurd btw notPAB
+  · intro hyp
+    have hOn : P ∈ (mkRay A B h).tangling.col.line := by
+      have := (mem_line h).mpr (hyp.imp id (·.imp id (·.imp id Or.inl)))
+      exact this.1
+    refine ⟨hOn, ?_, by simp⟩
+    intro leftP hL otherP hOther hNe
+    simp only [mkRay_leftBound, Option.some.injEq] at hL
+    subst hL
+    simp only [mkRay_points, Finset.mem_insert, Finset.mem_singleton] at hOther
+    rcases hOther with rfl | rfl
+    · exact (hNe rfl).elim
+    · intro hPAB
+      have d := (via axiom B.1 hPAB).distinct.card_eq
+      rcases hyp with rfl | rfl | btw | btw
+      · simp_all
+      · simp_all
+      · exact via lemma 1.0.18 ⟨btw, hPAB⟩
+      · exact via lemma 1.0.20 ⟨btw, hPAB⟩
 theorem Line.mem_segment {A B P : Point} (h : A ≠ B) :
     P ∈ mkSegment A B h ↔ P = A ∨ P = B ∨ A - P - B := by sorry
 
