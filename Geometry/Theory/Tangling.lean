@@ -41,6 +41,13 @@ noncomputable def extensions (t : Tangling) : List (List Point) :=
       ext.toList.filterMap fun i => pts[i]?
   | .error _ => []
 
+/-- A Tangling is consistent if its partial order has at least one extension. -/
+def Consistent (t : Tangling) : Prop := t.extensions ≠ []
+
+/-- The number of consistent total orderings. Zero ⇒ inconsistent (cycle). One ⇒
+fully untangled. Multiple ⇒ ambiguous; users dispatch via `untangle`. -/
+noncomputable def ambiguity (t : Tangling) : Nat := t.extensions.length
+
 end Tangling
 
 end Geometry.Theory
