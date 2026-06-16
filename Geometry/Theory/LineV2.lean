@@ -60,4 +60,14 @@ def Intersects (L M : Line) (X : Point) : Prop :=
 /-- L and M share no points. -/
 def Parallel (L M : Line) : Prop := ∀ P, ¬(L.contains P ∧ M.contains P)
 
+/-- Rays AB and AC are opposite if they're distinct but lie on the same line. -/
+def OppositeRay (A B C : Point) (hb : A ≠ B := by assumption)
+    (hc : A ≠ C := by assumption) : Prop :=
+  mkRay A B hb ≠ mkRay A C hc ∧ mkLine A B hb = mkLine A C hc
+
+/-- ∠ B A C — distinct, non-opposite rays from a common vertex A. -/
+def Angle (A B C : Point) (hb : A ≠ B := by assumption)
+    (hc : A ≠ C := by assumption) : Prop :=
+  distinct A B C ∧ mkRay A B hb ≠ mkRay A C hc ∧ ¬OppositeRay A B C hb hc
+
 end Geometry.Theory.LineV2
