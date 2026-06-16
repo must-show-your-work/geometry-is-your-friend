@@ -1,9 +1,17 @@
 import Geometry.Theory.Tangling
 import Geometry.Theory.Interpendices.A
+import LeanTeX
 
 namespace Geometry.Theory.LineV2
 
 open Geometry.Theory
+
+private def renderEndpointPair (diacritic : String) (a b : Lean.Expr) :
+    LeanTeX.LatexPrinterM LeanTeX.LatexData := do
+  let pa ← LeanTeX.latexPP a
+  let pb ← LeanTeX.latexPP b
+  let inner := pa.latex.1 ++ pb.latex.1
+  return LeanTeX.LatexData.atomString (diacritic ++ "{" ++ inner ++ "}")
 
 /-- A line, ray, or segment. Wraps a Tangling (search space of arrangements
 on the underlying collinear point set) plus optional closed bounds. -/
@@ -131,5 +139,17 @@ theorem Line.mem_ray {A B P : Point} (h : A ≠ B) :
     P ∈ mkRay A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P := by sorry
 theorem Line.mem_segment {A B P : Point} (h : A ≠ B) :
     P ∈ mkSegment A B h ↔ P = A ∨ P = B ∨ A - P - B := by sorry
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.LineV2.mkSegment)
+  | _, #[a, b, _] => renderEndpointPair "\\overline" a b
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.LineV2.mkRay)
+  | _, #[a, b, _] => renderEndpointPair "\\overrightarrow" a b
+
+open LeanTeX in
+latex_pp_app_rules (const := Geometry.Theory.LineV2.mkLine)
+  | _, #[a, b, _] => renderEndpointPair "\\overleftrightarrow" a b
 
 end Geometry.Theory.LineV2
