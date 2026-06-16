@@ -643,4 +643,81 @@ gets above 5 points in a line from my brief survey, so should be fine.
 Currently renaming all of the lemmas/exercises and reorganizing again. LLMs are a godsend for fiddling with this kind of
 thing.
 
+# 16-JUN-2026
 
+I think I finally understand Sheaves.
+
+Working with Line proofs is extremely tedious. I suspect this will replicate for Angles and other things later, so I set
+about to think about how to manage these sorts of proofs.
+
+Greenberg just uses Sets, and kindof loosely. It's fine for the level of formality (which is, I will say, higher than
+elsewhere, geometry lends itself to being more rigorous without getting too verbose) that Greenberg is operating at, but
+the translation of that informality to lean is frustrating, especially in light of how automatic it all feels.
+
+I started with Arrangements. Arrangments are specific constructions of betweenesses that are 'fixed' in some sense, but
+in principle we can enumerate all the 'valid' betweenesses of points on a line (i.e., all the valid arrangements of all
+points on a given line), and -- if you can contribute _enough_ context to those, reduce to a few valid cases that are
+easy to dispatch over. The underlying structure algebraically is a Lattice; so with a bit of help from claude I printed
+out a dummy version called a 'Tangling' (as in a 'tangling of points' which can be progressively 'untangled' by adding
+more betweenness conditions until it can fully disambiguate the line) which implements the underlying lattice structure
+and computes all the possible arrangements on demand. This structure is still partially underway, as it fell out of a
+different structure. In principle Tanglings are 'open' in the sense that you could potentially assert an 'invalid'
+tangling (one which contains an absurdity), this is fine and even common in Geometry, you'd use this to close a
+proof-by-contradiction.
+
+Tanglings fell out of a problem with Lines and LineParts, though. The current code has a type hierarchy. There are
+Abstract Lines, which are themselves classical sets of Points. This is how Greenberg thinks of them directly, but I
+don't think it is where his intuition is. I also have types for rays, segments, and so on, and a 'coercion' chain that
+can push one into the other. So a segment is included in a ray, which is included in a line, etc. This is _fine_, but it
+gets tedious in proofs like 3.7, where I have to reason about a bunch of rays and lines and segments all at once. These
+are all equal to each other in some sense. You can cast the proof all the way up to lines for _most_ of it, but it
+quickly becomes a huge mess of equality conditions and equation normalizing proof-arithmetic that I simply hate doing.
+I started thinking about alternatives, and came up with this breakdown, there are 2 kinds of lines. "Abstract" lines are
+notated `L, M, ...` and are 'unpointed' in the sense that they just represent a free collinearity condition to be
+supplied. Another way to think of it is that these lines are _unfixed_, that is, agnostic to their location on the
+plane with respect to any points. Other lines are 'Concrete', they are _fixed_ in space some named points. In my code
+these are `line A B`.
+
+Simultaneously, lines (abstract and concrete) can be _bounded_ in two positions. A line is unbounded on both sides. A
+ray is bounded on one side (WLOG the left side), and a segment is bounded on both. The existing code also talks about an
+'extension', which differs in its closure; but this is a concept I brought to the table and not something Greenberg
+really talks about directly, so in this new model I intended to drop it and have this simpler closed-only design. There
+is an interesting taxonomy that arises when you do re-add open/closed as conditions on the bounds as well.
+
+This is where I decided to just think like a programmer and ask, "What kind of datastructure is that? It's clearly a
+union type, it's all bound together by the collinearity constraint, and this Tangling structure is what gives you the
+ability to glue the concrete `line A B` to the abstract `L`. If we, instead of following Greenberg directly by the text,
+try to follow his _intuition_ -- as soon as it is clear that `L = line A B` the distinction vanishes for him, if that
+means `line A B = line C D` then he immediately starts aiming to disambiguate the implied Tangling. He's already
+thinking with this structure, if it not him directly then this is the product of his approach on my brain. Either way
+the structure seems natural, and indeed it is the idea of Quotienting. Lines in all their flavors are setoids, and you
+can quotient out in the context of an equality proof. It turns out this still sucks though, because all the lifting is
+still hand done, and you end up having to still work pretty hard to freely swap between these equivalent lines the way
+Greenberg does. We must talk about `Line`, but reason about _equivalence classes_ of `Line`. It was at this point that I
+thought "What is a bundle of lines called, hah, I bet that's why they call them sheaves."
+
+I am a _profound_ novice in the super-abstract stuff, I put on an okay show but mostly I got lost on the way to grad
+school and between debt and depression I never really climbed the mountain. But I'm a firm believer in the best day was
+yesterday, and the second best is today, so I dug into it and the early findings align with what I was thinking. A sheaf
+is a sort of 'bundling' of like objects. These Concrete/Abstract Line structures are all really the _same_ thing in
+different modes. They all have an underlying geometric _je ne sais quois_ that I suppose I'm beginning to think is a
+'sheaf of lines and fixings of lines' or really 'sheaf of bounded tanglings'. If I understand the structure right, it
+works like this.
+
+Explicitly Fixed, or explicitly Unfixed Lines are Sections of the Plane, they are specifically sets of collinear points
+in some tangling. We can glue two lines together if they are coincident, we can restrict the description by forgetting
+points (which can be useful in narrowing down the possible valid arrangements), and I think the global section is the
+whole plane? In any case, this kind of structure would mean the method of proof becomes quite mechanical, simply:
+
+1. For each fixed and unfixed line in the proof, promote them into a `Line := Sheaf of Bounded Tanglings`
+2. For each pair of Lines, use the proofstate to try to glue them together till you've got a minimum set of Lines.
+3. Examing the number of tanglings -- are any 0? If so, you're done by contradiction. Are any exactly 1? then great
+   you have a fully determined arrangment to work with.
+4. If you have ambiguous arrangements, then you can prune unneeded points from a Line to see if it reduces the number of
+   possible arrangements. If a point is free, but unnecessary, it would make a fixed arrangement appear unfixed.
+5. If all else fails, you can construct new lines to add new conditions to other lines, which is just proving theorems
+   by construction.
+
+In any case the point of this is -- if my intuition is leading me correctly I think it's time I picked up _The Rising
+Sea_ and really learned this stuff. This project will probably sit dormant for a bit until I get a better sense of the
+machinery. That work will be here in `high-tide` once I have something worth pushing.
