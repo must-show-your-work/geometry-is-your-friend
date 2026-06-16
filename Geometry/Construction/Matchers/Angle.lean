@@ -27,9 +27,14 @@ open Figures.Construction.ProofState
 
 @[proof_state_matcher 100]
 def matchAngle : Matcher := fun e => do
-  match (← instantiateMVars e).getAppFnArgs with
-  | (`Geometry.Theory.Angle, #[a, b, c]) =>
-    let some args ← readPointArgs #[a, b, c] | return none
+  let extract : Option (Array Expr) := match (← instantiateMVars e).getAppFnArgs with
+    | (`Geometry.Theory.Angle, #[a, b, c]) => some #[a, b, c]
+    | (`Geometry.Theory.LineV2.Angle, args) =>
+      if args.size ≥ 3 then some #[args[0]!, args[1]!, args[2]!] else none
+    | _ => none
+  match extract with
+  | some abc =>
+    let some args ← readPointArgs abc | return none
     let #[A, B, C] := args | return none
     let rayAB := s!"ray_{A}_{B}"
     let rayAC := s!"ray_{A}_{C}"
@@ -38,6 +43,6 @@ def matchAngle : Matcher := fun e => do
       .construct rayAC (.app "ray" [.name A, .name C]),
       assertN "noncollinear" #[A, B, C],
     ]
-  | _ => return none
+  | none => return none
 
 end Geometry.Construction.Matchers

@@ -27,11 +27,16 @@ open Figures.Construction.ProofState
 def matchNotOppositeRay : Matcher := fun e => do
   match (← instantiateMVars e).getAppFnArgs with
   | (``Not, #[inner]) =>
-    match inner.getAppFnArgs with
-    | (`Geometry.Theory.OppositeRay, #[v, x, z]) =>
-      let some args ← readPointArgs #[v, x, z] | return none
+    let vxz : Option (Array Expr) := match inner.getAppFnArgs with
+      | (`Geometry.Theory.OppositeRay, #[v, x, z]) => some #[v, x, z]
+      | (`Geometry.Theory.LineV2.OppositeRay, args) =>
+        if args.size ≥ 3 then some #[args[0]!, args[1]!, args[2]!] else none
+      | _ => none
+    match vxz with
+    | some arr =>
+      let some args ← readPointArgs arr | return none
       return some #[assertN "noncollinear" args]
-    | _ => return none
+    | none => return none
   | _ => return none
 
 end Geometry.Construction.Matchers
