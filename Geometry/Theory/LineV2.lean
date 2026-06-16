@@ -93,4 +93,10 @@ theorem OppositeRay.symm_iff {A B C : Point} {hb : A ≠ B} {hc : A ≠ C} :
   ⟨fun ⟨h₁, h₂⟩ => ⟨h₁.symm, h₂.symm⟩,
    fun ⟨h₁, h₂⟩ => ⟨h₁.symm, h₂.symm⟩⟩
 
+/-- `comparing L and M` introduces a `Trichotomy L M` hypothesis named `tri`
+for case-splitting. Sugar for `have tri := Line.trichotomy L M`. -/
+syntax (name := comparingTac) "comparing" term "and" term : tactic
+macro_rules (kind := comparingTac)
+  | `(tactic| comparing $L and $M) => `(tactic| have tri := Line.trichotomy $L $M)
+
 end Geometry.Theory.LineV2
