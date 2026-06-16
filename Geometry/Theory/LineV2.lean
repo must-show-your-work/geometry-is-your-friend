@@ -120,4 +120,11 @@ macro_rules (kind := comparingTac)
 @[simp] theorem mkSegment_rightBound {A B : Point} (h : A ≠ B) :
     (mkSegment A B h).rightBound = some B := rfl
 
+theorem Line.mem_line {A B P : Point} (h : A ≠ B) :
+    P ∈ mkLine A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P ∨ P - A - B := by sorry
+theorem Line.mem_ray {A B P : Point} (h : A ≠ B) :
+    P ∈ mkRay A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P := by sorry
+theorem Line.mem_segment {A B P : Point} (h : A ≠ B) :
+    P ∈ mkSegment A B h ↔ P = A ∨ P = B ∨ A - P - B := by sorry
+
 end Geometry.Theory.LineV2
