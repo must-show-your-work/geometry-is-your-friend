@@ -81,4 +81,16 @@ theorem Line.ext {L M : Line}
     (hl : L.leftBound = M.leftBound) (hr : L.rightBound = M.rightBound) :
     L = M := by sorry
 
+/-- An angle's two leg-lines are distinct — direct projection out of Angle's
+def (replaces the P7-era helper that bridged Set Point via congrArg). -/
+theorem Angle.line_ne {A B C : Point} {hb : A ≠ B} {hc : A ≠ C}
+    (a : Angle A B C hb hc) : mkLine A B hb ≠ mkLine A C hc :=
+  fun h => a.2.2 ⟨a.2.1, h⟩
+
+/-- OppositeRay is symmetric in its B and C arguments. -/
+theorem OppositeRay.symm_iff {A B C : Point} {hb : A ≠ B} {hc : A ≠ C} :
+    OppositeRay A B C hb hc ↔ OppositeRay A C B hc hb :=
+  ⟨fun ⟨h₁, h₂⟩ => ⟨h₁.symm, h₂.symm⟩,
+   fun ⟨h₁, h₂⟩ => ⟨h₁.symm, h₂.symm⟩⟩
+
 end Geometry.Theory.LineV2

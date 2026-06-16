@@ -103,7 +103,7 @@ atlas proposition 3.7 "D on line BC is interior to ∠CAB iff B-D-C"
           comment "Type shenanigans necessary because lines-as-sets is a leaky thing"
           change P ∈ (line B D : Line) at PonBD
           rw [BDeqBC] at PonBD
-          have PeqC : P = C := by 
+          have PeqC : P = C := by
             idea "P is on AC and BC, so P = C because intersections are uniqu"
             have : P ∈ (line A C : Line) ∩ (line B C) := by sorry
             have : line A C intersects line B C at P := by sorry
