@@ -52,6 +52,9 @@ def contains (L : Line) (P : Point) : Prop := P ∈ L.tangling.col.line
 
 instance : Membership Point Line where mem L P := L.contains P
 
+/-- Project a LineV2.Line to the carrier Set Point. Set work escape hatch. -/
+def toSet (L : Line) : Set Point := { P | L.contains P }
+
 end Line
 
 /-- Trichotomy classifier — every pair of lines is parallel, meets at a unique
