@@ -36,4 +36,21 @@ noncomputable def mkSegment (A B : Point) (h : A ≠ B := by assumption) : Line 
   { tangling := { points := {A, B}, col := via lemma 1.0.5 h, known := ∅ },
     leftBound := some A, rightBound := some B }
 
+namespace Line
+
+/-- Membership against the chosen Line via Tangling's Collinear witness; the
+bound filter is a TODO refinement layered on later. -/
+def contains (L : Line) (P : Point) : Prop := P ∈ L.tangling.col.line
+
+instance : Membership Point Line where mem L P := L.contains P
+
+end Line
+
+/-- Trichotomy classifier — every pair of lines is parallel, meets at a unique
+point, or coincides. Replaces lemma 2.0.1's Or-disjunction. -/
+inductive Trichotomy (L M : Line) : Type where
+  | parallel    (h : ∀ P, ¬(L.contains P ∧ M.contains P)) : Trichotomy L M
+  | meet (X : Point) (h : ∀ P, (L.contains P ∧ M.contains P) ↔ P = X) : Trichotomy L M
+  | coincident  (h : L = M) : Trichotomy L M
+
 end Geometry.Theory.LineV2
