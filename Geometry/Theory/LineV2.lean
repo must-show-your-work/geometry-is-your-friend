@@ -1,5 +1,6 @@
 import Geometry.Theory.Tangling
 import Geometry.Theory.Interpendices.A
+import Geometry.Theory.Interpendices.B
 import LeanTeX
 
 namespace Geometry.Theory.LineV2
@@ -136,7 +137,16 @@ macro_rules (kind := comparingTac)
 @[simp] theorem Line.mem_def {L : Line} {P : Point} : P ∈ L ↔ L.contains P := Iff.rfl
 
 theorem Line.mem_line {A B P : Point} (h : A ≠ B) :
-    P ∈ mkLine A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P ∨ P - A - B := by sorry
+    P ∈ mkLine A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P ∨ P - A - B := by
+  show (mkLine A B h).contains P ↔ _
+  unfold Line.contains
+  set L := (mkLine A B h).tangling.col.line
+  have hOnA : A ∈ L := (mkLine A B h).tangling.col.on_line A (by simp)
+  have hOnB : B ∈ L := (mkLine A B h).tangling.col.on_line B (by simp)
+  have hEq : L = (↑(LineThrough.through A B) : Theory.Line) :=
+    via lemma 2.0.2 h ⟨hOnA, Or.inl rfl, hOnB, Or.inr (Or.inl rfl)⟩
+  rw [hEq]
+  exact LineThrough.mem_coe_line.trans LineThrough.mem_def
 theorem Line.mem_ray {A B P : Point} (h : A ≠ B) :
     P ∈ mkRay A B h ↔ P = A ∨ P = B ∨ A - P - B ∨ A - B - P := by sorry
 theorem Line.mem_segment {A B P : Point} (h : A ≠ B) :
