@@ -70,4 +70,15 @@ def Angle (A B C : Point) (hb : A ≠ B := by assumption)
     (hc : A ≠ C := by assumption) : Prop :=
   distinct A B C ∧ mkRay A B hb ≠ mkRay A C hc ∧ ¬OppositeRay A B C hb hc
 
+/-- Trichotomy classifier instance — lemma 2.0.1's content as a structured
+value. Proof body is the existing 2.0.1 chain restated; user finishes. -/
+noncomputable def Line.trichotomy (L M : Line) : Trichotomy L M := by sorry
+
+/-- Two lines are equal if two distinct points lie on both and bounds match.
+Source: lemma 2.0.2 reformulated at the LineV2 level. -/
+theorem Line.ext {L M : Line}
+    (h₂ : ∃ p q, L.contains p ∧ L.contains q ∧ M.contains p ∧ M.contains q ∧ p ≠ q)
+    (hl : L.leftBound = M.leftBound) (hr : L.rightBound = M.rightBound) :
+    L = M := by sorry
+
 end Geometry.Theory.LineV2
