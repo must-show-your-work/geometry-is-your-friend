@@ -41,22 +41,22 @@ another side."
   While this dodge is sad, it is the case, and theorems are fortunately numbered separately from propositions, solving our
   possible off-by-one situation. Perhaps our disappointment was worth it after all."
 
-  /- figure := by -/
-  /-   construction { -/
-  /-     exists A B C : Point -/
-  /-     exists X : Point -/
-  /-     exists L : Line -/
-  /-     assert distinct A B C -/
-  /-     assert ¬ collinear A B C -/
-  /-     assert between A X B -/
-  /-     assert incident X L -/
-  /-     construct segAB := segment A B -/
-  /-     construct segBC := segment B C -/
-  /-     construct segAC := segment A C -/
-  /-   } -/
-  /-   title "Pasch's Theorem" -/
-  /-   index 1 -/
-  /-   caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L." -/
+  figure := by
+    construction {
+      exists A B C : Point
+      exists X : Point
+      exists L : Line
+      assert distinct A B C
+      assert ¬ collinear A B C
+      assert between A X B
+      assert incident X L
+      construct segAB := segment A B
+      construct segBC := segment B C
+      construct segAC := segment A C
+    }
+    title "Pasch's Theorem"
+    index 1
+    caption "Line L meets the interior of segment AB at X. The conclusion of Pasch is that L also meets exactly one of the other two segments — AC or BC — provided C is off L."
 
   figure := by
     construction { infer }
