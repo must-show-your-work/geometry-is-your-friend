@@ -16,10 +16,3 @@ I do quote the book frequently, but I believe this work is transformative and
 valuable, and thus Fair Use. That said, if the estate of Dr. Greenberg ever
 happens by this and wants it taken down, I am happy to comply. I love his book,
 I know it's a little strange to love a math text, but I love this one.
-
-The content of this repository is otherwise offered under the terms of
-[[LICENSE]], unless you are a governmental or law enforcement agency, in which
-case this software is not licensed to you in any way whatsoever. See attached
-caveat in the license file itself.
-
-ACAB.
