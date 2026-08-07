@@ -49,20 +49,20 @@ improper subset here is also odd, AB ⊂ AC clearly; but the author uses `⊆`. 
 complex, so it is easiest to just break down by conclusion.
   "
 
-  figure := by
-    construction {
-      exists A B C : Point
-      assert distinct A B C
-      assert between A B C
-      construct segAC := segment A C
-    }
+  -- figure := by
+    -- construction {
+      -- exists A B C : Point
+      -- assert distinct A B C
+      -- assert between A B C
+      -- construct segAC := segment A C
+    -- }
 
 atlas exercise 3.Review.3.a.i "If A-B-C, then AB ⊆ AC"
   {A B C : Point} (ABC : A - B - C := by assumption) :
   ((segment A B : Line) ⊆ (segment A C)) := by
   intro P PonAB
   rcases PonAB with APB | rfl | rfl
-  · have APBC : A - P - B - C := by organize ABC APB
+  · have APBC : A - P - B - C := by organize! ABC APB
     have APC : A - P - C := APBC
     obvious
   all_goals obvious

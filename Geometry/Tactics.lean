@@ -21,6 +21,13 @@ import Mathlib.Data.List.Basic
 -- atlas command elaborates.
 import Atlas
 
+-- Figure widget hooks. DSL path and proof-state path register on
+-- separate Atlas refs (post-hoc vs per-step), so importing both is
+-- enough — their `initialize` blocks wire them up. Theorems with a
+-- `construction { … }` figure go DSL; theorems without go proof-state.
+import Geometry.Construction.ProgressiveFigure
+import Geometry.Construction.IncrementalProofFigure
+
 /-- Simp set for `obvious` — see `Geometry/Theory/Axioms.lean` for the
     macro that uses it. Tag chapter-by-chapter as you encounter
     canonical normalizations that Greenberg treats as background.

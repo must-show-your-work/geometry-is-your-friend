@@ -28,19 +28,10 @@ atlas commentary := by
   name "Given A-B-C. Then AC = AB ∪ BC and B is the only point common to segments AB and BC."
   preface "Here are some more results on betweenness and separation that you will be asked to prove in the exercises"
 
-  /- this figure places C in the wrong spot -/
-  /- figure := by -/
-  /-   construction { -/
-  /-     exists A B C : Point -/
-  /-     assert distinct A B C -/
-  /-     assert between A B C -/
-  /-     assert collinear A B C -/
-  /-     construct segAB := segment A B -/
-  /-     construct segBC := segment B C -/
-  /-   } -/
-  /-   title "Proposition 3.5" -/
-  /-   index 1 -/
-  /-   caption "With B between A and C, segment AC is the union of AB and BC; the intersection is the single point B." -/
+  figure := by
+    construction { infer }
+    title "Proposition 3.5"
+    caption "With B between A and C, segment AC is the union of AB and BC; the intersection is the single point B."
 
 
 atlas proposition 3.5 "If A-B-C then AC = AB ∪ BC..."
@@ -60,7 +51,7 @@ atlas corollary 3.5 "[If A-B-C then ...], and AB intersects BC at B"
   ext P; constructor
   · intro ⟨PinAB, PinBC⟩
     rcases PinAB with APB | PeqA | PeqB
-    · have APBC : A - P - B - C := by organize ABC APB
+    · have APBC : A - P - B - C := by organize! ABC APB
       have PoffBC : P off segment B C := via lemma 2.0.27 APBC
       contradiction
     · rw [PeqA] at ABC

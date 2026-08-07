@@ -154,6 +154,19 @@ def Splits (L : Line) (A B : Point) : Prop := ¬(Guards A B L)
 notation:20 L " splits " A " and " B => Splits L A B
 notation:20 L " guards " A " and " B => Guards A B L
 
+-- `Not (Guards A B L)` shows as `L splits A and B` so by_contra etc.
+-- on guards goals don't surface the raw negation in the InfoView.
+-- Composes with the Guards notation above: the inner has already been
+-- rewritten to `L guards A and B` by the time Not's unexpander runs.
+@[app_unexpander Not]
+def unexpandNotGuards : Lean.PrettyPrinter.Unexpander
+  | `($_ $inner) =>
+    match inner with
+    | `($L:term guards $A:term and $B:term) =>
+        `($L splits $A and $B)
+    | _ => throw ()
+  | _ => throw ()
+
 /-! ## LeanTeX rules — render `Splits` / `Guards` as the verbal
 notation forms (`L splits A and B`, `L guards A and B`) that match
 the surface syntax. Argument-order quirk: `Splits` takes `(L A B)`

@@ -20,6 +20,8 @@ import Geometry.Ch3.Prop.P2
 import Geometry.Ch3.Prop.P3
 import Geometry.Ch3.Prop.P4
 import Geometry.Ch3.Prop.P5
+import Geometry.Ch3.Prop.P6
+import Geometry.Ch3.Prop.P7
 import Geometry.Ch3.Prop.Pasch
 -- Exercises
 import Geometry.Ch3.Ex.Betweenness.Ex1

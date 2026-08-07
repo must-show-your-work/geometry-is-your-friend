@@ -35,11 +35,7 @@ atlas commentary := by
 
   figure := by
     construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      construct mainLine := line_through A D
-      assert between A C D
-      assert between A B C
+      infer
     }
     title "Prop 3.3.i — setup"
     index 1
@@ -58,6 +54,9 @@ atlas proposition 3.3.i "Betweenness from shared outer pair: B-C-D from A-B-C an
   have ⟨E, EoffcL⟩ := proposition 2.3 cL
   auxillary {
     exists E : Point
+    construct L_AB := line_through A D
+    focus L_AB
+    assert off E L_AB
     construct rayEC := ray E C
   }
   quoting (3) "Consider line EC. Since (by hypothesis) AD meets this line in point C," ...
@@ -179,14 +178,7 @@ intuitive argument that the author makes into a bunch of type theoretic dust, wh
 world."
 
   figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B C
-      assert between A C D
-      assert between A B D
-      construct segAD := segment A D
-    }
+    construction { infer }
     title "Proposition 3.3 (ii)"
     index 1
     caption "From A-B-C and A-C-D follows A-B-D — all four points appear collinear with B between A and D."
@@ -219,14 +211,7 @@ atlas commentary := by
   preface "Corollary, Given A-B-C and B-C-D, then A-B-D..."
 
   figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B C
-      assert between B C D
-      assert between A B D
-      construct segAD := segment A D
-    }
+    construction { infer }
     title "Corollary 3.3 (i)"
     index 1
     caption "Shifted chain A-B-C and B-C-D yields A-B-D — order is A, B, C, D on the line."
@@ -258,14 +243,7 @@ atlas commentary := by
   preface "and A-C-D"
 
   figure := by
-    construction {
-      exists A B C D : Point
-      assert distinct A B C D
-      assert between A B C
-      assert between B C D
-      assert between A C D
-      construct segAD := segment A D
-    }
+    construction { infer }
     title "Corollary 3.3 (ii)"
     index 1
     caption "Companion to 3.3.i: same chain also gives A-C-D."

@@ -29,6 +29,7 @@ namespace Geometry.Theory
     - `P off L`: rest of proof gets `PoffL : P off L`; body sees `PonL : P on L`. -/
 syntax "clearly " term " := " "by " tacticSeq : tactic
 syntax "clearly " term : tactic
+syntax "clearly?" term : tactic
 
 /-- Derive an auto-name component from a term used in a `clearly` clause.
     Identifiers map to their user-name; line-part expressions get short
@@ -59,6 +60,7 @@ private partial def clearlyTermName (s : Lean.Syntax) : Lean.MacroM String := do
 -- start to confirm the hypothesis is there.
 macro_rules
   | `(tactic| clearly $prop) => `(tactic| clearly $prop := by obvious)
+  | `(tactic| clearly? $prop) => `(tactic| clearly $prop := by obvious?)
   | `(tactic| clearly $lhs ≠ $rhs := by $body) => do
     let lName ← clearlyTermName lhs
     let rName ← clearlyTermName rhs
