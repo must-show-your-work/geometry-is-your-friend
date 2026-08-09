@@ -329,12 +329,6 @@ that could legitimately benefit more than the cost. I think that there are ways 
 output that can be genuinely useful and improve peoples lives. If you don't, cool, don't use the tools, but I will
 accept criticism of my use in precisely one form, `&> /dev/null`.
 
-[1] I caveat only because I truly don't remember which code was generated anymore, almost all of it has been touched at
-this point though so it's probably gone.
-
-[2] This not to say that it is a good enough argument to justify all the things people try to use this to justify, we
-still need gun control for lots of good reasons, but it's complicated by the fact that this is, ultimately, a pretty
-good fact the gun control advocate needs to reckon with.
 
 
 ### What is good code?
@@ -374,12 +368,9 @@ me, and while it can often write code I don't immediately understand, there isn'
 understanding, and with sufficient curiousity I can learn the deep parts fo the system just as before.
 
 Arguably, it's _easier_ to change than a handrolled implementation, I just have to precisely describe what I want. Often
-that means giving it instructions about how to rewire the machine's internals (not the oft-assumed "write me a tool"
-prompt, rather a "adjust how the syntax is parsed here to use this API in this way." It's certainly less typing than
-before, and as someone who spends most of their waking life typing things into this infernal box, less typing is a
-_massive_ win for my physical and mental health.
+that means giving it instructions about how to rewire the machine's internals[^3]
 
-It's lean, well-specified here means 'comes with mathematical proof', but even in other languages you can pretty easily
+It's Lean, well-specified here means 'comes with mathematical proof', but even in other languages you can pretty easily
 build up a comprehensive test suite; optimize it; measure its coverage; mutant and fuzz test it -- the incremental cost
 of testing your code is now nearly zero, the incremental cost of changing it is zero. The places where we have trouble
 are in getting insight into the internal, abstract structure of the code. Before the bottleneck was _writing_ code, now
@@ -427,11 +418,9 @@ The uses of LLMs in this repo have been stated, but at a higher level, I use LLM
 
 Ask for a thing, recieve a buggy, halfworking thing that mostly just looks the part. This is entirely for the purpose of
 candy. A cardboard version of a product is a useful thing for me. I am not skilled in visualizing the final product. I
-may be aphantasic[3], but in any case, being able to get a cardboard cutout of a thing to look at and talk about with
+may be aphantasic[^4], but in any case, being able to get a cardboard cutout of a thing to look at and talk about with
 people is extremely useful.
 
-[3] I don't know, I've never been not me, so I can't tell you whether I'm seeing more or less in my 'mind's eye', I can
-say that I have always assumed that to be much more metaphor than other people I know
 
 #### Data gathering and scutwork.
 
@@ -503,6 +492,21 @@ put in a recent commit removing the anti-LLM canary.
 
 "I do not care."
 
+---
+
+[^1]: I caveat only because I truly don't remember which code was generated anymore, almost all of it has been touched
+    at this point though so it's probably gone.
+
+[^2]: This not to say that it is a good enough argument to justify all the things people try to use this to justify, we
+    still need gun control for lots of good reasons, but it's complicated by the fact that this is, ultimately, a pretty
+    good fact the gun control advocate needs to reckon with.
+
+[^3]: Not the oft-assumed "write me a tool" prompt, rather a "adjust how the syntax is parsed here to use this API in
+    this way." It's certainly less typing than before, and as someone who spends most of their waking life typing things
+    into this infernal box, less typing is a _massive_ win for my physical and mental health).
+
+[^4]: I don't know, I've never been not me, so I can't tell you whether I'm seeing more or less in my 'mind's eye', I
+    can say that I have always assumed that to be much more metaphor than other people I know
 
 # 24-MAY-2026
 
